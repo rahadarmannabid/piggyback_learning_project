@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Extract Frames</title>
+  </head>
+  <body>
+    <h1>Extract Frames (1 per second)</h1>
+
+    <p><strong>Video ID:</strong> {{ video_id }}</p>
+
+    <!-- Step 1: Extract frames -->
+    <form action="/frames/{{ video_id }}" method="post">
+      <button type="submit">Extract Frames</button>
+    </form>
+
+    {% if ran %}
+      <h2>Result</h2>
+      <p><strong>Status:</strong> {{ "Success" if success else "Failed" }}</p>
+      <p><strong>Message:</strong> {{ message }}</p>
+
+      {% if success %}
+        <p><strong>Extracted Frames:</strong> {{ count }}</p>
+        {% if output_dir %}
+          <p><strong>Output Folder:</strong> <a href="{{ output_dir }}">{{ output_dir }}</a></p>
+        {% endif %}
+
+        {% if files %}
+          <h3>Files</h3>
+          <ul>
+            {% for f in files %}
+              <li><a href="{{ f }}" download>{{ f }}</a></li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        <!-- Step 2: Generate Questions -->
+        <h2>Next Step</h2>
+        <form action="/questions/{{ video_id }}" method="get">
+          <button type="submit">Generate Questions</button>
+        </form>
+      {% endif %}
+    {% endif %}
+
+    <p><a href="/">Back</a></p>
+  </body>
+</html>

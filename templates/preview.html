@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Download Result</title>
+  </head>
+  <body>
+    <h1>Download Result</h1>
+
+    <p><strong>Status:</strong> {{ "Success" if success else "Failed" }}</p>
+    <p><strong>Message:</strong> {{ message }}</p>
+
+    {% if video_id %}
+      <p><strong>Video ID (this download):</strong> {{ video_id }}</p>
+    {% endif %}
+
+    {% if success and current_video_url %}
+      <h2>Preview</h2>
+      <video controls width="720">
+        <source src="{{ current_video_url }}">
+        {% if current_sub_url %}
+          <track kind="subtitles" src="{{ current_sub_url }}" srclang="en" label="English" default>
+        {% endif %}
+        Your browser does not support the video tag.
+      </video>
+      {% if video_id %}
+        <p>
+          <a href="/frames/{{ video_id }}">Extract Frames</a> |
+          <a href="/questions/{{ video_id }}">Generate Questions</a>
+        </p>
+      {% endif %}
+    {% endif %}
+
+    {% if files and success %}
+      <h2>Files from this download</h2>
+      <ul>
+        {% for f in files %}
+          <li><a href="{{ f }}" download>{{ f }}</a></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <hr>
+
+    <h2>All Downloads</h2>
+    {% if all_downloads and all_downloads|length > 0 %}
+      <ul>
+        {% for item in all_downloads %}
+          <li>
+            <p><strong>Video ID:</strong> {{ item.video_id }}
+              — <a href="/frames/{{ item.video_id }}">Extract Frames</a>
+              — <a href="/questions/{{ item.video_id }}">Generate Questions</a>
+            </p>
+            {% if item.files and item.files|length > 0 %}
+              <ul>
+                {% for f in item.files %}
+                  <li><a href="{{ f }}" download>{{ f }}</a></li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p>No files found.</p>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No downloads yet.</p>
+    {% endif %}
+
+    <p><a href="/">Back</a></p>
+  </body>
+</html>

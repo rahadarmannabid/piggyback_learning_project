@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Generate Questions</title>
+  </head>
+  <body>
+    <h1>Generate Questions</h1>
+
+    <p><strong>Video ID:</strong> {{ video_id }}</p>
+    {% if duration_seconds %}
+      <p><strong>Approx. Duration:</strong> {{ duration_seconds }} seconds</p>
+    {% endif %}
+
+    <!-- WebSocket-driven form -->
+    <form id="ws-form">
+      <fieldset>
+        <legend>Interval Settings</legend>
+
+        <label for="start_seconds">Start (seconds):</label>
+        <input type="number" id="start_seconds" name="start_seconds" value="{{ start_seconds or 0 }}" min="0" required>
+
+        <label for="interval_seconds">Interval length (seconds):</label>
+        <input type="number" id="interval_seconds" name="interval_seconds" value="{{ interval_seconds or 60 }}" min="1" required>
+      </fieldset>
+
+      <p>
+        <label>
+          <input type="checkbox" id="full_duration" name="full_duration" {% if full_duration %}checked{% endif %}>
+          Generate for the <em>full duration</em> (loop 0–60, 61–120, …)
+        </label>
+      </p>
+
+      <p>
+        <label for="api_key">OpenAI API Key (optional; else use env):</label>
+        <input type="password" id="api_key" name="api_key" placeholder="sk-...">
+      </p>
+
+      <button type="submit">Start WebSocket Generation</button>
+    </form>
+
+    <h2>Live Output</h2>
+    <pre id="stream" style="white-space: pre-wrap;"></pre>
+
+    <!-- Optional fallback non-streaming HTTP form -->
+    <h3>Or use non-streaming (HTTP) submit</h3>
+    <form action="/questions/{{ video_id }}" method="post">
+      <input type="hidden" name="start_seconds" value="{{ start_seconds or 0 }}">
+      <input type="hidden" name="interval_seconds" value="{{ interval_seconds or 60 }}">
+      <input type="hidden" name="full_duration" value="">
+      <button type="submit">Submit (HTTP, no streaming)</button>
+    </form>
+
+    <p><a href="/">Back</a> | <a href="/frames/{{ video_id }}">Extract Frames</a></p>
+
+    <script>
+      const form = document.getElementById('ws-form');
+      const out = document.getElementById('stream');
+
+      function log(obj) {
+        try {
+          out.textContent += (typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2)) + "\n";
+        } catch (e) {
+          out.textContent += String(obj) + "\n";
+        }
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        out.textContent = "";
+
+        const startSeconds = parseInt(document.getElementById('start_seconds').value || "0", 10);
+        const intervalSeconds = parseInt(document.getElementById('interval_seconds').value || "60", 10);
+        const fullDuration = document.getElementById('full_duration').checked;
+        const apiKey = document.getElementById('api_key').value || null;
+
+        const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + "/ws/questions/{{ video_id }}";
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({
+            start_seconds: startSeconds,
+            interval_seconds: intervalSeconds,
+            full_duration: fullDuration,
+            api_key: apiKey
+          }));
+          log({type: "connected", message: "WebSocket opened. Generation started."});
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'status') {
+              log({status: data.message});
+            } else if (data.type === 'segment_result') {
+              log({segment: `${data.start}-${data.end}`, result: data.result});
+            } else if (data.type === 'done') {
+              log({done: true, segments_count: data.segments_count, output_json: data.output_json});
+            } else if (data.type === 'error') {
+              log({error: data.message});
+            } else {
+              log(data);
+            }
+          } catch (e) {
+            log(event.data);
+          }
+        };
+
+        ws.onerror = (err) => {
+          log({type: "error", message: "WebSocket error"});
+        };
+
+        ws.onclose = () => {
+          log({type: "closed", message: "WebSocket closed."});
+        };
+      });
+    </script>
+  </body>
+</html>
