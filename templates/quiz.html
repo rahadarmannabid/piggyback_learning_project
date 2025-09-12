@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kids Video Quiz</title>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <style>
+    body {
+      display: flex;
+      font-family: Arial, sans-serif;
+    }
+
+    /* -------- SIDEBAR STYLES -------- */
+    #sidebar {
+      width: 250px;
+      border-left: 2px solid #ddd;
+      padding: 15px;
+      background: #f9f9f9;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+    #sidebar h3 {
+      margin-top: 0;
+    }
+    #sidebar ul {
+      list-style: none;
+      padding: 0;
+    }
+    #sidebar li {
+      margin-bottom: 10px;
+      font-size: 0.9em;
+    }
+    #sidebar a {
+      color: #0077cc;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    #sidebar a:hover {
+      text-decoration: underline;
+    }
+    /* -------------------------------- */
+
+    #main-content {
+      flex: 1;
+      padding: 20px;
+    }
+    #question-box {
+      margin-top: 20px;
+      display: none;
+      border: 2px solid #444;
+      padding: 12px;
+      border-radius: 8px;
+      max-width: 700px;
+      background: #f8f8f8;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    #feedback {
+      margin-top: 8px;
+      font-weight: bold;
+    }
+    #timestamp {
+      margin-top: 4px;
+      font-size: 0.9em;
+      color: #555;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div id="main-content">
+    <h1>Kids Video Quiz</h1>
+
+    <!-- YouTube player -->
+    <div id="player"></div>
+
+    <!-- Question box -->
+    <div id="question-box">
+      <h3 id="question"></h3>
+      <p id="timestamp"></p>
+      <p id="feedback"></p>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <h3>📝 Questions</h3>
+    <ul id="question-list"></ul>
+  </div>
+
+  <script>
+    let player;
+    let segments = {};
+    let asked = new Set();
+    let checkInterval = null;
+    let activeQuestion = false;
+    let previousTime = 0;
+
+    // 🚫 Skip-lock variables
+    let maxAllowedTime = 0;     // furthest user has legitimately watched
+    let skipLockBypass = false; // true only when sidebar link is used
+
+    fetch("/static/questions.json?nocache=" + Date.now())
+      .then(response => response.json())
+      .then(data => {
+        segments = data;
+        console.log("✅ Loaded questions.json:", segments);
+        populateSidebar();
+      })
+      .catch(err => console.error("❌ Failed to load questions.json:", err));
+
+    function toSeconds(timeStr) {
+      if (!timeStr) return 0;
+      const parts = timeStr.split(":").map(Number);
+      return parts.length === 2 ? parts[0] * 60 + parts[1] : Number(timeStr);
+    }
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player("player", {
+        height: "390",
+        width: "640",
+        videoId: "zY2IwiBPchQ",
+        playerVars: { controls: 1 }, // keep controls but lock skipping 1 or 0 for none
+        events: { "onStateChange": onPlayerStateChange }
+      });
+    }
+
+    function onPlayerStateChange(event) {
+      if (event.data == YT.PlayerState.PLAYING && !checkInterval) {
+        previousTime = Math.floor(player.getCurrentTime());
+        checkInterval = setInterval(() => {
+          let currentTime = Math.floor(player.getCurrentTime());
+
+          // 🚫 Skip-lock check
+          if (!skipLockBypass) {
+            if (currentTime > maxAllowedTime + 2) { // tried to jump too far
+              console.warn("⏪ Skip attempt detected! Resetting...");
+              player.seekTo(maxAllowedTime, true);
+              return;
+            }
+          } else {
+            skipLockBypass = false; // reset after sidebar jump
+          }
+
+          // Update maxAllowedTime
+          if (currentTime > maxAllowedTime) {
+            maxAllowedTime = currentTime;
+          }
+
+          // Normal quiz logic
+          if (activeQuestion) {
+            previousTime = currentTime;
+            return;
+          }
+
+          for (let seg in segments) {
+            let segment = segments[seg];
+            for (let key in segment) {
+              if (key.startsWith("question_")) {
+                let q = segment[key];
+                let quesTime = toSeconds(q.ques_time);
+                let segStart = toSeconds(segment.segment_range_start);
+
+                if (previousTime < quesTime && currentTime >= quesTime && !asked.has(quesTime)) {
+                  console.log("🎯 Asking:", q.question, "at", q.ques_time);
+                  askQuestion(q, segStart);
+                  previousTime = currentTime;
+                  return;
+                }
+              }
+            }
+          }
+          previousTime = currentTime;
+        }, 1000);
+      }
+
+      if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.ENDED) {
+        clearInterval(checkInterval);
+        checkInterval = null;
+      }
+    }
+
+    function askQuestion(q, segStart) {
+      activeQuestion = true;
+      player.pauseVideo();
+      document.getElementById("question-box").style.display = "block";
+      document.getElementById("question").innerText = q.question;
+      document.getElementById("timestamp").innerHTML =
+        `⏱ Appears at <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>`;
+      document.getElementById("feedback").innerText = "";
+
+      let utter = new SpeechSynthesisUtterance(q.question);
+      utter.onend = () => startListening(q, segStart);
+      speechSynthesis.speak(utter);
+    }
+
+    function startListening(q, segStart) {
+      let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
+      recognition.start();
+
+      recognition.onresult = (event) => {
+        let spoken = event.results[0][0].transcript.toLowerCase();
+        console.log("🎤 Heard:", spoken);
+
+        if (spoken.includes(q.answer.toLowerCase())) {
+          document.getElementById("feedback").innerText = "✅ Congratulations, correct!";
+          asked.add(toSeconds(q.ques_time));
+          activeQuestion = false;
+          player.playVideo();
+        } else {
+          document.getElementById("feedback").innerText = "❌ Sorry, wrong answer. Rewinding...";
+          player.seekTo(segStart, true);
+          setTimeout(() => {
+            activeQuestion = false;
+            player.playVideo();
+          }, 1000);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error("⚠️ Speech recognition error:", event.error);
+      };
+    }
+
+    // -------- SIDEBAR POPULATOR --------
+    function populateSidebar() {
+      const list = document.getElementById("question-list");
+      list.innerHTML = "";
+
+      for (let seg in segments) {
+        let segment = segments[seg];
+        for (let key in segment) {
+          if (key.startsWith("question_")) {
+            let q = segment[key];
+            let li = document.createElement("li");
+            li.innerHTML = `
+              <strong>${seg}</strong> — 
+              <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>
+              <br>
+              ${q.question}
+            `;
+            list.appendChild(li);
+          }
+        }
+      }
+    }
+
+    // ✅ Helper for sidebar clicks (bypasses skip lock)
+    function seekWithBypass(seconds) {
+      skipLockBypass = true;
+      player.seekTo(seconds, true);
+    }
+  </script>
+</body>
+</html>

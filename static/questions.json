@@ -1,0 +1,50 @@
+{
+  "segment_1": {
+    "segment_range_start": "0:00",
+    "segment_range_end": "2:34",
+    "question_1": {
+      "ques_time": "0:45",
+      "difficulty": "easy",
+      "question": "Why did the character do this task?",
+      "answer": "Beacause they wanted revenge" 
+    },
+    "question_2": {
+      "ques_time": "1:30",
+      "difficulty": "hard",
+      "question": "What is two plus three?",
+      "answer": "five"
+    }
+  },
+  "segment_2": {
+    "segment_range_start": "2:35",
+    "segment_range_end": "4:49",
+    "question_1": {
+      "ques_time": "3:00",
+      "difficulty": "easy",
+      "question": "What color is the sky on a clear day?",
+      "answer": "blue"
+    },
+    "question_2": {
+      "ques_time": "4:20",
+      "difficulty": "hard",
+      "question": "What gas do humans need to breathe?",
+      "answer": "oxygen"
+    }
+  },
+  "segment_3": {
+    "segment_range_start": "4:50",
+    "segment_range_end": "6:30",
+    "question_1": {
+      "ques_time": "5:10",
+      "difficulty": "easy",
+      "question": "What color is grass?",
+      "answer": "green"
+    },
+    "question_2": {
+      "ques_time": "6:00",
+      "difficulty": "hard",
+      "question": "What is the largest planet in our solar system?",
+      "answer": "jupiter"
+    }
+  }
+}

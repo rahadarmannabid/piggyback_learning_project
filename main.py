@@ -825,3 +825,24 @@ def _maybe_parse_json(text: Optional[str]):
         return json.loads(text)
     except Exception:
         return text  # return raw text if not valid JSON
+
+# #Test
+# from fastapi import FastAPI, Request
+# from fastapi.responses import HTMLResponse
+# from fastapi.templating import Jinja2Templates
+
+# app = FastAPI()
+# templates = Jinja2Templates(directory="templates")
+
+@app.get("/quiz", response_class=HTMLResponse)
+async def quiz_page(request: Request):
+    return templates.TemplateResponse("quiz.html", {"request": request})
+from fastapi.staticfiles import StaticFiles
+
+# Serve the "static" folder at /static
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+
+
+
