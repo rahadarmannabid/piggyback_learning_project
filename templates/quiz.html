@@ -118,7 +118,7 @@
         height: "390",
         width: "640",
         videoId: "zY2IwiBPchQ",
-        playerVars: { controls: 0 }, // keep controls but lock skipping 1 or 0 for none
+        playerVars: { controls: 1 }, // keep controls but lock skipping 1 or 0 for none
         events: { "onStateChange": onPlayerStateChange }
       });
     }
@@ -244,7 +244,7 @@
       }
     }
 
-    // ✅ Helper for sidebar clicks (bypasses skip lock)
+    // Helper for sidebar clicks (bypasses skip lock)
     function seekWithBypass(seconds) {
       skipLockBypass = true;
       player.seekTo(seconds, true);

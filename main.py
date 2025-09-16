@@ -841,6 +841,7 @@ from fastapi.staticfiles import StaticFiles
 
 # Serve the "static" folder at /static
 app.mount("/static", StaticFiles(directory="static"), name="static")
+print("Now live on: http://localhost:8000/quiz")
 
 
 
