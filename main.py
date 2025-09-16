@@ -1,13 +1,14 @@
 # main.py
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+import os
 import base64
 import io
 import json
 import asyncio
 
 from fastapi import FastAPI, Form, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -15,6 +16,9 @@ import yt_dlp
 import cv2
 import pandas as pd
 from PIL import Image
+import httpx
+import re
+from dotenv import load_dotenv
 
 # OpenAI SDK v1.x (pip install openai>=1.30)
 from openai import OpenAI  # uses OPENAI_API_KEY env var by default
@@ -25,12 +29,17 @@ DOWNLOADS_DIR = BASE_DIR / "downloads"
 TEMPLATES_DIR = BASE_DIR / "templates"
 DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
+# Load env vars from .env (if present) and .env.txt (explicit file requested by user)
+load_dotenv()
+load_dotenv(".env.txt")
+
 app = FastAPI(title="YouTube Downloader")
 
 # Serve the downloads directory so the user can click the files
 app.mount("/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="downloads")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 # -----------------------------
 # Download helpers
@@ -297,6 +306,30 @@ def time_to_seconds(time_str):
         return 0
 
 
+def parse_iso8601_duration_to_seconds(duration: str) -> int:
+    """Parse ISO8601 duration like PT1H2M3S to total seconds."""
+    if not duration:
+        return 0
+    # Support hours, minutes, seconds (YouTube typical)
+    m = re.fullmatch(r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", duration)
+    if not m:
+        return 0
+    hours = int(m.group(1) or 0)
+    minutes = int(m.group(2) or 0)
+    seconds = int(m.group(3) or 0)
+    return hours * 3600 + minutes * 60 + seconds
+
+
+def format_hhmmss(total_seconds: int) -> str:
+    h = total_seconds // 3600
+    m = (total_seconds % 3600) // 60
+    s = total_seconds % 60
+    if h > 0:
+        return f"{h:02d}:{m:02d}:{s:02d}"
+    else:
+        return f"{m:02d}:{s:02d}"
+
+
 def read_frame_data_from_csv(folder_name, start_time, end_time):
     """Read frame data from CSV file and get frames within specified time range"""
     folder_path = Path(folder_name)
@@ -551,6 +584,170 @@ def do_download(request: Request, url: str = Form(...)):
             "current_sub_url": media["sub"],
         },
     )
+
+
+# -----------------------------
+# YouTube Search API (child-safe with duration filters)
+# -----------------------------
+@app.get("/api/yt_search")
+async def yt_search(
+    request: Request,
+    q: str,
+    min_minutes: int = 10,
+    max_minutes: int = 60,
+    max_results: int = 25,
+    page_token: Optional[str] = None,
+    page_size: Optional[int] = 20,
+):
+    """
+    Search YouTube for kid-safe videos and filter by duration window.
+    Requires YOUTUBE_API_KEY env var.
+    """
+    api_key = YOUTUBE_API_KEY
+    if not api_key:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": "Missing YOUTUBE_API_KEY on server.",
+                "items": [],
+            },
+        )
+
+    q = (q or "").strip()
+    if not q:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Empty query.", "items": []},
+        )
+
+    min_seconds = max(0, int(min_minutes)) * 60
+    max_seconds = max(0, int(max_minutes)) * 60
+    if max_seconds and max_seconds < min_seconds:
+        min_seconds, max_seconds = max_seconds, min_seconds
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # 1) Search for videos (safeSearch=strict, embeddable)
+            size = int(page_size) if page_size is not None else 20
+            if size <= 0:
+                size = 20
+            if size > 50:
+                size = 50
+
+            search_params = {
+                "part": "snippet",
+                "q": q,
+                "type": "video",
+                "maxResults": min(size, 50),
+                "safeSearch": "strict",
+                "videoEmbeddable": "true",
+                "order": "relevance",
+                "key": api_key,
+            }
+            if page_token:
+                search_params["pageToken"] = page_token
+            search_resp = await client.get(
+                "https://www.googleapis.com/youtube/v3/search", params=search_params
+            )
+            search_resp.raise_for_status()
+            search_data = search_resp.json()
+
+            video_ids = [
+                item.get("id", {}).get("videoId")
+                for item in search_data.get("items", [])
+                if item.get("id", {}).get("kind") == "youtube#video"
+                and item.get("id", {}).get("videoId")
+            ]
+            if not video_ids:
+                return JSONResponse(
+                    content={
+                        "success": True,
+                        "items": [],
+                        "message": "No results found.",
+                    }
+                )
+
+            # 2) Fetch details (duration, madeForKids, thumbnails)
+            videos_params = {
+                "part": "snippet,contentDetails,status",
+                "id": ",".join(video_ids),
+                "key": api_key,
+                "maxResults": 50,
+            }
+            videos_resp = await client.get(
+                "https://www.googleapis.com/youtube/v3/videos", params=videos_params
+            )
+            videos_resp.raise_for_status()
+            videos_data = videos_resp.json()
+
+            items_out: List[Dict[str, Any]] = []
+            for v in videos_data.get("items", []):
+                vid = v.get("id")
+                snippet = v.get("snippet", {})
+                content_details = v.get("contentDetails", {})
+                status = v.get("status", {})
+
+                duration_iso = content_details.get("duration")
+                duration_seconds = parse_iso8601_duration_to_seconds(duration_iso)
+                if duration_seconds <= 0:
+                    continue
+
+                if duration_seconds < min_seconds:
+                    continue
+                if max_seconds and duration_seconds > max_seconds:
+                    continue
+
+                # Child-safe filter: require madeForKids True and not age-restricted
+                made_for_kids = bool(status.get("madeForKids", False))
+                if not made_for_kids:
+                    continue
+
+                # YouTube may also mark age-restricted; guard just in case
+                content_rating = content_details.get("contentRating", {})
+                if content_rating.get("ytRating") == "ytAgeRestricted":
+                    continue
+
+                thumbnails = snippet.get("thumbnails", {})
+                thumb = (
+                    thumbnails.get("medium", {}).get("url")
+                    or thumbnails.get("high", {}).get("url")
+                    or thumbnails.get("default", {}).get("url")
+                )
+                items_out.append(
+                    {
+                        "videoId": vid,
+                        "title": snippet.get("title"),
+                        "channel": snippet.get("channelTitle"),
+                        "durationSeconds": duration_seconds,
+                        "durationFormatted": format_hhmmss(duration_seconds),
+                        "thumbnail": thumb,
+                        "url": f"https://www.youtube.com/watch?v={vid}",
+                    }
+                )
+
+            return JSONResponse(
+                content={
+                    "success": True,
+                    "items": items_out[:size],
+                    "count": len(items_out[:size]),
+                    "page_size": size,
+                    "nextPageToken": search_data.get("nextPageToken"),
+                    "searchTotal": search_data.get("pageInfo", {}).get("totalResults"),
+                    "message": f"Showing up to {size} results ordered by relevance.",
+                }
+            )
+
+    except httpx.HTTPStatusError as e:
+        return JSONResponse(
+            status_code=502,
+            content={"success": False, "message": f"YouTube API error: {e}"},
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": f"Server error: {e}"},
+        )
 
 
 @app.get("/frames/{video_id}", response_class=HTMLResponse)

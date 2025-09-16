@@ -1,2 +1,14 @@
 .env
-__pycache__
+__pycache__.env
+.env.*
+.env.txt
+pycache/
+downloads/
+venv/
+.venv/
+*.py[cod]
+*.log
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -6,10 +6,179 @@
   </head>
   <body>
     <h1>YouTube Downloader</h1>
-    <form action="/download" method="post">
+    <form action="/download" method="post" style="margin-bottom: 24px;">
       <label for="url">YouTube URL:</label>
       <input type="url" id="url" name="url" required placeholder="https://www.youtube.com/watch?v=...">
       <button type="submit">Download</button>
     </form>
+
+    <hr>
+
+    <h2>Search YouTube (Kid‑Safe)</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px;">
+      <input type="text" id="yt_query" placeholder="Search something on youtube" style="flex: 1 1 320px; padding: 6px;">
+      <label for="min_minutes">Min (min):</label>
+      <input type="number" id="min_minutes" value="10" min="0" style="width: 80px; padding: 6px;">
+      <label for="max_minutes">Max (min):</label>
+      <input type="number" id="max_minutes" value="60" min="1" style="width: 80px; padding: 6px;">
+      <button id="yt_search_btn" type="button">Search</button>
+    </div>
+
+    <div id="yt_status" style="margin: 8px 0; color: #555;"></div>
+    <div id="yt_results_meta" style="margin: 4px 0; color: #333; font-size: 0.95em;"></div>
+    <div id="yt_results" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;"></div>
+    <div style="margin-top: 12px;">
+      <button id="yt_load_more" type="button" style="display:none;">Load more</button>
+    </div>
+
+    <script>
+      const qInput = document.getElementById('yt_query');
+      const minInput = document.getElementById('min_minutes');
+      const maxInput = document.getElementById('max_minutes');
+      const searchBtn = document.getElementById('yt_search_btn');
+      const resultsDiv = document.getElementById('yt_results');
+      const resultsMeta = document.getElementById('yt_results_meta');
+      const statusDiv = document.getElementById('yt_status');
+      const urlInput = document.getElementById('url');
+      const loadMoreBtn = document.getElementById('yt_load_more');
+
+      // State for pagination
+      let lastQuery = '';
+      let lastMin = 10;
+      let lastMax = 60;
+      let nextPageToken = null;
+      const PAGE_SIZE = 20; // enforce 20 per page
+
+      function setStatus(msg, isError=false) {
+        statusDiv.style.color = isError ? '#b00020' : '#555';
+        statusDiv.textContent = msg || '';
+      }
+
+      function updateMeta() {
+        const shown = resultsDiv.children.length;
+        resultsMeta.textContent = `Showing ${shown} result(s) (20 per page)`;
+      }
+
+      function renderResults(items, append = false) {
+        if (!append) {
+          resultsDiv.innerHTML = '';
+        }
+        if (!items || items.length === 0) {
+          setStatus('No results found. Try adjusting your query or duration.');
+          updateMeta();
+          return;
+        }
+        setStatus(`Loaded ${items.length} result(s).`);
+
+        for (const item of items) {
+          const card = document.createElement('div');
+          card.style.border = '1px solid #ddd';
+          card.style.borderRadius = '6px';
+          card.style.padding = '8px';
+          card.style.background = '#fafafa';
+
+          const img = document.createElement('img');
+          img.src = item.thumbnail || '';
+          img.alt = item.title || 'thumbnail';
+          img.style.width = '100%';
+          img.style.borderRadius = '4px';
+
+          const title = document.createElement('div');
+          title.textContent = item.title || '';
+          title.style.fontWeight = '600';
+          title.style.marginTop = '6px';
+
+          const meta = document.createElement('div');
+          meta.textContent = `${item.channel || ''} • ${item.durationFormatted || ''}`;
+          meta.style.color = '#666';
+          meta.style.fontSize = '0.9em';
+          meta.style.margin = '4px 0 8px 0';
+
+          const actions = document.createElement('div');
+          actions.style.display = 'flex';
+          actions.style.gap = '8px';
+
+          const selectBtn = document.createElement('button');
+          selectBtn.type = 'button';
+          selectBtn.textContent = 'Select';
+          selectBtn.addEventListener('click', () => {
+            if (item.url) {
+              urlInput.value = item.url;
+              urlInput.focus();
+              setStatus('Selected video URL. Click Download to proceed.');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          });
+
+          const openBtn = document.createElement('a');
+          openBtn.href = item.url || '#';
+          openBtn.target = '_blank';
+          openBtn.rel = 'noopener noreferrer';
+          openBtn.textContent = 'Open on YouTube';
+          openBtn.style.alignSelf = 'center';
+
+          actions.appendChild(selectBtn);
+          actions.appendChild(openBtn);
+
+          card.appendChild(img);
+          card.appendChild(title);
+          card.appendChild(meta);
+          card.appendChild(actions);
+          resultsDiv.appendChild(card);
+        }
+        updateMeta();
+      }
+
+      async function runSearch(pageToken = null, append = false) {
+        const q = (qInput.value || '').trim();
+        const minM = parseInt(minInput.value || '10', 10);
+        const maxM = parseInt(maxInput.value || '60', 10);
+        if (!q) {
+          setStatus('Please enter a search query.', true);
+          return;
+        }
+        setStatus('Searching…');
+        if (!append) {
+          resultsDiv.innerHTML = '';
+        }
+
+        try {
+          const url = new URL('/api/yt_search', window.location.origin);
+          url.searchParams.set('q', q);
+          url.searchParams.set('min_minutes', String(minM));
+          url.searchParams.set('max_minutes', String(maxM));
+          url.searchParams.set('page_size', String(PAGE_SIZE));
+          if (pageToken) {
+            url.searchParams.set('page_token', pageToken);
+          }
+          const resp = await fetch(url.toString());
+          if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(txt || `HTTP ${resp.status}`);
+          }
+          const data = await resp.json();
+          if (!data.success) {
+            setStatus(data.message || 'Search failed.', true);
+            return;
+          }
+          renderResults(data.items || [], append);
+          nextPageToken = data.nextPageToken || null;
+          loadMoreBtn.style.display = nextPageToken ? 'inline-block' : 'none';
+          lastQuery = q;
+          lastMin = minM;
+          lastMax = maxM;
+        } catch (e) {
+          setStatus(`Error: ${e}`, true);
+        }
+      }
+
+      searchBtn.addEventListener('click', () => runSearch());
+      qInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
+      loadMoreBtn.addEventListener('click', () => {
+        if (nextPageToken) {
+          runSearch(nextPageToken, true);
+        }
+      });
+    </script>
   </body>
 </html>
