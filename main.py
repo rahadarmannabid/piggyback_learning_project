@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import Body
 from rapidfuzz import fuzz
+from pydantic import BaseModel
 
 # ---------- Third-Party ----------
 
@@ -62,6 +63,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
+
 # -----------------------------
 # Download helpers
 # -----------------------------
@@ -70,7 +72,12 @@ def download_youtube(url: str) -> Dict[str, Any]:
     Download best-quality video and English subtitles (WebVTT) from a YouTube URL.
     Returns a dict with success flag, message, video_id, and list of file paths (relative to downloads/).
     """
-    result = {"success": False, "message": "Download error", "video_id": None, "files": []}
+    result = {
+        "success": False,
+        "message": "Download error",
+        "video_id": None,
+        "files": [],
+    }
 
     if not url:
         result["message"] = "No URL provided."
@@ -203,13 +210,21 @@ def extract_frames_per_second_for_video(video_id: str) -> Dict[str, Any]:
     """
     folder_path = DOWNLOADS_DIR / video_id
     if not folder_path.exists():
-        return {"success": False, "message": f"Folder '{video_id}' not found.", "files": []}
+        return {
+            "success": False,
+            "message": f"Folder '{video_id}' not found.",
+            "files": [],
+        }
 
     video_files = []
     for ext in ("*.mp4", "*.webm", "*.mkv"):
         video_files.extend(folder_path.glob(ext))
     if not video_files:
-        return {"success": False, "message": f"No video files found in '{video_id}'.", "files": []}
+        return {
+            "success": False,
+            "message": f"No video files found in '{video_id}'.",
+            "files": [],
+        }
 
     video_file = video_files[0]
     output_dir = folder_path / "extracted_frames"
@@ -217,7 +232,11 @@ def extract_frames_per_second_for_video(video_id: str) -> Dict[str, Any]:
 
     cap = cv2.VideoCapture(str(video_file))
     if not cap.isOpened():
-        return {"success": False, "message": f"Error opening video file: {video_file.name}", "files": []}
+        return {
+            "success": False,
+            "message": f"Error opening video file: {video_file.name}",
+            "files": [],
+        }
 
     fps = cap.get(cv2.CAP_PROP_FPS)
     total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -302,13 +321,13 @@ def encode_image_to_base64(image_path, max_size=(512, 512)):
     """Convert image to base64 string with optional resizing for efficiency"""
     try:
         with Image.open(image_path) as img:
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
+            if img.mode != "RGB":
+                img = img.convert("RGB")
             img.thumbnail(max_size, Image.Resampling.LANCZOS)
             buffer = io.BytesIO()
-            img.save(buffer, format='JPEG', quality=85)
+            img.save(buffer, format="JPEG", quality=85)
             image_bytes = buffer.getvalue()
-            return base64.b64encode(image_bytes).decode('utf-8')
+            return base64.b64encode(image_bytes).decode("utf-8")
     except Exception as e:
         print(f"Error encoding image {image_path}: {e}")
         return None
@@ -317,7 +336,7 @@ def encode_image_to_base64(image_path, max_size=(512, 512)):
 def time_to_seconds(time_str):
     """Convert time string (HH:MM:SS or MM:SS) to seconds"""
     try:
-        parts = time_str.split(':')
+        parts = time_str.split(":")
         if len(parts) == 3:  # HH:MM:SS
             hours, minutes, seconds = map(int, parts)
             return hours * 3600 + minutes * 60 + seconds
@@ -367,14 +386,16 @@ def read_frame_data_from_csv(folder_name, start_time, end_time):
         df = pd.read_csv(csv_path)
 
         # Convert time strings to seconds for filtering
-        if 'Time_Formatted' in df.columns:
-            df['Time_Seconds'] = df['Time_Formatted'].apply(time_to_seconds)
-        elif 'Time_Seconds' in df.columns:
+        if "Time_Formatted" in df.columns:
+            df["Time_Seconds"] = df["Time_Formatted"].apply(time_to_seconds)
+        elif "Time_Seconds" in df.columns:
             pass
         else:
-            df['Time_Seconds'] = df.index  # fallback
+            df["Time_Seconds"] = df.index  # fallback
 
-        filtered_frames = df[(df['Time_Seconds'] >= start_time) & (df['Time_Seconds'] <= end_time)]
+        filtered_frames = df[
+            (df["Time_Seconds"] >= start_time) & (df["Time_Seconds"] <= end_time)
+        ]
         if len(filtered_frames) == 0:
             return [], ""
 
@@ -382,21 +403,29 @@ def read_frame_data_from_csv(folder_name, start_time, end_time):
         transcript_parts = []
 
         for _, row in filtered_frames.iterrows():
-            image_path = frames_dir / row['Filename']
+            image_path = frames_dir / row["Filename"]
             frame_info = {
-                'image_path': image_path,
-                'subtitle_text': row.get('Subtitle_Text', 'No transcript available'),
-                'time_seconds': row.get('Time_Seconds', 0),
-                'time_formatted': row.get('Time_Formatted', '')
+                "image_path": image_path,
+                "subtitle_text": row.get("Subtitle_Text", "No transcript available"),
+                "time_seconds": row.get("Time_Seconds", 0),
+                "time_formatted": row.get("Time_Formatted", ""),
             }
             frame_data.append(frame_info)
 
-            subtitle = row.get('Subtitle_Text', '')
-            if subtitle and subtitle not in ['No transcript available', 'No subtitle at this time', 'No subtitles available']:
-                time_label = row.get('Time_Formatted', f"{row.get('Time_Seconds', 0)}s")
+            subtitle = row.get("Subtitle_Text", "")
+            if subtitle and subtitle not in [
+                "No transcript available",
+                "No subtitle at this time",
+                "No subtitles available",
+            ]:
+                time_label = row.get("Time_Formatted", f"{row.get('Time_Seconds', 0)}s")
                 transcript_parts.append(f"[{time_label}] {subtitle}")
 
-        complete_transcript = "\n".join(transcript_parts) if transcript_parts else "No transcript available for this video segment."
+        complete_transcript = (
+            "\n".join(transcript_parts)
+            if transcript_parts
+            else "No transcript available for this video segment."
+        )
         return frame_data, complete_transcript
 
     except Exception as e:
@@ -404,7 +433,9 @@ def read_frame_data_from_csv(folder_name, start_time, end_time):
         return [], ""
 
 
-def generate_questions_for_segment(video_id: str, start_time: int, end_time: int, api_key: Optional[str] = None) -> Optional[str]:
+def generate_questions_for_segment(
+    video_id: str, start_time: int, end_time: int, api_key: Optional[str] = None
+) -> Optional[str]:
     """
     Analyze frames + transcript for a time window and return JSON text with the questions.
     """
@@ -415,7 +446,9 @@ def generate_questions_for_segment(video_id: str, start_time: int, end_time: int
         print(f"Error creating OpenAI client: {e}")
         return None
 
-    frame_data, complete_transcript = read_frame_data_from_csv(folder_name, start_time, end_time)
+    frame_data, complete_transcript = read_frame_data_from_csv(
+        folder_name, start_time, end_time
+    )
     if not frame_data:
         return None
 
@@ -465,15 +498,17 @@ Please do the following:
     # Add frames as low-detail inline images
     successful_frames = 0
     for fr in frame_data:
-        b64 = encode_image_to_base64(fr['image_path'])
+        b64 = encode_image_to_base64(fr["image_path"])
         if b64:
-            content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{b64}",
-                    "detail": "low"
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{b64}",
+                        "detail": "low",
+                    },
                 }
-            })
+            )
             successful_frames += 1
 
     if successful_frames == 0:
@@ -484,7 +519,7 @@ Please do the following:
             model="gpt-4o",
             messages=[{"role": "user", "content": content}],
             max_tokens=1500,
-            temperature=0.3
+            temperature=0.3,
         )
         return resp.choices[0].message.content
     except Exception as e:
@@ -492,7 +527,9 @@ Please do the following:
         return None
 
 
-def build_segments_from_duration(duration_seconds: int, interval_seconds: int, start_offset: int = 0) -> List[tuple]:
+def build_segments_from_duration(
+    duration_seconds: int, interval_seconds: int, start_offset: int = 0
+) -> List[tuple]:
     """
     Build inclusive segments like (0, 60), (61, 120), ... until duration_seconds.
     """
@@ -512,14 +549,17 @@ def generate_questions_for_full_duration(
     video_id: str,
     interval_seconds: int,
     api_key: Optional[str] = None,
-    start_offset: int = 0
+    start_offset: int = 0,
 ) -> Dict[str, Any]:
     """
     Non-streaming aggregator (kept for HTTP POST flow or saving to disk).
     """
     frames_dir = DOWNLOADS_DIR / video_id / "extracted_frames"
     if not frames_dir.exists():
-        return {"success": False, "message": "Frames not found. Please extract frames first."}
+        return {
+            "success": False,
+            "message": "Frames not found. Please extract frames first.",
+        }
 
     # Read duration
     duration_seconds = 0
@@ -527,49 +567,59 @@ def generate_questions_for_full_duration(
     if json_path.exists():
         try:
             info = json.loads(json_path.read_text(encoding="utf-8"))
-            duration_seconds = int(float(info.get("video_info", {}).get("duration_seconds", 0)))
+            duration_seconds = int(
+                float(info.get("video_info", {}).get("duration_seconds", 0))
+            )
         except Exception:
             duration_seconds = 0
 
     if duration_seconds <= 0:
         return {"success": False, "message": "Unable to determine video duration."}
 
-    segments = build_segments_from_duration(duration_seconds, interval_seconds, start_offset)
+    segments = build_segments_from_duration(
+        duration_seconds, interval_seconds, start_offset
+    )
 
     aggregated: Dict[str, Any] = {
         "video_id": video_id,
         "interval_seconds": int(interval_seconds),
         "start_offset": int(start_offset),
         "duration_seconds": duration_seconds,
-        "segments": []
+        "segments": [],
     }
 
-    for (seg_start, seg_end) in segments:
-        result_text = generate_questions_for_segment(video_id, seg_start, seg_end, api_key)
+    for seg_start, seg_end in segments:
+        result_text = generate_questions_for_segment(
+            video_id, seg_start, seg_end, api_key
+        )
         parsed = None
         if result_text:
             try:
                 parsed = json.loads(result_text)
             except Exception:
                 parsed = None
-        aggregated["segments"].append({
-            "start": seg_start,
-            "end": seg_end,
-            "result": parsed if parsed is not None else result_text
-        })
+        aggregated["segments"].append(
+            {
+                "start": seg_start,
+                "end": seg_end,
+                "result": parsed if parsed is not None else result_text,
+            }
+        )
 
     # Save aggregated file
     questions_dir = DOWNLOADS_DIR / video_id / "questions"
     questions_dir.mkdir(parents=True, exist_ok=True)
     out_path = questions_dir / f"questions_interval_{int(interval_seconds)}s.json"
-    out_path.write_text(json.dumps(aggregated, indent=2, ensure_ascii=False), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(aggregated, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
     return {
         "success": True,
         "message": f"Generated {len(segments)} segments of questions.",
         "segments_count": len(segments),
         "output_json": f"/downloads/{out_path.relative_to(DOWNLOADS_DIR).as_posix()}",
-        "aggregated": aggregated
+        "aggregated": aggregated,
     }
 
 
@@ -822,7 +872,9 @@ def questions_page(request: Request, video_id: str):
     if json_path.exists():
         try:
             info = json.loads(json_path.read_text(encoding="utf-8"))
-            duration_seconds = int(float(info.get("video_info", {}).get("duration_seconds", 0)))
+            duration_seconds = int(
+                float(info.get("video_info", {}).get("duration_seconds", 0))
+            )
         except Exception:
             duration_seconds = None
 
@@ -849,7 +901,7 @@ def generate_questions_http(
     video_id: str,
     start_seconds: int = Form(0),
     interval_seconds: int = Form(...),
-    full_duration: Optional[str] = Form(None),   # checkbox: "on" if checked
+    full_duration: Optional[str] = Form(None),  # checkbox: "on" if checked
     api_key: Optional[str] = Form(None),
 ):
     """
@@ -879,7 +931,9 @@ def generate_questions_http(
     if json_path.exists():
         try:
             info = json.loads(json_path.read_text(encoding="utf-8"))
-            duration_seconds = int(float(info.get("video_info", {}).get("duration_seconds", 0)))
+            duration_seconds = int(
+                float(info.get("video_info", {}).get("duration_seconds", 0))
+            )
         except Exception:
             pass
 
@@ -898,12 +952,25 @@ def generate_questions_http(
                 "video_id": video_id,
                 "duration_seconds": duration_seconds,
                 "result": None,
-                "full_result": json.dumps(full_outcome.get("aggregated"), indent=2, ensure_ascii=False) if full_outcome.get("aggregated") else None,
+                "full_result": (
+                    json.dumps(
+                        full_outcome.get("aggregated"), indent=2, ensure_ascii=False
+                    )
+                    if full_outcome.get("aggregated")
+                    else None
+                ),
                 "output_json": full_outcome.get("output_json"),
                 "start_seconds": int(start_seconds or 0),
                 "interval_seconds": int(interval_seconds),
                 "full_duration": True,
-                "error": None if full_outcome.get("success") else (full_outcome.get("message") or "Failed to generate questions for full duration."),
+                "error": (
+                    None
+                    if full_outcome.get("success")
+                    else (
+                        full_outcome.get("message")
+                        or "Failed to generate questions for full duration."
+                    )
+                ),
             },
         )
 
@@ -926,7 +993,11 @@ def generate_questions_http(
             "start_seconds": start,
             "interval_seconds": int(interval_seconds),
             "full_duration": False,
-            "error": None if result_text else "Failed to generate questions. Verify API key and time window.",
+            "error": (
+                None
+                if result_text
+                else "Failed to generate questions. Verify API key and time window."
+            ),
         },
     )
 
@@ -947,7 +1018,12 @@ async def ws_questions(websocket: WebSocket, video_id: str):
 
         frames_dir = DOWNLOADS_DIR / video_id / "extracted_frames"
         if not frames_dir.exists():
-            await websocket.send_json({"type": "error", "message": "Frames not found. Please extract frames first."})
+            await websocket.send_json(
+                {
+                    "type": "error",
+                    "message": "Frames not found. Please extract frames first.",
+                }
+            )
             await websocket.close()
             return
 
@@ -957,7 +1033,9 @@ async def ws_questions(websocket: WebSocket, video_id: str):
         if json_path.exists():
             try:
                 info = json.loads(json_path.read_text(encoding="utf-8"))
-                duration_seconds = int(float(info.get("video_info", {}).get("duration_seconds", 0)))
+                duration_seconds = int(
+                    float(info.get("video_info", {}).get("duration_seconds", 0))
+                )
             except Exception:
                 duration_seconds = None
 
@@ -968,65 +1046,90 @@ async def ws_questions(websocket: WebSocket, video_id: str):
             if duration_seconds is not None and end > duration_seconds:
                 end = duration_seconds
 
-            await websocket.send_json({"type": "status", "message": f"Generating questions for {start}-{end}s..."})
+            await websocket.send_json(
+                {
+                    "type": "status",
+                    "message": f"Generating questions for {start}-{end}s...",
+                }
+            )
             # offload blocking work to thread
-            result_text = await asyncio.to_thread(generate_questions_for_segment, video_id, start, end, api_key)
-            await websocket.send_json({
-                "type": "segment_result",
-                "start": start,
-                "end": end,
-                "result": _maybe_parse_json(result_text)
-            })
+            result_text = await asyncio.to_thread(
+                generate_questions_for_segment, video_id, start, end, api_key
+            )
+            await websocket.send_json(
+                {
+                    "type": "segment_result",
+                    "start": start,
+                    "end": end,
+                    "result": _maybe_parse_json(result_text),
+                }
+            )
             await websocket.send_json({"type": "done"})
             await websocket.close()
             return
 
         # FULL DURATION LOOP
         if duration_seconds is None or duration_seconds <= 0:
-            await websocket.send_json({"type": "error", "message": "Unable to determine video duration."})
+            await websocket.send_json(
+                {"type": "error", "message": "Unable to determine video duration."}
+            )
             await websocket.close()
             return
 
-        segments = build_segments_from_duration(duration_seconds, interval_seconds, start_seconds)
-        await websocket.send_json({"type": "status", "message": f"Starting full-duration generation over {len(segments)} segments."})
+        segments = build_segments_from_duration(
+            duration_seconds, interval_seconds, start_seconds
+        )
+        await websocket.send_json(
+            {
+                "type": "status",
+                "message": f"Starting full-duration generation over {len(segments)} segments.",
+            }
+        )
 
         aggregated = {
             "video_id": video_id,
             "interval_seconds": int(interval_seconds),
             "start_offset": int(start_seconds),
             "duration_seconds": duration_seconds,
-            "segments": []
+            "segments": [],
         }
 
         for idx, (seg_start, seg_end) in enumerate(segments, start=1):
-            await websocket.send_json({"type": "status", "message": f"[{idx}/{len(segments)}] {seg_start}-{seg_end}s"})
-            result_text = await asyncio.to_thread(generate_questions_for_segment, video_id, seg_start, seg_end, api_key)
+            await websocket.send_json(
+                {
+                    "type": "status",
+                    "message": f"[{idx}/{len(segments)}] {seg_start}-{seg_end}s",
+                }
+            )
+            result_text = await asyncio.to_thread(
+                generate_questions_for_segment, video_id, seg_start, seg_end, api_key
+            )
             result_obj = _maybe_parse_json(result_text)
-            aggregated["segments"].append({
-                "start": seg_start,
-                "end": seg_end,
-                "result": result_obj
-            })
+            aggregated["segments"].append(
+                {"start": seg_start, "end": seg_end, "result": result_obj}
+            )
             # push each segment as soon as it's ready
-            await websocket.send_json({
-                "type": "segment_result",
-                "start": seg_start,
-                "end": seg_end,
-                "result": result_obj
-            })
+            await websocket.send_json(
+                {
+                    "type": "segment_result",
+                    "start": seg_start,
+                    "end": seg_end,
+                    "result": result_obj,
+                }
+            )
 
         # Save aggregated JSON to disk
         questions_dir = DOWNLOADS_DIR / video_id / "questions"
         questions_dir.mkdir(parents=True, exist_ok=True)
         out_path = questions_dir / f"questions_interval_{int(interval_seconds)}s.json"
-        out_path.write_text(json.dumps(aggregated, indent=2, ensure_ascii=False), encoding="utf-8")
+        out_path.write_text(
+            json.dumps(aggregated, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
         output_url = f"/downloads/{out_path.relative_to(DOWNLOADS_DIR).as_posix()}"
 
-        await websocket.send_json({
-            "type": "done",
-            "segments_count": len(segments),
-            "output_json": output_url
-        })
+        await websocket.send_json(
+            {"type": "done", "segments_count": len(segments), "output_json": output_url}
+        )
         await websocket.close()
 
     except WebSocketDisconnect:
@@ -1047,6 +1150,7 @@ def _maybe_parse_json(text: Optional[str]):
         return json.loads(text)
     except Exception:
         return text  # return raw text if not valid JSON
+
 
 # ============================================================
 # QUIZ PAGE
@@ -1113,14 +1217,16 @@ def refresh_kids_videos_json():
                 pass
 
         # --- Final video entry ---
-        results.append({
-            "video_id": vid,
-            "title": title,
-            "duration": duration,
-            "duration_seconds": duration_sec,
-            "local_path": f"/downloads/{vid}/{video_file.name}",
-            "thumbnail": thumb_url or "/static/default-unlock.png"
-        })
+        results.append(
+            {
+                "video_id": vid,
+                "title": title,
+                "duration": duration,
+                "duration_seconds": duration_sec,
+                "local_path": f"/downloads/{vid}/{video_file.name}",
+                "thumbnail": thumb_url or "/static/default-unlock.png",
+            }
+        )
 
     # Write static JSON for frontend use
     out_path = BASE_DIR / "static" / "kids_videos.json"
@@ -1146,49 +1252,67 @@ def kids_page(request: Request):
     return templates.TemplateResponse("kids.html", {"request": request})
 
 
-
-
-
 # ============================================================
 # rapidfuzz compare answers
 # ============================================================
 
 NUM_WORDS = {
-    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
-    "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
-    "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
-    "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
-    "eighteen": 18, "nineteen": 19, "twenty": 20,
-    "thirty": 30, "forty": 40, "fifty": 50,
-    "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
 }
 
-SCALE_WORDS = {
-    "hundred": 100,
-    "thousand": 1000,
-    "million": 1_000_000
-}
+SCALE_WORDS = {"hundred": 100, "thousand": 1000, "million": 1_000_000}
 
+STOPWORDS = {"the", "a", "an", "is", "are", "and", "of", "to", "it"}
+
+
+# ----------------------------
+# Helpers
+# ----------------------------
 def words_to_numbers(text: str) -> list[int]:
     """
     Extract ALL numbers (digits or words) from a phrase.
-    Supports 0 → millions.
-    Returns a list of integers (could be multiple).
+    Supports 0 → millions. Returns a list of ints.
     """
     text = text.lower().strip()
     numbers = []
 
-    # Case 1: Raw digits first
+    # Digits
     for d in re.findall(r"\d+", text):
         numbers.append(int(d))
 
-    # Case 2: Word parsing
+    # Words
     tokens = re.split(r"[-\s]+", text)
-    total = 0
-    current = 0
+    total, current = 0, 0
     found_number = False
 
-    for token in tokens + ["end"]:  # sentinel to flush last number
+    for token in tokens + ["end"]:  # sentinel flush
         if token in NUM_WORDS:
             found_number = True
             current += NUM_WORDS[token]
@@ -1199,7 +1323,7 @@ def words_to_numbers(text: str) -> list[int]:
             if current == 0:
                 current = 1
             current *= scale
-            if scale > 100:  # thousand, million
+            if scale > 100:  # thousand/million
                 total += current
                 current = 0
 
@@ -1207,30 +1331,23 @@ def words_to_numbers(text: str) -> list[int]:
             if found_number:
                 total += current
                 numbers.append(total)
-                total = 0
-                current = 0
-                found_number = False
+                total, current, found_number = 0, 0, False
 
     return numbers
 
 
+def clean_text(text: str) -> str:
+    """Remove stopwords and punctuation for fuzzy matching."""
+    return " ".join(
+        w
+        for w in re.findall(r"[a-z]+", text.lower())
+        if w not in STOPWORDS and w not in NUM_WORDS and w not in SCALE_WORDS
+    )
 
-def is_numeric_answer(expected: str, user: str) -> tuple[bool, bool]:
-    """
-    Returns (are_both_numeric, are_equal_numbers).
-    Compares expected against *any number* in user’s phrase.
-    """
-    exp_nums = words_to_numbers(expected)
-    usr_nums = words_to_numbers(user)
 
-    if exp_nums and usr_nums:
-        for e in exp_nums:
-            if e in usr_nums:
-                return True, True
-        return True, False
-
-    return False, False
-
+# ----------------------------
+# API Route
+# ----------------------------
 @app.post("/api/check_answer")
 async def check_answer(payload: dict = Body(...)):
     expected = payload.get("expected", "").strip().lower()
@@ -1239,30 +1356,80 @@ async def check_answer(payload: dict = Body(...)):
     print(f"🔎 Checking answers | Expected='{expected}' | User='{user}'")
 
     if not expected or not user:
-        return {"similarity": 0.0, "expected": expected, "user": user, "is_numeric": False}
-    
-    is_num, num_match = is_numeric_answer(expected, user)
-    if is_num:
         return {
-            "similarity": 1.0 if num_match else 0.0,
+            "similarity": 0.0,
             "expected": expected,
             "user": user,
-            "is_numeric": True
+            "is_numeric": False,
         }
 
+    # --- Extract numbers ---
+    exp_nums = words_to_numbers(expected)
+    usr_nums = words_to_numbers(user)
+
+    # --- If expected has numbers, enforce strict equality ---
+    if exp_nums:
+        if sorted(exp_nums) != sorted(usr_nums):
+            return {
+                "similarity": 0.0,
+                "expected": expected,
+                "user": user,
+                "is_numeric": True,
+                "reason": f"Numbers mismatch (expected {exp_nums}, got {usr_nums})",
+            }
+
+        # Numbers match → check words
+        exp_clean = clean_text(expected)
+        usr_clean = clean_text(user)
+
+        # ✅ If expected is just a number, treat as correct
+        if not exp_clean:
+            return {
+                "similarity": 1.0,
+                "expected": expected,
+                "user": user,
+                "is_numeric": True,
+                "reason": "Pure numeric match",
+            }
+
+        # ✅ If user only said the number → still accept as correct
+        if not usr_clean:
+            return {
+                "similarity": 1.0,
+                "expected": expected,
+                "user": user,
+                "is_numeric": True,
+                "reason": "User gave numeric-only answer",
+            }
+
+        # Otherwise run fuzzy
+        pr = fuzz.partial_ratio(exp_clean, usr_clean) / 100.0
+        tsr = fuzz.token_set_ratio(exp_clean, usr_clean) / 100.0
+        ratio = max(pr, tsr)
+
+        print(f"  numeric fuzzy → pr={pr:.3f}, tsr={tsr:.3f}, final={ratio:.3f}")
+
+        return {
+            "similarity": round(ratio, 3),
+            "expected": expected,
+            "user": user,
+            "is_numeric": True,
+        }
+
+    # --- No numbers: plain fuzzy check ---
     pr = fuzz.partial_ratio(expected, user) / 100.0
     tsr = fuzz.token_set_ratio(expected, user) / 100.0
     ratio = max(pr, tsr)
 
-
-    print(f"  partial_ratio={pr:.3f}, token_set_ratio={tsr:.3f}, final={ratio:.3f}, is_numeric={is_num}")
+    print(f"  plain fuzzy → pr={pr:.3f}, tsr={tsr:.3f}, final={ratio:.3f}")
 
     return {
         "similarity": round(ratio, 3),
         "expected": expected,
         "user": user,
-        "is_numeric": False
+        "is_numeric": False,
     }
+
 
 # ============================================================
 # STATIC FILES
