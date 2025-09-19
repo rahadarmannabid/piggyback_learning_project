@@ -18,31 +18,14 @@
       overflow-y: auto;
       max-height: 100vh;
     }
-    #sidebar h3 {
-      margin-top: 0;
-    }
-    #sidebar ul {
-      list-style: none;
-      padding: 0;
-    }
-    #sidebar li {
-      margin-bottom: 10px;
-      font-size: 0.9em;
-    }
-    #sidebar a {
-      color: #0077cc;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    #sidebar a:hover {
-      text-decoration: underline;
-    }
+    #sidebar h3 { margin-top: 0; }
+    #sidebar ul { list-style: none; padding: 0; }
+    #sidebar li { margin-bottom: 10px; font-size: 0.9em; }
+    #sidebar a { color: #0077cc; text-decoration: none; cursor: pointer; }
+    #sidebar a:hover { text-decoration: underline; }
     /* -------------------------------- */
 
-    #main-content {
-      flex: 1;
-      padding: 20px;
-    }
+    #main-content { flex: 1; padding: 20px; }
     #question-box {
       margin-top: 20px;
       display: none;
@@ -53,16 +36,8 @@
       background: #f8f8f8;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    #feedback {
-      margin-top: 8px;
-      font-weight: bold;
-    }
-    #timestamp {
-      margin-top: 4px;
-      font-size: 0.9em;
-      color: #555;
-      font-style: italic;
-    }
+    #feedback { margin-top: 8px; font-weight: bold; }
+    #timestamp { margin-top: 4px; font-size: 0.9em; color: #555; font-style: italic; }
   </style>
 </head>
 <body>
@@ -89,15 +64,20 @@
   <script>
     let player;
     let segments = {};
-    let asked = new Set();
+    let asked = new Set();         // stores integer seconds for correctly answered questions
     let checkInterval = null;
     let activeQuestion = false;
     let previousTime = 0;
 
-    // 🚫 Skip-lock variables
-    let maxAllowedTime = 0;     // furthest user has legitimately watched
-    let skipLockBypass = false; // true only when sidebar link is used
+    // Skip-lock variables
+    let maxAllowedTime = 0;     
+    let skipLockBypass = false;
 
+    // Rewind buffers (seconds)
+    const REWIND_BEFORE_SEGMENT_BUFFER = 2;   // fallback when no prior correct question in segment
+    const REWIND_AFTER_CORRECT_BUFFER = 1;   // rewind to lastCorrect + this
+
+    // Load questions.json
     fetch("/static/questions.json?nocache=" + Date.now())
       .then(response => response.json())
       .then(data => {
@@ -110,7 +90,9 @@
     function toSeconds(timeStr) {
       if (!timeStr) return 0;
       const parts = timeStr.split(":").map(Number);
-      return parts.length === 2 ? parts[0] * 60 + parts[1] : Number(timeStr);
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+      return Number(timeStr) || 0;
     }
 
     function onYouTubeIframeAPIReady() {
@@ -118,7 +100,7 @@
         height: "390",
         width: "640",
         videoId: "zY2IwiBPchQ",
-        playerVars: { controls: 1 }, // keep controls but lock skipping 1 or 0 for none
+        playerVars: { controls: 1 }, // show progress bar but we block skipping
         events: { "onStateChange": onPlayerStateChange }
       });
     }
@@ -129,58 +111,65 @@
         checkInterval = setInterval(() => {
           let currentTime = Math.floor(player.getCurrentTime());
 
-          // 🚫 Skip-lock check
+          // ---------- Skip-lock detection ----------
           if (!skipLockBypass) {
-            if (currentTime > maxAllowedTime + 2) { // tried to jump too far
-              console.warn("⏪ Skip attempt detected! Resetting...");
+            if (currentTime > maxAllowedTime + 2) {
+              console.warn("⏪ Skip attempt detected! Resetting to maxAllowedTime:", maxAllowedTime);
               player.seekTo(maxAllowedTime, true);
               return;
             }
           } else {
-            skipLockBypass = false; // reset after sidebar jump
+            // a sidebar jump happened; allow it once and reset bypass
+            skipLockBypass = false;
           }
+          // Update the maximum allowed time watched
+          if (currentTime > maxAllowedTime) maxAllowedTime = currentTime;
+          // -----------------------------------------
 
-          // Update maxAllowedTime
-          if (currentTime > maxAllowedTime) {
-            maxAllowedTime = currentTime;
-          }
-
-          // Normal quiz logic
           if (activeQuestion) {
             previousTime = currentTime;
             return;
           }
 
-          for (let seg in segments) {
-            let segment = segments[seg];
-            for (let key in segment) {
-              if (key.startsWith("question_")) {
-                let q = segment[key];
-                let quesTime = toSeconds(q.ques_time);
-                let segStart = toSeconds(segment.segment_range_start);
+          // Loop through segments and questions, using crossing detection
+          for (let segKey in segments) {
+            let segment = segments[segKey];
+            let segStart = toSeconds(segment.segment_range_start);
+            let segEnd = toSeconds(segment.segment_range_end);
 
-                if (previousTime < quesTime && currentTime >= quesTime && !asked.has(quesTime)) {
-                  console.log("🎯 Asking:", q.question, "at", q.ques_time);
-                  askQuestion(q, segStart);
-                  previousTime = currentTime;
-                  return;
-                }
+            for (let key in segment) {
+              if (!key.startsWith("question_")) continue;
+              let q = segment[key];
+              let quesTime = toSeconds(q.ques_time);
+
+              // trigger only when we cross the quesTime and it's not already correctly answered
+              if (previousTime < quesTime && currentTime >= quesTime && !asked.has(quesTime)) {
+                console.log("🎯 Asking:", q.question, "at", q.ques_time, "(sec:", quesTime, ")");
+                // pass segStart and segEnd so rewind logic can compute within-segment last-correct
+                askQuestion(q, segStart, segEnd);
+                previousTime = currentTime;
+                return; // only ask one question at a time
               }
             }
           }
+
           previousTime = currentTime;
-        }, 1000);
+        }, 700); // slightly faster check for responsiveness
       }
 
       if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.ENDED) {
-        clearInterval(checkInterval);
-        checkInterval = null;
+        if (checkInterval) {
+          clearInterval(checkInterval);
+          checkInterval = null;
+        }
       }
     }
 
-    function askQuestion(q, segStart) {
+    // askQuestion now receives segStart and segEnd so startListening can refer to the segment bounds
+    function askQuestion(q, segStart, segEnd) {
       activeQuestion = true;
       player.pauseVideo();
+
       document.getElementById("question-box").style.display = "block";
       document.getElementById("question").innerText = q.question;
       document.getElementById("timestamp").innerHTML =
@@ -188,36 +177,92 @@
       document.getElementById("feedback").innerText = "";
 
       let utter = new SpeechSynthesisUtterance(q.question);
-      utter.onend = () => startListening(q, segStart);
+      // pass segStart and segEnd to startListening so the wrong-answer rewind logic can scope to the segment
+      utter.onend = () => startListening(q, segStart, segEnd);
       speechSynthesis.speak(utter);
     }
+    
 
-    function startListening(q, segStart) {
-      let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    // START LISTENING: if wrong, rewind to just after last correctly answered question in this segment
+    function startListening(q, segStart, segEnd) {
+      let SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        document.getElementById("feedback").innerText = "Speech recognition not supported in this browser.";
+        setTimeout(() => {
+          activeQuestion = false;
+          document.getElementById("question-box").style.display = "none";
+          player.playVideo();
+        }, 1200);
+        return;
+      }
+
+      let recognition = new SpeechRec();
       recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
       recognition.start();
 
       recognition.onresult = (event) => {
         let spoken = event.results[0][0].transcript.toLowerCase();
         console.log("🎤 Heard:", spoken);
 
+        const quesSec = toSeconds(q.ques_time);
+        // Find previously-correct answers inside this same segment
+        const askedArr = Array.from(asked || []);
+        const askedInSegment = askedArr.filter(t => t >= segStart && t <= segEnd);
+
         if (spoken.includes(q.answer.toLowerCase())) {
+          // Correct: mark as done and resume
           document.getElementById("feedback").innerText = "✅ Congratulations, correct!";
-          asked.add(toSeconds(q.ques_time));
+          asked.add(quesSec);
           activeQuestion = false;
-          player.playVideo();
-        } else {
-          document.getElementById("feedback").innerText = "❌ Sorry, wrong answer. Rewinding...";
-          player.seekTo(segStart, true);
+          // hide question then resume shortly
           setTimeout(() => {
+            document.getElementById("question-box").style.display = "none";
+            // resume playing; previousTime is reset on next interval tick
+            player.playVideo();
+          }, 700);
+        } else {
+          // Wrong: compute rewind target
+          console.log("❌ Wrong answer. askedInSegment:", askedInSegment);
+          let rewindTo;
+          if (askedInSegment.length > 0) {
+            const lastAnswered = Math.max(...askedInSegment);
+            // rewind to just after lastAnswered, but ensure we rewind before the current question
+            rewindTo = Math.min(lastAnswered + REWIND_AFTER_CORRECT_BUFFER, Math.max(segStart, quesSec - 1));
+            if (rewindTo < segStart) rewindTo = segStart;
+            console.log("Rewinding to just after last correct in segment:", lastAnswered, "-> seek to", rewindTo);
+          } else {
+            // no previous correct in this segment: revert to segment start (with optional small buffer before it)
+            // we choose segStart (you can subtract REWIND_BEFORE_SEGMENT_BUFFER if you prefer earlier context)
+            rewindTo = Math.max(0, segStart);
+            console.log("No previous correct in segment — rewinding to segment start:", rewindTo);
+          }
+
+          document.getElementById("feedback").innerText = "❌ Sorry, wrong answer. Rewinding...";
+          // Seek to the computed time and resume
+          player.seekTo(rewindTo, true);
+
+          // update previousTime so the crossing detection doesn't immediately re-trigger
+          previousTime = Math.floor(rewindTo);
+
+          // unlock and resume after a short pause so the user can hear context
+          setTimeout(() => {
+            document.getElementById("question-box").style.display = "none";
             activeQuestion = false;
             player.playVideo();
-          }, 1000);
+          }, 800);
         }
       };
 
       recognition.onerror = (event) => {
         console.error("⚠️ Speech recognition error:", event.error);
+        document.getElementById("feedback").innerText = "Could not hear you clearly — try again.";
+        setTimeout(() => {
+          activeQuestion = false;
+          document.getElementById("question-box").style.display = "none";
+          player.playVideo();
+        }, 1000);
       };
     }
 
@@ -232,6 +277,7 @@
           if (key.startsWith("question_")) {
             let q = segment[key];
             let li = document.createElement("li");
+            // show segment key, clickable timestamp (bypasses skip lock), and question text
             li.innerHTML = `
               <strong>${seg}</strong> — 
               <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Kids Videos | Piggyback</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f9ff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Header with left-aligned back button + centered title */
+    h1 {
+      position: relative;
+      background: #0077cc;
+      color: white;
+      padding: 12px 56px;       /* extra left pad so title stays centered visually */
+      margin: 0;
+      width: 100%;
+      text-align: center;
+    }
+    #back-button {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #005fa3;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    #back-button:hover { background: #004a85; }
+
+    /* Grid for video cards */
+    #video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      padding: 16px;
+      width: 90%;
+      max-width: 1200px;
+    }
+    .video-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s ease-in-out;
+    }
+    .video-card:hover { transform: scale(1.03); }
+    .video-thumb { width: 100%; height: 140px; object-fit: cover; }
+    .video-info { padding: 10px; }
+    .video-title { font-size: 0.95em; font-weight: bold; margin: 0 0 4px 0; }
+    .video-duration { font-size: 0.8em; color: #666; }
+
+    /* Quiz player wrapper */
+    #player-container {
+      display: none;
+      margin-top: 20px;
+      width: 90%;
+      max-width: 1200px;
+      display: none;            /* shown when playing */
+      flex-direction: column;   /* wrapper contains video row + (optional) sidebar row */
+      gap: 16px;
+    }
+
+    /* Row with character (left) + video (right) */
+    #video-wrapper {
+      display: flex;
+      justify-content: center;  /* centers the whole pair */
+      align-items: flex-start;  /* align tops */
+      gap: 30px;                /* space between character and video */
+      width: 100%;
+    }
+
+    /* Character column */
+    #character {
+      flex: 0 0 220px;          /* fixed column; does not shrink */
+      text-align: center;
+      align-self: flex-start;
+    }
+    #character img {
+      width: 100%;
+      max-width: 200px;         /* sensible desktop size */
+      transition: transform 0.3s ease;
+    }
+    #character.talking img { transform: scale(1.05); }
+
+    /* Video container (keeps overlay positioning) */
+    #video-container {
+      position: relative;
+      display: inline-block;
+      width: 960px;             /* target width */
+      max-width: 100%;          /* shrink on smaller screens */
+    }
+    #player {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    /* Question box overlay */
+    #question-box {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      font-size: 1.2em;
+      font-weight: bold;
+      text-align: center;
+      display: none;
+      z-index: 16;              /* above blocker */
+    }
+    #feedback { margin-top: 8px; font-weight: bold; font-size: 1.1em; }
+    #timestamp { margin-top: 4px; font-size: 0.9em; color: #555; font-style: italic; }
+
+    /* Transparent blocker to prevent interactions during questions */
+    #blocker {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0);
+      z-index: 15;
+      display: none;
+      pointer-events: auto;
+    }
+
+    /* Floating toggle button (top-right of video) */
+    #toggle-sidebar {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 119, 204, 0.9);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 20;
+    }
+    #toggle-sidebar:hover { background: rgba(0, 95, 163, 0.95); }
+
+    /* Sidebar (dev/testing) */
+    #sidebar {
+      width: 30%;
+      border-left: 2px solid #ddd;
+      padding: 15px;
+      background: #f9f9f9;
+      overflow-y: auto;
+      max-height: 600px;
+    }
+    #sidebar h3 { margin-top: 0; }
+    #sidebar ul { list-style: none; padding: 0; }
+    #sidebar li { margin-bottom: 12px; font-size: 0.9em; }
+    #sidebar a { color: #0077cc; text-decoration: none; cursor: pointer; }
+    #sidebar a:hover { text-decoration: underline; }
+
+    /* Hide helper */
+    .hidden { display: none !important; }
+
+    /* Responsive tweaks */
+    @media (max-width: 1024px) {
+      #character { flex-basis: 180px; }
+      #character img { max-width: 160px; }
+    }
+    @media (max-width: 900px) {
+      #character { flex-basis: 160px; }
+      #character img { max-width: 140px; }
+    }
+    @media (max-width: 700px) {
+      #video-wrapper { flex-direction: column; align-items: center; gap: 16px; }
+      #character { flex: none; }
+      #character img { max-width: 120px; }
+      #video-container { width: 100%; }
+      #question-box { font-size: 1em; padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <button id="back-button">⬅️ Back to Library</button>
+    🐷 Piggyback
+  </h1>
+
+  <!-- Video library -->
+  <div id="video-grid"></div>
+
+  <!-- Quiz Player -->
+  <div id="player-container">
+    <div id="video-wrapper">
+      <!-- Character to the left -->
+      <div id="character">
+        <img id="character-img" src="/static/character/neutral.png" alt="Friendly Character">
+      </div>
+
+      <!-- Video on the right -->
+      <div id="video-container">
+        <video id="player" controls></video>
+        <!-- ⛔ blocks clicks while a question is active -->
+        <div id="blocker" aria-hidden="true"></div>
+
+        <!-- Overlay Question Box (single instance) -->
+        <div id="question-box">
+          <h3 id="question"></h3>
+          <p id="timestamp"></p>
+          <p id="feedback"></p>
+        </div>
+
+        <!-- Floating Sidebar Toggle Button -->
+        <button id="toggle-sidebar" title="Toggle question list">📑</button>
+      </div>
+    </div>
+
+    <!-- Sidebar (dev mode toggleable) -->
+    <div id="sidebar" class="hidden">
+      <h3>📝 Questions</h3>
+      <ul id="question-list"></ul>
+    </div>
+  </div>
+
+    <script>
+      // ===============================
+      // CONFIGURATION
+      // ===============================
+      const DEV_MODE = true; // set false to hide sidebar & toggle in production
+
+      const THRESHOLDS = {
+        phrase: { correct: 0.6, borderline: 0.5 },
+        number: { correct: 0.9, borderline: 0.8 }
+      };
+
+      // ===============================
+      // Global State
+      // ===============================
+      let segments = {};
+      let asked = new Set();
+      let checkInterval = null;
+      let activeQuestion = false;
+      let previousTime = 0;
+      let maxAllowedTime = 0;
+      let skipLockBypass = false;
+
+      const player = document.getElementById("player");
+      // If anything triggers play while a question is active, immediately pause again
+      player.addEventListener("play", (e) => {
+        if (activeQuestion) {
+          e.preventDefault?.();
+          player.pause();
+        }
+      });
+
+      // Prevent keyboard shortcuts (space, k, media keys) during questions
+      document.addEventListener("keydown", (e) => {
+        if (!activeQuestion) return;
+        const k = e.key.toLowerCase();
+        if (k === " " || k === "k" || k === "mediaplaypause") {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, { capture: true });
+
+      const sidebar = document.getElementById("sidebar");
+      const toggleBtn = document.getElementById("toggle-sidebar");
+
+      // DEV mode visibility
+      if (!DEV_MODE) {
+        sidebar.classList.add("hidden");
+        toggleBtn.classList.add("hidden");
+      }
+
+      // Sidebar toggle (single source of truth via .hidden class)
+      toggleBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sidebar.classList.toggle("hidden");
+      });
+
+      // ===============================
+      // Load Videos for Library
+      // ===============================
+      async function loadVideos() {
+        try {
+          const res = await fetch("/api/kids_videos?nocache=" + Date.now());
+          const data = await res.json();
+          if (!data.success) throw new Error("API error");
+
+          const grid = document.getElementById("video-grid");
+          grid.innerHTML = "";
+
+          data.videos.forEach(video => {
+            const card = document.createElement("div");
+            card.className = "video-card";
+            card.innerHTML = `
+          <img class="video-thumb" src="${video.thumbnail}" alt="Thumbnail">
+          <div class="video-info">
+            <p class="video-title">${video.title}</p>
+            <p class="video-duration">${video.duration }</p>
+          </div>
+        `;
+            card.onclick = () => startQuiz(video);
+            grid.appendChild(card);
+          });
+        } catch (err) {
+          console.error("❌ Error loading kids_videos:", err);
+          document.getElementById("video-grid").innerHTML = "<p>⚠️ Error loading videos.</p>";
+        }
+      }
+
+      // ===============================
+      // Start Quiz for Selected Video
+      // ===============================
+      function startQuiz(video) {
+        // Hide library, show quiz player
+        document.getElementById("video-grid").style.display = "none";
+        document.getElementById("player-container").style.display = "flex";
+
+        // Load video file
+        player.src = video.local_path;
+        player.play();
+
+        // Load matching questions
+        fetch(`/static/questions.json?nocache=${Date.now()}`)
+          .then(res => res.json())
+          .then(data => {
+            segments = data;
+            populateSidebar();
+            startMonitoring();
+          })
+          .catch(err => console.error("❌ Failed to load questions:", err));
+      }
+
+      // ===============================
+      // Monitor Video Playback
+      // ===============================
+      function startMonitoring() {
+        clearInterval(checkInterval);
+        checkInterval = setInterval(() => {
+          let currentTime = Math.floor(player.currentTime);
+
+          // --- Skip-lock ---
+          if (!skipLockBypass && currentTime > maxAllowedTime + 2) {
+            console.warn("⏪ Skip attempt detected!");
+            player.currentTime = maxAllowedTime;
+            return;
+          }
+          skipLockBypass = false;
+          if (currentTime > maxAllowedTime) maxAllowedTime = currentTime;
+
+          if (activeQuestion) {
+            previousTime = currentTime;
+            return;
+          }
+
+          // --- Question Triggers ---
+          for (let segKey in segments) {
+            let segment = segments[segKey];
+            let segStart = toSeconds(segment.segment_range_start);
+            let segEnd = toSeconds(segment.segment_range_end);
+
+            for (let key in segment) {
+              if (!key.startsWith("question_")) continue;
+              let q = segment[key];
+              let quesTime = toSeconds(q.ques_time);
+
+              if (previousTime < quesTime && currentTime >= quesTime && !asked.has(quesTime)) {
+                askQuestion(q, segStart, segEnd);
+                previousTime = currentTime;
+                return;
+              }
+            }
+          }
+
+          previousTime = currentTime;
+        }, 700);
+      }
+
+      // ===============================
+      // Asking + Answering Questions
+      // ===============================
+      function askQuestion(q, segStart, segEnd) {
+        setCharacter("asking", q.question);
+        activeQuestion = true;
+        lockVideoControls();            // ⛔ lock here
+        player.pause();
+
+        document.getElementById("question-box").style.display = "block";
+        document.getElementById("question").innerText = q.question;
+        document.getElementById("timestamp").innerHTML =
+          `⏱ Appears at <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>`;
+        document.getElementById("feedback").innerText = "";
+
+        setCharacter("asking");
+        speakLine(q.question, () => {
+          // only start listening after friendly voice finishes
+          startListening(q, segStart, segEnd);
+        });
+      }
+
+      function startListening(q, segStart, segEnd) {
+        let SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          document.getElementById("feedback").innerText = "⚠️ Speech recognition not supported.";
+          return resumeVideo();
+        }
+
+        let recognition = new SpeechRec();
+        recognition.lang = "en-US";
+        recognition.interimResults = true;   // capture partial speech
+        recognition.continuous = true;       // keep listening until stopped
+        recognition.maxAlternatives = 1;
+
+        let finalTranscript = "";
+
+        recognition.onresult = (event) => {
+          // Collect final results only
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript.toLowerCase() + " ";
+            }
+          }
+        };
+
+        recognition.onend = () => {
+          if (finalTranscript.trim()) {
+            processAnswer(finalTranscript.trim(), q, segStart, segEnd);
+          } else {
+            document.getElementById("feedback").innerText = "⚠️ No answer detected.";
+            setTimeout(resumeVideo, 1000);
+          }
+        };
+
+        recognition.onerror = () => {
+          document.getElementById("feedback").innerText = "⚠️ Didn't catch that.";
+          setTimeout(resumeVideo, 1000);
+        };
+
+        // Safety: stop listening after 8 seconds max
+        setTimeout(() => recognition.stop(), 8000);
+
+        recognition.start();
+      }
+
+      function processAnswer(spoken, q, segStart, segEnd) {
+        const quesSec = toSeconds(q.ques_time);
+        const askedInSegment = Array.from(asked).filter(t => t >= segStart && t <= segEnd);
+
+        console.log("🎤 Heard (final):", spoken, " | Expected:", q.answer);
+
+        fetch("/api/check_answer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ expected: q.answer, user: spoken })
+        })
+          .then(res => res.json())
+          .then(data => {
+            console.log("✅ Local check response:", data);
+
+            const feedbackEl = document.getElementById("feedback");
+            const sim = parseFloat(data.similarity);
+            const t = data.is_numeric ? THRESHOLDS.number : THRESHOLDS.phrase;
+
+            if (sim >= t.correct) {
+              feedbackEl.innerText = `✅ Correct! (similarity: ${sim})`;
+              feedbackEl.style.color = "green";
+              asked.add(quesSec);
+
+              setCharacter("correct");
+              speakLine("Great job! You got it right!");
+
+              setTimeout(resumeVideo, 700);
+
+            } else if (sim >= t.borderline) {
+              feedbackEl.innerText = `🤔 Almost correct (similarity: ${sim}). Rewinding...`;
+              feedbackEl.style.color = "orange";
+
+              setCharacter("almost", "Hmm, close! Let’s try again.");
+
+              setTimeout(() => {
+                let rewindTo = askedInSegment.length > 0
+                  ? Math.max(...askedInSegment) + 1
+                  : segStart;
+                player.currentTime = rewindTo;
+                resumeVideo();
+              }, 1500);
+
+            } else {
+              feedbackEl.innerText = `❌ Wrong. (similarity: ${sim}) Rewinding...`;
+              feedbackEl.style.color = "red";
+
+              setCharacter("wrong", "Not quite, but you can do it!");
+
+              setTimeout(() => {
+                let rewindTo = askedInSegment.length > 0
+                  ? Math.max(...askedInSegment) + 1
+                  : segStart;
+                player.currentTime = rewindTo;
+                resumeVideo();
+              }, 1500);
+            }
+          })
+          .catch(err => {
+            console.error("⚠️ Answer check failed:", err);
+            document.getElementById("feedback").innerText = "⚠️ Could not check answer.";
+            setTimeout(resumeVideo, 1000);
+          });
+      }
+
+      function resumeVideo() {
+        activeQuestion = false;
+        const box = document.getElementById("question-box");
+        box.style.display = "none"; // hide overlay
+        document.getElementById("feedback").innerText = ""; // clear feedback
+        unlockVideoControls();          // ✅ unlock here
+        player.play();
+      }
+
+      // ===============================
+      // Sidebar Helpers
+      // ===============================
+      function populateSidebar() {
+        const list = document.getElementById("question-list");
+        list.innerHTML = "";
+        for (let seg in segments) {
+          let segment = segments[seg];
+          for (let key in segment) {
+            if (key.startsWith("question_")) {
+              let q = segment[key];
+              let li = document.createElement("li");
+              li.innerHTML = `
+            <strong>${seg}</strong> —
+            <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>
+            <br>${q.question}
+          `;
+              list.appendChild(li);
+            }
+          }
+        }
+      }
+      function seekWithBypass(seconds) {
+        skipLockBypass = true;
+        player.currentTime = seconds;
+      }
+
+      // ===============================
+      // Back Button
+      // ===============================
+      document.getElementById("back-button").onclick = () => {
+        player.pause();
+        clearInterval(checkInterval);
+        document.getElementById("player-container").style.display = "none";
+        document.getElementById("video-grid").style.display = "grid";
+      };
+
+      // ===============================
+      // Helpers
+      // ===============================
+      function toSeconds(timeStr) {
+        if (!timeStr) return 0;
+        const parts = timeStr.split(":").map(Number);
+        if (parts.length === 2) return parts[0] * 60 + parts[1];
+        if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        return Number(timeStr) || 0;
+      }
+
+
+      // ===============================
+      // character
+      // ===============================
+      function setCharacter(state, line = null) {
+        const img = document.getElementById("character-img");
+        const character = document.getElementById("character");
+
+        switch (state) {
+          case "asking":
+            img.src = "/static/character/asking.png";
+            break;
+          case "correct":
+            img.src = "/static/character/happy.png";
+            break;
+          case "almost":
+            img.src = "/static/character/thinking.png";
+            break;
+          case "wrong":
+            img.src = "/static/character/sad.png";
+            break;
+          default:
+            img.src = "/static/character/neutral.png";
+        }
+
+        if (line) speakLine(line);
+
+      }
+
+      function speakLine(line, onDone = null) {
+        const utter = new SpeechSynthesisUtterance(line);
+
+        const voices = speechSynthesis.getVoices();
+        const friendly = voices.find(v =>
+          v.name.includes("Google US English Female") ||
+          v.name.includes("Google UK English Female") ||
+          v.lang === "en-US"
+        );
+        if (friendly) utter.voice = friendly;
+
+        utter.pitch = 3;
+        utter.rate = 0.95;
+        utter.volume = 1;
+
+        const character = document.getElementById("character");
+        utter.onstart = () => character.classList.add("talking");
+        utter.onend = () => {
+          character.classList.remove("talking");
+          if (onDone) onDone();
+        };
+
+        speechSynthesis.speak(utter);
+      }
+
+      function lockVideoControls() {
+        const blocker = document.getElementById("blocker");
+        blocker.style.display = "block";
+        player.controls = false;          // hide native controls
+        player.pause();                   // ensure paused
+      }
+
+      function unlockVideoControls() {
+        const blocker = document.getElementById("blocker");
+        blocker.style.display = "none";
+        player.controls = true;           // restore controls
+      }
+
+
+      // Init
+      loadVideos();
+    </script>
+</body>
+
+</html>

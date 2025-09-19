@@ -1,4 +1,15 @@
+# ============================================================
 # main.py
+# ============================================================
+# Core FastAPI app for:
+#  - Downloading YouTube videos (yt-dlp)
+#  - Extracting frames for comprehension quizzes
+#  - Generating child-friendly questions with OpenAI
+#  - Safe YouTube search (YouTube Data API)
+#  - Serving quiz and kids pages
+# ============================================================
+
+# ---------- Standard Library ----------
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import os
@@ -6,11 +17,17 @@ import base64
 import io
 import json
 import asyncio
+import re
 
+# ---------- FastAPI ----------
 from fastapi import FastAPI, Form, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi import Body
+from rapidfuzz import fuzz
+
+# ---------- Third-Party ----------
 
 import yt_dlp
 import cv2
@@ -20,10 +37,14 @@ import httpx
 import re
 from dotenv import load_dotenv
 
+
+# ---------- OpenAI ----------
 # OpenAI SDK v1.x (pip install openai>=1.30)
 from openai import OpenAI  # uses OPENAI_API_KEY env var by default
 
-# --------- Configuration ----------
+# ============================================================
+# Configuration & Setup
+# ============================================================
 BASE_DIR = Path(__file__).parent.resolve()
 DOWNLOADS_DIR = BASE_DIR / "downloads"
 TEMPLATES_DIR = BASE_DIR / "templates"
@@ -79,6 +100,9 @@ def download_youtube(url: str) -> Dict[str, Any]:
             "ignoreerrors": True,
             "no_warnings": True,
             "quiet": True,
+            # New: Save metadata + thumbnail
+            "writeinfojson": True,
+            "writethumbnail": True,
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -560,6 +584,7 @@ def index(request: Request):
 @app.post("/download", response_class=HTMLResponse)
 def do_download(request: Request, url: str = Form(...)):
     outcome = download_youtube(url)
+    refresh_kids_videos_json()
 
     # Links for the current download
     links = [f"/downloads/{rel}" for rel in outcome.get("files", [])]
@@ -1023,24 +1048,226 @@ def _maybe_parse_json(text: Optional[str]):
     except Exception:
         return text  # return raw text if not valid JSON
 
-# #Test
-# from fastapi import FastAPI, Request
-# from fastapi.responses import HTMLResponse
-# from fastapi.templating import Jinja2Templates
-
-# app = FastAPI()
-# templates = Jinja2Templates(directory="templates")
-
+# ============================================================
+# QUIZ PAGE
+# ============================================================
 @app.get("/quiz", response_class=HTMLResponse)
 async def quiz_page(request: Request):
+    """Quiz panel page"""
     return templates.TemplateResponse("quiz.html", {"request": request})
-from fastapi.staticfiles import StaticFiles
 
+
+# ============================================================
+# KIDS VIDEOS HELPERS
+# ============================================================
+def refresh_kids_videos_json():
+    """
+    Scan downloads/ and refresh static/kids_videos.json
+    - Extracts video title from .info.json if available
+    - Finds thumbnail (jpg/png/webp) if present
+    - Falls back to default thumbnail if none
+    - Reads duration from frame_data.json (if extracted)
+    """
+    results = []
+    for item in sorted(DOWNLOADS_DIR.iterdir()):
+        if not item.is_dir():
+            continue
+
+        vid = item.name
+
+        # --- Video file ---
+        video_files = list(item.glob("*.mp4")) + list(item.glob("*.webm"))
+        if not video_files:
+            continue
+        video_file = video_files[0]
+
+        # --- Title from metadata ---
+        title = vid
+        info_json = next(item.glob("*.info.json"), None)
+        if info_json:
+            try:
+                info = json.loads(info_json.read_text(encoding="utf-8"))
+                title = info.get("title", vid)
+            except Exception:
+                pass
+
+        # --- Thumbnail ---
+        thumb_url = None
+        for ext in ("jpg", "png", "webp"):
+            thumb_file = next(item.glob(f"*.{ext}"), None)
+            if thumb_file:
+                thumb_url = f"/downloads/{vid}/{thumb_file.name}"
+                break
+
+        # --- Duration from frames (optional) ---
+        duration = None
+        duration_sec = None
+        frame_json = item / "extracted_frames" / "frame_data.json"
+        if frame_json.exists():
+            try:
+                info = json.loads(frame_json.read_text(encoding="utf-8"))
+                duration_sec = int(float(info["video_info"]["duration_seconds"]))
+                m, s = divmod(duration_sec, 60)
+                duration = f"{m:02d}:{s:02d}"
+            except Exception:
+                pass
+
+        # --- Final video entry ---
+        results.append({
+            "video_id": vid,
+            "title": title,
+            "duration": duration,
+            "duration_seconds": duration_sec,
+            "local_path": f"/downloads/{vid}/{video_file.name}",
+            "thumbnail": thumb_url or "/static/default-unlock.png"
+        })
+
+    # Write static JSON for frontend use
+    out_path = BASE_DIR / "static" / "kids_videos.json"
+    os.makedirs(out_path.parent, exist_ok=True)
+    out_path.write_text(json.dumps({"videos": results}, indent=2), encoding="utf-8")
+
+    return results
+
+
+# ============================================================
+# KIDS VIDEOS ROUTES
+# ============================================================
+@app.get("/api/kids_videos")
+def list_kids_videos():
+    """Return JSON of all locally available kids videos"""
+    videos = refresh_kids_videos_json()
+    return {"success": True, "count": len(videos), "videos": videos}
+
+
+@app.get("/kids", response_class=HTMLResponse)
+def kids_page(request: Request):
+    """Kids panel page (front-end HTML that loads kids_videos.json)"""
+    return templates.TemplateResponse("kids.html", {"request": request})
+
+
+
+
+
+# ============================================================
+# rapidfuzz compare answers
+# ============================================================
+
+NUM_WORDS = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+    "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+    "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
+    "eighteen": 18, "nineteen": 19, "twenty": 20,
+    "thirty": 30, "forty": 40, "fifty": 50,
+    "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90
+}
+
+SCALE_WORDS = {
+    "hundred": 100,
+    "thousand": 1000,
+    "million": 1_000_000
+}
+
+def words_to_numbers(text: str) -> list[int]:
+    """
+    Extract ALL numbers (digits or words) from a phrase.
+    Supports 0 → millions.
+    Returns a list of integers (could be multiple).
+    """
+    text = text.lower().strip()
+    numbers = []
+
+    # Case 1: Raw digits first
+    for d in re.findall(r"\d+", text):
+        numbers.append(int(d))
+
+    # Case 2: Word parsing
+    tokens = re.split(r"[-\s]+", text)
+    total = 0
+    current = 0
+    found_number = False
+
+    for token in tokens + ["end"]:  # sentinel to flush last number
+        if token in NUM_WORDS:
+            found_number = True
+            current += NUM_WORDS[token]
+
+        elif token in SCALE_WORDS:
+            found_number = True
+            scale = SCALE_WORDS[token]
+            if current == 0:
+                current = 1
+            current *= scale
+            if scale > 100:  # thousand, million
+                total += current
+                current = 0
+
+        else:
+            if found_number:
+                total += current
+                numbers.append(total)
+                total = 0
+                current = 0
+                found_number = False
+
+    return numbers
+
+
+
+def is_numeric_answer(expected: str, user: str) -> tuple[bool, bool]:
+    """
+    Returns (are_both_numeric, are_equal_numbers).
+    Compares expected against *any number* in user’s phrase.
+    """
+    exp_nums = words_to_numbers(expected)
+    usr_nums = words_to_numbers(user)
+
+    if exp_nums and usr_nums:
+        for e in exp_nums:
+            if e in usr_nums:
+                return True, True
+        return True, False
+
+    return False, False
+
+@app.post("/api/check_answer")
+async def check_answer(payload: dict = Body(...)):
+    expected = payload.get("expected", "").strip().lower()
+    user = payload.get("user", "").strip().lower()
+
+    print(f"🔎 Checking answers | Expected='{expected}' | User='{user}'")
+
+    if not expected or not user:
+        return {"similarity": 0.0, "expected": expected, "user": user, "is_numeric": False}
+    
+    is_num, num_match = is_numeric_answer(expected, user)
+    if is_num:
+        return {
+            "similarity": 1.0 if num_match else 0.0,
+            "expected": expected,
+            "user": user,
+            "is_numeric": True
+        }
+
+    pr = fuzz.partial_ratio(expected, user) / 100.0
+    tsr = fuzz.token_set_ratio(expected, user) / 100.0
+    ratio = max(pr, tsr)
+
+
+    print(f"  partial_ratio={pr:.3f}, token_set_ratio={tsr:.3f}, final={ratio:.3f}, is_numeric={is_num}")
+
+    return {
+        "similarity": round(ratio, 3),
+        "expected": expected,
+        "user": user,
+        "is_numeric": False
+    }
+
+# ============================================================
+# STATIC FILES
+# ============================================================
 # Serve the "static" folder at /static
 app.mount("/static", StaticFiles(directory="static"), name="static")
-print("Now live on: http://localhost:8000/quiz")
 
-
-
-
-
+print("Now live on: http://localhost:8000/kids")

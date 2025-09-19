@@ -1,13 +1,21 @@
+# Environment files
 .env
-__pycache__.env
 .env.*
 .env.txt
-pycache/
-downloads/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
 venv/
 .venv/
-*.py[cod]
+
+# Project data (don’t commit large auto-generated stuff)
+downloads/
 *.log
+
+# IDE / OS junk
 .vscode/
 .idea/
 .DS_Store

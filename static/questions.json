@@ -5,14 +5,14 @@
     "question_1": {
       "ques_time": "0:45",
       "difficulty": "easy",
-      "question": "1 plus 1 is??",
-      "answer": "two" 
+      "question": "Why did this person fall?",
+      "answer": "They fell because they were running around in a swimming pool." 
     },
     "question_2": {
       "ques_time": "1:30",
       "difficulty": "hard",
-      "question": "What is two plus three?",
-      "answer": "five"
+      "question": "What is 2 + 3?",
+      "answer": "5"
     }
   },
   "segment_2": {
@@ -21,14 +21,14 @@
     "question_1": {
       "ques_time": "3:00",
       "difficulty": "easy",
-      "question": "What color is the sky on a clear day?",
-      "answer": "blue"
+      "question": "say 2 dogs 3 cats?",
+      "answer": "2 dogs and 3 cats"
     },
     "question_2": {
       "ques_time": "4:20",
       "difficulty": "hard",
       "question": "What gas do humans need to breathe?",
-      "answer": "oxygen"
+      "answer": "11111"
     }
   },
   "segment_3": {
