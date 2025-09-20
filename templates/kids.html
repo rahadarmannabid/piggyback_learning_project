@@ -608,7 +608,7 @@
     // ===============================
     function askQuestion(q, segStart, segEnd) {
       activeQuestion = true;
-      lockVideoControls();            // ⛔ lock here
+      lockVideoControls();
       player.pause();
 
       document.getElementById("question-box").style.display = "block";
@@ -622,74 +622,77 @@
       bubble.innerText = q.question;
 
       speakLine(q.question, () => {
-        // only start listening after friendly voice finishes
+        // Start Whisper-based recording instead of SpeechRecognition
         startListening(q, segStart, segEnd);
       });
     }
 
-    function startListening(q, segStart, segEnd) {
-      let SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    // ===============================
+    // Whisper Recording + Transcription
+    // ===============================
+    const listeningPhrases = [
+      "I'm listening 👂",
+      "Go ahead, tell me!",
+      "I’m paying attention…"
+    ];
+
+    async function startListening(q, segStart, segEnd) {
       const micIndicator = document.getElementById("mic-indicator");
       const bubble = document.getElementById("speech-bubble");
 
-      if (!SpeechRec) {
-        document.getElementById("feedback").innerText = "⚠️ Speech recognition not supported.";
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        bubble.innerText = "⚠️ Mic access denied.";
         return resumeVideo();
       }
 
-      let recognition = new SpeechRec();
-      recognition.lang = "en-US";
-      recognition.interimResults = true;   // capture partial speech
-      recognition.continuous = true;       // keep listening until stopped
-      recognition.maxAlternatives = 1;
+      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      let chunks = [];
 
-      let finalTranscript = "";
-      let interimTranscript = "";
-
-      recognition.onstart = () => {
-        micIndicator.style.display = "block";   // 🎤 show
-        bubble.innerText = "I’m listening...";  // 💬 update bubble
+      recorder.onstart = () => {
+        micIndicator.style.display = "block";
+        bubble.innerText = listeningPhrases[Math.floor(Math.random() * listeningPhrases.length)];
       };
 
-      recognition.onresult = (event) => {
-        interimTranscript = "";  // reset each time
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript.toLowerCase();
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + " ";
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        micIndicator.style.display = "none";
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const formData = new FormData();
+        formData.append("file", blob, "speech.webm");
+
+        try {
+          const res = await fetch("/api/transcribe", {
+            method: "POST",
+            body: formData
+          });
+          const data = await res.json();
+          if (data.success && data.text.trim()) {
+            bubble.innerText = `You said: "${data.text.trim()}"`;
+            processAnswer(data.text.trim().toLowerCase(), q, segStart, segEnd);
           } else {
-            interimTranscript += transcript + " ";
+            bubble.innerText = "I didn’t hear anything, try again!";
+            setTimeout(() => {
+              player.currentTime = segStart;
+              resumeVideo();
+            }, 1500);
           }
+        } catch (err) {
+          console.error("❌ Whisper error:", err);
+          bubble.innerText = "Oops, I couldn’t process that.";
+          setTimeout(resumeVideo, 1000);
         }
       };
 
-      recognition.onend = () => {
-        micIndicator.style.display = "none";   // 🎤 hide when done
-        let spoken = finalTranscript.trim() || interimTranscript.trim(); // ✅ fallback
-        if (spoken) {
-          processAnswer(spoken, q, segStart, segEnd);
-        } else {
-          document.getElementById("feedback").innerText = "⚠️ No answer detected.";
-          bubble.innerText = "I didn’t hear you. Try saying it louder this time!";
-          setTimeout(() => {
-            let rewindTo = segStart;
-            player.currentTime = rewindTo;
-            resumeVideo();
-          }, 1500);
-        }
-      };
+      recorder.start();
+      setTimeout(() => recorder.stop(), 12000);
+      console.log("🎤 Recorded chunks:", chunks);
 
-      recognition.onerror = () => {
-        micIndicator.style.display = "none";   // 🎤 hide if error
-        document.getElementById("feedback").innerText = "⚠️ Didn't catch that.";
-        bubble.innerText = "Oops, I didn’t catch that.";
-        setTimeout(resumeVideo, 1000);
-      };
-
-      // Safety: stop listening after 10 seconds max
-      setTimeout(() => recognition.stop(), 10000);
-
-      recognition.start();
     }
 
     function processAnswer(spoken, q, segStart, segEnd) {
@@ -765,7 +768,7 @@
       const box = document.getElementById("question-box");
       box.style.display = "none"; // hide overlay
       document.getElementById("feedback").innerText = ""; // clear feedback
-      unlockVideoControls();          // ✅ unlock here
+      unlockVideoControls();          // unlock here
       player.play();
     }
 
@@ -836,26 +839,58 @@
       const bubble = document.getElementById("speech-bubble");
       const character = document.getElementById("character");
 
+      const phrases = {
+        asking: [
+          "Hmm... let’s think!",
+          "Can you tell me?",
+          "What do you think?"
+        ],
+        correct: [
+          "Great job! 🎉",
+          "Yay! High five ✋",
+          "You got it, smarty!"
+        ],
+        almost: [
+          "Hmm, close! Let’s try again.",
+          "Almost there!",
+          "Not quite, but keep trying!"
+        ],
+        wrong: [
+          "Not quite, but you can do it!",
+          "Let’s give it another shot!",
+          "Hmm, that’s okay. We’ll try again!"
+        ],
+        neutral: [
+          "Ready?",
+          "Let’s go!",
+          "I’m excited to learn with you!"
+        ]
+      };
+
+      function pick(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
       switch (state) {
         case "asking":
           img.src = "/static/character/asking.png";
-          bubble.innerText = line || "Hmm... let’s think!";
+          bubble.innerText = line || pick(phrases.asking);
           break;
         case "correct":
           img.src = "/static/character/happy.png";
-          bubble.innerText = line || "Great job!";
+          bubble.innerText = line || pick(phrases.correct);
           break;
         case "almost":
           img.src = "/static/character/thinking.png";
-          bubble.innerText = line || "Almost! Try again!";
+          bubble.innerText = line || pick(phrases.almost);
           break;
         case "wrong":
           img.src = "/static/character/sad.png";
-          bubble.innerText = line || "Not quite, but keep going!";
+          bubble.innerText = line || pick(phrases.wrong);
           break;
         default:
           img.src = "/static/character/neutral.png";
-          bubble.innerText = line || "Ready?";
+          bubble.innerText = line || pick(phrases.neutral);
       }
 
       if (line) speakLine(line);
@@ -901,8 +936,25 @@
     }
 
 
+
     // Init
     loadVideos();
+
+    const idlePhrases = [
+      "This is fun! 😄",
+      "I like learning with you!",
+      "You’re doing great 🌟",
+      "I’m happy we’re learning together!"
+    ];
+
+    setInterval(() => {
+      if (!activeQuestion) {
+        const bubble = document.getElementById("speech-bubble");
+        bubble.innerText = idlePhrases[Math.floor(Math.random() * idlePhrases.length)];
+      }
+    }, 20000); // every 20 seconds
+
+
   </script>
 </body>
 

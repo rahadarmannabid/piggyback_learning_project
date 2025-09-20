@@ -1,50 +1,102 @@
 {
   "segment_1": {
     "segment_range_start": "0:00",
-    "segment_range_end": "2:34",
+    "segment_range_end": "2:35",
     "question_1": {
-      "ques_time": "0:45",
+      "ques_time": "2:30",
       "difficulty": "easy",
-      "question": "2+3=??",
-      "answer": "5" 
-    },
-    "question_2": {
-      "ques_time": "1:30",
-      "difficulty": "hard",
-      "question": "What is 2 + 3?",
-      "answer": "5"
+      "question": "What are two things that Arthur and his friends admit they used to be scared of when they were younger?",
+      "answer": "They admit to being scared of the dark, Binky Barnes, and an old movie called 'Navy versus the Nightworm.'"
     }
   },
   "segment_2": {
-    "segment_range_start": "2:35",
-    "segment_range_end": "4:49",
+    "segment_range_start": "2:36",
+    "segment_range_end": "5:05",
     "question_1": {
-      "ques_time": "3:00",
+      "ques_time": "5:00",
       "difficulty": "easy",
-      "question": "say 2 dogs 3 cats?",
-      "answer": "2 dogs and 3 cats"
-    },
-    "question_2": {
-      "ques_time": "4:20",
-      "difficulty": "hard",
-      "question": "What gas do humans need to breathe?",
-      "answer": "11111"
+      "question": "Why does Buster's mom initially say he can't go to Arthur's sleepover?",
+      "answer": "She is worried he will be scared because of a recent newspaper report about a UFO spaceship sighting in Elwood City."
     }
   },
   "segment_3": {
-    "segment_range_start": "4:50",
-    "segment_range_end": "6:30",
+    "segment_range_start": "5:06",
+    "segment_range_end": "7:35",
     "question_1": {
-      "ques_time": "5:10",
+      "ques_time": "7:30",
       "difficulty": "easy",
-      "question": "What color is grass?",
-      "answer": "green"
-    },
-    "question_2": {
-      "ques_time": "6:00",
-      "difficulty": "hard",
-      "question": "What is the largest planet in our solar system?",
-      "answer": "jupiter"
+      "question": "Who unexpectedly joins Arthur's sleepover, much to his dismay?",
+      "answer": "His little sister, D.W., comes outside with her sleeping bag, saying their parents told her she had to be allowed to join."
+    }
+  },
+  "segment_4": {
+    "segment_range_start": "7:36",
+    "segment_range_end": "10:05",
+    "question_1": {
+      "ques_time": "10:00",
+      "difficulty": "easy",
+      "question": "How do Arthur and his friends successfully scare D.W. so that she leaves the tent?",
+      "answer": "They build a fake UFO using a trash can lid, forks for antennas, and other items. They then fly it outside the tent while making strange noises, which makes D.W. believe she has seen a real spaceship."
+    }
+  },
+  "segment_5": {
+    "segment_range_start": "10:06",
+    "segment_range_end": "12:35",
+    "question_1": {
+      "ques_time": "12:30",
+      "difficulty": "easy",
+      "question": "What are two of the New Year's Eve stories or legends that Arthur's friends tell him about?",
+      "answer": "Francine tells him about the 'Green Flash,' a magical light that signals the new year, and Binky tells him about the 'New Year's Police' who arrest people who still have last year's calendar."
+    }
+  },
+  "segment_6": {
+    "segment_range_start": "12:36",
+    "segment_range_end": "15:05",
+    "question_1": {
+      "ques_time": "15:00",
+      "difficulty": "easy",
+      "question": "After hearing all the strange stories about New Year's Eve, what does Arthur decide to do?",
+      "answer": "He decides he doesn't want to stay up until midnight after all and plans to go to sleep early."
+    }
+  },
+  "segment_7": {
+    "segment_range_start": "15:06",
+    "segment_range_end": "17:35",
+    "question_1": {
+      "ques_time": "17:30",
+      "difficulty": "easy",
+      "question": "How does D.W. attempt to stay awake until midnight while Grandma Thora is babysitting?",
+      "answer": "She pinches herself, does a wild dance, and considers putting ice down her back."
+    }
+  },
+  "segment_8": {
+    "segment_range_start": "17:36",
+    "segment_range_end": "20:05",
+    "question_1": {
+      "ques_time": "20:00",
+      "difficulty": "easy",
+      "question": "What happens right after D.W. wakes up from her nightmare about a monster?",
+      "answer": "Her parents and Arthur come into her room to comfort her. Her dad is holding the newspaper with the picture D.W. made of the 'alien' she saw."
+    }
+  },
+  "segment_9": {
+    "segment_range_start": "20:06",
+    "segment_range_end": "22:35",
+    "question_1": {
+      "ques_time": "22:30",
+      "difficulty": "easy",
+      "question": "What does D.W. do when she sees the boys' fake UFO outside the tent?",
+      "answer": "She starts taking pictures of it with her camera, yelling that she is going to be rich."
+    }
+  },
+  "segment_10": {
+    "segment_range_start": "22:36",
+    "segment_range_end": "26:45",
+    "question_1": {
+      "ques_time": "25:40",
+      "difficulty": "easy",
+      "question": "After the boys scare D.W., who ends up scaring them?",
+      "answer": "Their own dad, who comes to the tent to bring them their sleeping bags and tell them it's bedtime."
     }
   }
 }

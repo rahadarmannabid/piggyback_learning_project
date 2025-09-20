@@ -1,12 +1,28 @@
 {
   "videos": [
     {
+      "video_id": "J6Pyoi2mN1c",
+      "title": "Arthur FULL EPISODE | Arthur's First Sleepover / Arthur's New Year's Eve | PBS KIDS",
+      "duration": null,
+      "duration_seconds": null,
+      "local_path": "/downloads/J6Pyoi2mN1c/J6Pyoi2mN1c.mp4",
+      "thumbnail": "/downloads/J6Pyoi2mN1c/J6Pyoi2mN1c.webp"
+    },
+    {
       "video_id": "LLELkIbTgTI",
       "title": "Swimming Pool Safety | Useful Story | Safety Rules for Kids | Sheriff Labrador",
       "duration": null,
       "duration_seconds": null,
       "local_path": "/downloads/LLELkIbTgTI/LLELkIbTgTI.mp4",
       "thumbnail": "/downloads/LLELkIbTgTI/LLELkIbTgTI.webp"
+    },
+    {
+      "video_id": "pbCYOX4dP5A",
+      "title": "Arthur | D.W.'s Iconic Moments | PBS KIDS",
+      "duration": null,
+      "duration_seconds": null,
+      "local_path": "/downloads/pbCYOX4dP5A/pbCYOX4dP5A.mp4",
+      "thumbnail": "/downloads/pbCYOX4dP5A/pbCYOX4dP5A.webp"
     },
     {
       "video_id": "slPMc9R5prc",

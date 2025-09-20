@@ -20,11 +20,20 @@ import asyncio
 import re
 
 # ---------- FastAPI ----------
-from fastapi import FastAPI, Form, Request, WebSocket, WebSocketDisconnect
+from fastapi import (
+    FastAPI,
+    Form,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+    UploadFile,
+    File,
+    Body,
+)
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi import Body
+from fastapi.middleware.cors import CORSMiddleware
 from rapidfuzz import fuzz
 from pydantic import BaseModel
 
@@ -1382,7 +1391,7 @@ async def check_answer(payload: dict = Body(...)):
         exp_clean = clean_text(expected)
         usr_clean = clean_text(user)
 
-        # ✅ If expected is just a number, treat as correct
+        # If expected is just a number, treat as correct
         if not exp_clean:
             return {
                 "similarity": 1.0,
@@ -1392,7 +1401,7 @@ async def check_answer(payload: dict = Body(...)):
                 "reason": "Pure numeric match",
             }
 
-        # ✅ If user only said the number → still accept as correct
+        # If user only said the number → still accept as correct
         if not usr_clean:
             return {
                 "similarity": 1.0,
@@ -1430,6 +1439,48 @@ async def check_answer(payload: dict = Body(...)):
         "is_numeric": False,
     }
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ===============================
+# Whisper Transcription Route
+# ===============================
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+@app.post("/api/transcribe")
+async def transcribe_audio(file: UploadFile = File(...)):
+    """
+    Accepts audio (webm, wav, mp3, etc), sends to Whisper,
+    no temp file saved (in-memory BytesIO).
+    """
+    try:
+        # Read file into memory
+        contents = await file.read()
+        audio_bytes = io.BytesIO(contents)
+
+        # Send to Whisper
+        transcription = client.audio.transcriptions.create(
+            model="whisper-1",  # could switch to gpt-4o-mini-transcribe later
+            file=("speech.webm", audio_bytes, file.content_type)
+        )
+
+        # 👇 Debug logging
+        print("Whisper raw response:", transcription)
+
+        return {"success": True, "text": transcription.text}
+
+    except Exception as e:
+        print("❌ Whisper transcription error:", e)
+        return {"success": False, "error": str(e)}
 
 # ============================================================
 # STATIC FILES
