@@ -10,4 +10,5 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+.git bash commands.txt
 Thumbs.db

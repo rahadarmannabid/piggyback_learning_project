@@ -1,0 +1,25 @@
+Open Git Bash (or terminal)
+Navigate to project folder:
+
+1. cd ~/piggyback_learning_project
+
+
+expert_pannel branch:
+
+2. git checkout expert_pannel
+
+
+Activate Your Virtual Environment
+
+3. source venv/Scripts/activate
+
+
+You’ll know it worked when (venv) appears in your prompt.
+
+Run the Server
+
+4. uvicorn --reload --host 0.0.0.0 --port 8000 main:app
+
+
+
+#http://localhost:8000/questions/Qpob-8JuYX0

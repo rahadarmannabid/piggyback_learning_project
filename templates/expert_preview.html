@@ -1,0 +1,1004 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Expert Preview</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 2rem;
+        line-height: 1.55;
+      }
+      h1, h2, h3 {
+        margin-top: 1.5rem;
+      }
+      form, select, button, input, textarea {
+        font-size: 1rem;
+      }
+      .toolbar {
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .picker {
+        margin-bottom: 2rem;
+      }
+      .picker select {
+        min-width: 24rem;
+      }
+      .info-box {
+        background: #f4f6fb;
+        border: 1px solid #d5dcf0;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+      }
+      video {
+        max-width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background: #000;
+      }
+      .flex-layout {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        align-items: flex-start;
+      }
+      .panel {
+        flex: 1 1 320px;
+        max-width: 620px;
+      }
+      details {
+        margin-bottom: 1rem;
+        border: 1px solid #e6e6e6;
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        background: #fafafa;
+      }
+      details[open] {
+        background: #fefefe;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .segment-placeholder {
+        color: #555;
+        margin: 0.5rem 0 0 0;
+      }
+      .badge {
+        font-size: 0.8rem;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: #e7f4ec;
+        color: #1f6f3d;
+      }
+      .annotations {
+        margin-top: 2rem;
+      }
+      #annotation-log {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      #annotation-log li {
+        padding: 0.65rem 0.75rem;
+        border-bottom: 1px solid #e6e6e6;
+      }
+      #annotation-log li strong {
+        margin-right: 0.5rem;
+      }
+      #annotation-log li em {
+        color: #444;
+      }
+      #annotation-log li.empty {
+        color: #777;
+        font-style: italic;
+      }
+      .status {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        display: none;
+      }
+      .status.show {
+        display: block;
+      }
+      .status.success {
+        background: #e4f6ec;
+        border: 1px solid #2f965f;
+        color: #145c33;
+      }
+      .status.error {
+        background: #fde8e8;
+        border: 1px solid #d33c2d;
+        color: #7a1a12;
+      }
+      .status.info {
+        background: #eef2fb;
+        border: 1px solid #6277c4;
+        color: #2c3b75;
+      }
+      .page-footer {
+        margin-top: 3rem;
+        text-align: center;
+      }
+      .finalize-button {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        background: #2d6cdf;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 600;
+        transition: background 0.2s ease-in-out, transform 0.2s ease-in-out;
+      }
+      .finalize-button:hover {
+        background: #214fad;
+        transform: translateY(-1px);
+      }
+      .finalize-button:focus {
+        outline: 3px solid rgba(45, 108, 223, 0.35);
+        outline-offset: 2px;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      .modal.hidden {
+        display: none;
+      }
+      .modal-dialog {
+        background: #ffffff;
+        border-radius: 8px;
+        width: min(92vw, 520px);
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 1.75rem 1.75rem 1.25rem 1.75rem;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+        position: relative;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+      }
+      .modal-header-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .modal-close,
+      .modal-skip {
+        border: none;
+        background: #e9edf6;
+        color: #1a2a4a;
+        padding: 0.35rem 0.75rem;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .modal-skip {
+        font-weight: 600;
+      }
+      .modal-close {
+        font-size: 1.2rem;
+        line-height: 1;
+        padding: 0.2rem 0.6rem;
+      }
+      .modal-close:hover,
+      .modal-skip:hover {
+        background: #d6ddf0;
+      }
+      .modal-close:focus,
+      .modal-skip:focus {
+        outline: 2px solid #4b64d3;
+        outline-offset: 2px;
+      }
+      .field {
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+      .field label {
+        font-weight: 600;
+      }
+      .field textarea {
+        resize: vertical;
+        min-height: 4rem;
+      }
+      .inline-options {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+      .source-list {
+        background: #f6f8fc;
+        border: 1px solid #dbe2f2;
+        border-radius: 6px;
+        padding: 0.75rem;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+      .source-list dl {
+        margin: 0;
+      }
+      .source-list dt {
+        font-weight: 600;
+        margin-top: 0.5rem;
+      }
+      .source-list dt:first-child {
+        margin-top: 0;
+      }
+      .source-list dd {
+        margin: 0.15rem 0 0.4rem 0;
+      }
+      .muted {
+        color: #666;
+        font-size: 0.9rem;
+      }
+      .modal-actions {
+        margin-top: 1.2rem;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+      }
+      .modal-actions button {
+        padding: 0.55rem 1.2rem;
+        border-radius: 4px;
+        border: 0;
+        cursor: pointer;
+      }
+      .modal-actions .primary {
+        background: #3149d9;
+        color: #fff;
+      }
+      .modal-actions .primary:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .label-pair {
+        margin-top: 0.25rem;
+        color: #555;
+      }
+      .hidden {
+        display: none !important;
+      }
+      @media (max-width: 768px) {
+        body {
+          margin: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="toolbar">
+      <h1>Expert Preview</h1>
+      <div>
+        <a href="/">Home</a>
+        {% if selected_video_id %}
+          | <a href="/questions/{{ selected_video_id }}">Back to Questions</a>
+        {% endif %}
+      </div>
+    </header>
+
+    <section class="picker">
+      {% if question_files %}
+        <form method="get" id="question-picker">
+          <label for="question-file">Select a questions JSON:</label>
+          <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; margin-top:0.4rem;">
+            <select id="question-file" name="file" required>
+              <option value="">-- Choose a file --</option>
+              {% for item in question_files %}
+                <option value="{{ item.rel_path }}" {% if item.rel_path == selected_file_rel %}selected{% endif %}>
+                  {{ item.video_id }} / {{ item.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <button type="submit">Load</button>
+          </div>
+        </form>
+      {% else %}
+        <p class="info-box">No generated question JSON files were found. Generate questions first from the Questions page.</p>
+      {% endif %}
+      {% if selection_error %}
+        <p class="status error show">{{ selection_error }}</p>
+      {% endif %}
+    </section>
+
+    {% if selected_file_rel %}
+      <section class="info-box">
+        <p><strong>Selected file:</strong> {{ selected_file_name }}{% if question_file_url %} (<a href="{{ question_file_url }}" target="_blank" rel="noopener noreferrer">download</a>){% endif %}</p>
+        <p><strong>Video ID:</strong> {{ selected_video_id }}</p>
+        {% if annotations_rel_path %}
+          <p><strong>Expert annotations file:</strong> <a href="/downloads/{{ annotations_rel_path }}" target="_blank" rel="noopener noreferrer">/downloads/{{ annotations_rel_path }}</a></p>
+        {% endif %}
+      </section>
+
+      <div class="flex-layout">
+        <div class="panel">
+          <h2>Video Preview</h2>
+          {% if video_url %}
+            <video id="expert-video" controls preload="metadata">
+              <source src="{{ video_url }}">
+              Your browser does not support the video element.
+            </video>
+          {% else %}
+            <p class="status info show">The original video file could not be located. Please ensure the download exists inside the video folder.</p>
+          {% endif %}
+          <div id="status-message" class="status info"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Segments</h2>
+          {% if segments %}
+            {% for segment in segments %}
+              {% set seg_key = segment.start ~ '-' ~ segment.end %}
+              <details data-segment-index="{{ segment.index }}">
+                <summary>
+                  Segment {{ loop.index }}: {{ segment.start }}s - {{ segment.end }}s
+                  {% if existing_annotations_map.get(seg_key) %}
+                    <span class="badge">Annotated</span>
+                  {% endif %}
+                </summary>
+                <p class="segment-placeholder">
+                  {% if existing_annotations_map.get(seg_key) %}
+                    {% if existing_annotations_map.get(seg_key).skipped %}
+                      Segment skipped. You can revisit to add a question.
+                    {% else %}
+                      Expert question saved. Play this interval to review or update.
+                    {% endif %}
+                  {% else %}
+                    Questions unlock after you save your expert question for this interval.
+                  {% endif %}
+                </p>
+              </details>
+            {% endfor %}
+          {% else %}
+            <p class="status info show">No segments were found in this JSON file.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <section class="annotations">
+        <h2>Expert Annotations</h2>
+        <ul id="annotation-log">
+          {% if existing_annotations %}
+            {% for entry in existing_annotations %}
+              <li data-segment-key="{{ entry.start }}-{{ entry.end }}">
+                {% if entry.skipped %}
+                  <strong>Skipped</strong>
+                  <span class="label-pair">({{ entry.start }}s - {{ entry.end }}s)</span><br>
+                  <span class="muted">Segment marked as skipped.</span>
+                {% else %}
+                  <strong>{{ entry.question_type_label or entry.question_type }}</strong>
+                  <span class="label-pair">({{ entry.start }}s - {{ entry.end }}s)</span><br>
+                  <span>{{ entry.question }}</span><br>
+                  <em>{{ entry.answer }}</em>
+                {% endif %}
+              </li>
+            {% endfor %}
+          {% else %}
+            <li id="annotation-empty" class="empty">No expert annotations captured yet.</li>
+          {% endif %}
+        </ul>
+      </section>
+    {% else %}
+      <p class="info-box">Choose a questions JSON from the list above to begin reviewing segments and adding expert questions.</p>
+    {% endif %}
+
+    <div class="page-footer">
+      <a class="finalize-button" href="/">Finalize &amp; Submit questions</a>
+    </div>
+
+    <div id="annotation-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 id="modal-title">Add Expert Question</h3>
+          <div class="modal-header-actions">
+            <button type="button" class="modal-skip" id="annotation-skip">Skip</button>
+            <button type="button" class="modal-close" id="annotation-close" aria-label="Close">&times;</button>
+          </div>
+        </div>
+        <p id="modal-segment" class="label-pair"></p>
+        <form id="annotation-form">
+          <div class="field">
+            <label for="annotation-type">Question type</label>
+            <select id="annotation-type" name="question_type" required>
+              {% for option in question_type_options %}
+                <option value="{{ option.value }}">{{ option.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="annotation-question">Question</label>
+            <textarea id="annotation-question" name="question" required placeholder="Add your expert question..."></textarea>
+          </div>
+          <div class="field">
+            <label for="annotation-answer">Answer</label>
+            <textarea id="annotation-answer" name="answer" required placeholder="Provide an expected answer..."></textarea>
+          </div>
+          <div id="best-question-block" class="field hidden">
+            <label for="best-question-input">Best LLM generated question (editable)</label>
+            <input type="text" id="best-question-input" placeholder="Best question from LLM">
+            <label for="best-answer-input">answer for the best question</label>
+            <textarea id="best-answer-input" placeholder="Answer for the best question"></textarea>
+            <div class="field">
+              <span>Approve LLM best question?</span>
+              <div class="inline-options">
+                <label><input type="radio" name="best-approval" value="approved" checked> Approve</label>
+                <label><input type="radio" name="best-approval" value="disapproved"> Disapprove</label>
+              </div>
+            </div>
+            <div class="field hidden" id="best-comment-wrapper">
+              <label for="best-comment-input">Comment</label>
+              <textarea id="best-comment-input" placeholder="Explain why this best question is unsuitable."></textarea>
+            </div>
+          </div>
+          <div id="llm-block" class="field hidden">
+            <label>LLM Generated question(s)</label>
+            <div id="modal-source" class="source-list"></div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="primary" id="annotation-submit">Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>\r\n\r\n
+
+    <script id="expert-bootstrap" type="application/json">{{ {
+      "selectedFileRel": selected_file_rel,
+      "segmentsData": segments_for_js,
+      "existingAnnotationsMap": existing_annotations_map
+    }|tojson }}</script>
+
+
+
+    <script>
+
+      const bootstrapNode = document.getElementById('expert-bootstrap');
+      let selectedFileRel = null;
+      let segmentsData = [];
+      let existingAnnotationsMap = {};
+      if (bootstrapNode) {
+        try {
+          const parsed = JSON.parse(bootstrapNode.textContent || '{}');
+          if (parsed && typeof parsed === 'object') {
+            selectedFileRel = parsed.selectedFileRel ?? null;
+            segmentsData = Array.isArray(parsed.segmentsData) ? parsed.segmentsData : [];
+            existingAnnotationsMap = parsed.existingAnnotationsMap || {};
+          }
+        } catch (err) {
+          console.error('Failed to parse expert bootstrap data', err);
+        }
+        bootstrapNode.remove();
+      }
+
+      const videoEl = document.getElementById('expert-video');
+      const annotationModal = document.getElementById('annotation-modal');
+      const modalClose = document.getElementById('annotation-close');
+      const skipButton = document.getElementById('annotation-skip');
+      const annotationForm = document.getElementById('annotation-form');
+      const annotationType = document.getElementById('annotation-type');
+      const annotationQuestion = document.getElementById('annotation-question');
+      const annotationAnswer = document.getElementById('annotation-answer');
+      const annotationSubmit = document.getElementById('annotation-submit');
+      const annotationsList = document.getElementById('annotation-log');
+      const modalSegmentLabel = document.getElementById('modal-segment');
+      const statusBox = document.getElementById('status-message');
+      const bestQuestionBlock = document.getElementById('best-question-block');
+      const bestQuestionInput = document.getElementById('best-question-input');
+      const bestAnswerInput = document.getElementById('best-answer-input');
+      const bestApprovalRadios = Array.from(document.querySelectorAll('input[name="best-approval"]'));
+      const bestCommentWrapper = document.getElementById('best-comment-wrapper');
+      const bestCommentInput = document.getElementById('best-comment-input');
+      const llmBlock = document.getElementById('llm-block');
+      const modalSource = document.getElementById('modal-source');
+
+      const annotatedSegments = new Set(Object.keys(existingAnnotationsMap || {}));
+      const pendingSegments = [];
+      let currentSegmentPointer = 0;
+      let modalIsOpen = false;
+      let activeSegment = null;
+      let activeSegmentCompleted = false;
+      let skipConfirmationPending = false;
+      let skipPreviewShown = false;
+      let confirmSubmitPending = false;
+
+      function setStatus(message, level = 'info') {
+        if (!statusBox) {
+          return;
+        }
+        statusBox.textContent = message || '';
+        statusBox.classList.remove('success', 'error', 'info', 'show');
+        if (message) {
+          statusBox.classList.add(level, 'show');
+        }
+      }
+
+      function removeEmptyAnnotationPlaceholder() {
+        const emptyNode = document.getElementById('annotation-empty');
+        if (emptyNode) {
+          emptyNode.remove();
+        }
+      }
+
+      function renderAnnotationEntry(entry) {
+        if (!annotationsList || !entry) {
+          return;
+        }
+        const key = `${entry.start}-${entry.end}`;
+        let node = annotationsList.querySelector(`[data-segment-key="${key}"]`);
+        let html;
+        if (entry.skipped) {
+          html = `<strong>Skipped</strong> <span class="label-pair">(${entry.start}s - ${entry.end}s)</span><br><span class="muted">Segment marked as skipped.</span>`;
+        } else {
+          html = `<strong>${entry.question_type_label || entry.question_type}</strong> <span class="label-pair">(${entry.start}s - ${entry.end}s)</span><br><span>${entry.question}</span><br><em>${entry.answer}</em>`;
+        }
+        if (node) {
+          node.innerHTML = html;
+        } else {
+          removeEmptyAnnotationPlaceholder();
+          node = document.createElement('li');
+          node.dataset.segmentKey = key;
+          node.innerHTML = html;
+          annotationsList.appendChild(node);
+        }
+      }
+
+      function markSegmentAsAnnotated(segment, entry) {
+        if (!segment) {
+          return;
+        }
+        const detailsEl = document.querySelector(`details[data-segment-index="${segment.index}"]`);
+        if (!detailsEl) {
+          return;
+        }
+        const summary = detailsEl.querySelector('summary');
+        if (summary && !summary.querySelector('.badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.textContent = 'Annotated';
+          summary.appendChild(document.createTextNode(' '));
+          summary.appendChild(badge);
+        }
+        const placeholder = detailsEl.querySelector('.segment-placeholder');
+        if (placeholder) {
+          if (entry && entry.skipped) {
+            placeholder.textContent = 'Segment skipped. You can revisit to add a question.';
+          } else {
+            placeholder.textContent = 'Expert question saved. Play this interval to review or update.';
+          }
+        }
+      }
+
+      function deriveAnswerFromSegment(segment, questionText) {
+        if (!segment || !segment.questions || !questionText) {
+          return '';
+        }
+        const target = questionText.trim().toLowerCase();
+        for (const payload of Object.values(segment.questions)) {
+          if (!payload) {
+            continue;
+          }
+          const candidate = (payload.q || payload.question || '').trim().toLowerCase();
+          if (candidate && candidate === target) {
+            return payload.a || payload.answer || '';
+          }
+        }
+        return '';
+      }
+
+      function getAnnotationForSegment(segment) {
+        if (!segment) {
+          return null;
+        }
+        const key = `${segment.start}-${segment.end}`;
+        return existingAnnotationsMap ? existingAnnotationsMap[key] : null;
+      }
+
+      function applyBestApproval(value, comment) {
+        bestApprovalRadios.forEach((radio) => {
+          radio.checked = radio.value === value;
+        });
+        if (value === 'disapproved') {
+          bestCommentWrapper.classList.remove('hidden');
+          bestCommentInput.value = comment || '';
+        } else {
+          bestCommentWrapper.classList.add('hidden');
+          bestCommentInput.value = '';
+        }
+      }
+
+      bestApprovalRadios.forEach((radio) => {
+        radio.addEventListener('change', () => {
+          applyBestApproval(radio.value, bestCommentInput.value);
+        });
+      });
+
+      function renderSegmentExtras(segment, options) {
+        options = options || {};
+        const reveal = !!options.reveal;
+        const hideBest = !!options.hideBest;
+
+        if (!bestQuestionBlock || !llmBlock || !modalSource) {
+          return;
+        }
+
+        const annotation = getAnnotationForSegment(segment);
+        const isSkipped = annotation && annotation.skipped;
+
+        if (!reveal) {
+          bestQuestionBlock.classList.add('hidden');
+          llmBlock.classList.add('hidden');
+          bestQuestionInput.value = '';
+          bestAnswerInput.value = '';
+          applyBestApproval('approved', '');
+          modalSource.innerHTML = '';
+          return;
+        }
+
+        const savedBest = annotation && annotation.best_question ? annotation.best_question : null;
+        const bestQuestionText = savedBest && savedBest.question ? savedBest.question : (segment && segment.best_question ? segment.best_question : '');
+        const bestAnswerText = savedBest && typeof savedBest.answer === 'string' ? savedBest.answer : deriveAnswerFromSegment(segment, bestQuestionText);
+
+        if (hideBest || isSkipped) {
+          bestQuestionBlock.classList.add('hidden');
+        } else {
+          bestQuestionBlock.classList.remove('hidden');
+          bestQuestionInput.value = bestQuestionText || '';
+          bestAnswerInput.value = bestAnswerText || '';
+          if (savedBest && typeof savedBest.approved === 'boolean') {
+            applyBestApproval(savedBest.approved ? 'approved' : 'disapproved', savedBest.comment || '');
+          } else {
+            applyBestApproval('approved', '');
+          }
+        }
+
+        llmBlock.classList.remove('hidden');
+        modalSource.innerHTML = '';
+        if (!segment) {
+          return;
+        }
+        if (segment.best_question && !(savedBest && savedBest.question)) {
+          const bestInfo = document.createElement('p');
+          bestInfo.className = 'muted';
+          bestInfo.textContent = `Original LLM best question: ${segment.best_question}`;
+          modalSource.appendChild(bestInfo);
+        }
+        if (segment.questions) {
+          const dl = document.createElement('dl');
+          for (const [key, payload] of Object.entries(segment.questions)) {
+            if (!payload) {
+              continue;
+            }
+            const questionText = payload.q || payload.question || '';
+            const answerText = payload.a || payload.answer || '';
+            const dt = document.createElement('dt');
+            dt.textContent = key.replace(/_/g, ' ');
+            const dd = document.createElement('dd');
+            const qLine = document.createElement('div');
+            qLine.innerHTML = `<strong>Q:</strong> ${questionText}`;
+            const aLine = document.createElement('div');
+            aLine.innerHTML = `<strong>A:</strong> ${answerText}`;
+            dd.appendChild(qLine);
+            dd.appendChild(aLine);
+            dl.appendChild(dt);
+            dl.appendChild(dd);
+          }
+          modalSource.appendChild(dl);
+        }
+      }
+
+      function closeModal(resumePlayback = false) {
+        if (!annotationModal) {
+          return;
+        }
+        if (videoEl) {
+          videoEl.pause();
+        }
+        annotationModal.classList.add('hidden');
+        modalIsOpen = false;
+        activeSegment = null;
+        activeSegmentCompleted = false;
+        skipConfirmationPending = false;
+        skipPreviewShown = false;
+        confirmSubmitPending = false;
+        if (annotationSubmit) {
+          annotationSubmit.textContent = 'Submit';
+          annotationSubmit.disabled = false;
+        }
+        if (skipButton) {
+          skipButton.disabled = false;
+          skipButton.textContent = 'Skip';
+        }
+        if (resumePlayback && videoEl) {
+          videoEl.play().catch(() => {});
+        }
+      }
+
+      function openModalForSegment(segment) {
+        if (!segment || !annotationModal) {
+          return;
+        }
+        modalIsOpen = true;
+        activeSegment = segment;
+        activeSegmentCompleted = false;
+        skipPreviewShown = false;
+        const key = `${segment.start}-${segment.end}`;
+        const alreadyAnnotated = annotatedSegments.has(key);
+        skipConfirmationPending = !alreadyAnnotated;
+        modalSegmentLabel.textContent = `Provide a question for ${segment.start}s - ${segment.end}s`;
+        annotationQuestion.value = '';
+        annotationAnswer.value = '';
+        if (annotationType.options.length > 0) {
+          annotationType.value = annotationType.options[0].value;
+        }
+        confirmSubmitPending = false;
+        annotationSubmit.disabled = false;
+        annotationSubmit.textContent = 'Submit';
+        if (skipButton) {
+          skipButton.disabled = false;
+          skipButton.textContent = 'Skip';
+          skipButton.classList.toggle('hidden', alreadyAnnotated);
+        }
+        renderSegmentExtras(segment, { reveal: alreadyAnnotated });
+        if (videoEl) {
+          videoEl.pause();
+        }
+        annotationModal.classList.remove('hidden');
+        annotationQuestion.focus();
+        setStatus('', 'info');
+      }
+
+      function enqueueSegmentsUpTo(timeSeconds) {
+        while (currentSegmentPointer < segmentsData.length) {
+          const seg = segmentsData[currentSegmentPointer];
+          const key = `${seg.start}-${seg.end}`;
+          if (annotatedSegments.has(key)) {
+            currentSegmentPointer += 1;
+            continue;
+          }
+          if (timeSeconds < seg.end) {
+            break;
+          }
+          if (!pendingSegments.some((item) => item.index === seg.index)) {
+            pendingSegments.push(seg);
+          }
+          currentSegmentPointer += 1;
+        }
+        if (pendingSegments.length && videoEl && !videoEl.paused) {
+          videoEl.pause();
+        }
+      }
+
+      function openNextPendingSegment() {
+        if (modalIsOpen) {
+          return;
+        }
+        if (pendingSegments.length) {
+          openModalForSegment(pendingSegments.shift());
+        }
+      }
+
+      function proceedAfterCompletion() {
+        if (pendingSegments.length) {
+          closeModal(false);
+          openModalForSegment(pendingSegments.shift());
+        } else {
+          closeModal(true);
+        }
+      }
+
+      function handleTimeUpdate() {
+        if (!segmentsData.length || !videoEl) {
+          return;
+        }
+        enqueueSegmentsUpTo(videoEl.currentTime);
+        if (!modalIsOpen) {
+          openNextPendingSegment();
+        }
+      }
+
+      if (videoEl) {
+        videoEl.addEventListener('timeupdate', handleTimeUpdate);
+      }
+
+      if (modalClose) {
+        modalClose.addEventListener('click', () => {
+          if (!activeSegmentCompleted) {
+            setStatus('Please add a question or skip this segment before closing.', 'error');
+            return;
+          }
+          proceedAfterCompletion();
+        });
+      }
+
+      if (skipButton && selectedFileRel) {
+        skipButton.addEventListener('click', async () => {
+          if (!activeSegment || skipButton.disabled) {
+            return;
+          }
+          if (skipConfirmationPending) {
+            skipConfirmationPending = false;
+            skipPreviewShown = true;
+            renderSegmentExtras(activeSegment, { reveal: true, hideBest: true });
+            setStatus('Review the LLM questions. Click Skip again to confirm.', 'info');
+            skipButton.textContent = 'Confirm Skip';
+            return;
+          }
+
+          skipButton.disabled = true;
+          setStatus('Skipping segment...', 'info');
+          try {
+            const resp = await fetch('/api/expert-annotations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                file: selectedFileRel,
+                segment_index: activeSegment.index,
+                start: activeSegment.start,
+                end: activeSegment.end,
+                skip: true,
+              }),
+            });
+            if (!resp.ok) {
+              const textValue = await resp.text();
+              throw new Error(textValue || 'Failed to skip segment.');
+            }
+            const result = await resp.json();
+            if (!result || !result.success) {
+              throw new Error(result && result.detail ? result.detail : 'Failed to skip segment.');
+            }
+            const key = `${activeSegment.start}-${activeSegment.end}`;
+            annotatedSegments.add(key);
+            existingAnnotationsMap[key] = result.annotation;
+            renderAnnotationEntry(result.annotation);
+            markSegmentAsAnnotated(activeSegment, result.annotation);
+            activeSegmentCompleted = true;
+            skipButton.disabled = false;
+            skipButton.textContent = 'Skip';
+            skipConfirmationPending = true;
+            skipPreviewShown = false;
+            setStatus('Segment skipped.', 'info');
+            proceedAfterCompletion();
+          } catch (err) {
+            console.error(err);
+            skipButton.disabled = false;
+            setStatus(err.message || 'Unable to skip segment.', 'error');
+          }
+        });
+      }
+
+      if (annotationForm && selectedFileRel) {
+        annotationForm.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          if (!activeSegment) {
+            return;
+          }
+          const questionValue = annotationQuestion.value.trim();
+          const answerValue = annotationAnswer.value.trim();
+          if (!questionValue || !answerValue) {
+            setStatus('Please provide both a question and an answer before saving.', 'error');
+            return;
+          }
+
+          if (!confirmSubmitPending && bestQuestionBlock && bestQuestionBlock.classList.contains('hidden')) {
+            renderSegmentExtras(activeSegment, { reveal: true });
+            confirmSubmitPending = true;
+            if (annotationSubmit) {
+              annotationSubmit.textContent = 'Confirm submit';
+            }
+            setStatus('Review the best question and LLM generated questions before confirming.', 'info');
+            return;
+          }
+
+          const payload = {
+            file: selectedFileRel,
+            segment_index: activeSegment.index,
+            start: activeSegment.start,
+            end: activeSegment.end,
+            question_type: annotationType.value,
+            question: questionValue,
+            answer: answerValue,
+          };
+
+          if (bestQuestionBlock && !bestQuestionBlock.classList.contains('hidden')) {
+            const approvalSelection = bestApprovalRadios.find((radio) => radio.checked);
+            const approvalValue = approvalSelection ? approvalSelection.value : 'approved';
+            if (approvalValue === 'disapproved' && !bestCommentInput.value.trim()) {
+              setStatus('Please add a comment when disapproving the best question.', 'error');
+              return;
+            }
+            payload.best_question = {
+              question: bestQuestionInput.value.trim(),
+              answer: bestAnswerInput.value.trim(),
+              approved: approvalValue === 'approved',
+              comment: approvalValue === 'disapproved' ? bestCommentInput.value.trim() : '',
+            };
+          }
+
+          annotationSubmit.disabled = true;
+          setStatus('Saving annotation...', 'info');
+          try {
+            const resp = await fetch('/api/expert-annotations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            if (!resp.ok) {
+              const textValue = await resp.text();
+              throw new Error(textValue || 'Failed to save annotation.');
+            }
+            const result = await resp.json();
+            if (!result || !result.success) {
+              throw new Error(result && result.detail ? result.detail : 'Failed to save annotation.');
+            }
+            const key = `${activeSegment.start}-${activeSegment.end}`;
+            annotatedSegments.add(key);
+            existingAnnotationsMap[key] = result.annotation;
+            renderAnnotationEntry(result.annotation);
+            markSegmentAsAnnotated(activeSegment, result.annotation);
+            renderSegmentExtras(activeSegment, { reveal: true });
+            confirmSubmitPending = false;
+            annotationSubmit.disabled = false;
+            annotationSubmit.disabled = false;
+            annotationSubmit.textContent = 'Submit';
+            activeSegmentCompleted = true;
+            skipConfirmationPending = false;
+            skipPreviewShown = false;
+            if (skipButton) {
+              skipButton.disabled = false;
+              skipButton.textContent = 'Skip';
+            }
+            setStatus('Annotation saved.', 'success');
+            proceedAfterCompletion();
+          } catch (err) {
+            console.error(err);
+            annotationSubmit.disabled = false;
+            if (confirmSubmitPending) {
+              annotationSubmit.textContent = 'Confirm submit';
+            } else {
+              annotationSubmit.textContent = 'Submit';
+            }
+            setStatus(err.message || 'Unable to store annotation.', 'error');
+          }
+        });
+      }
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modalIsOpen) {
+          event.preventDefault();
+          modalClose.click();
+        }
+      });
+
+      if (annotationModal) {
+        annotationModal.addEventListener('click', (event) => {
+          if (event.target === annotationModal) {
+            modalClose.click();
+          }
+        });
+      }
+    </script>
+
+  </body>
+</html>
+
+
+
+

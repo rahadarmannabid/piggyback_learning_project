@@ -27,7 +27,7 @@
       <p>
         <label>
           <input type="checkbox" id="full_duration" name="full_duration" {% if full_duration %}checked{% endif %}>
-          Generate for the <em>full duration</em> (loop 0–60, 61–120, …)
+          Generate for the <em>full duration</em> (loop 0-60, 61-120, ...)
         </label>
       </p>
 
@@ -41,6 +41,9 @@
 
     <h2>Live Output</h2>
     <pre id="stream" style="white-space: pre-wrap;"></pre>
+    <p id="saved-json">
+      {% if output_json %}<strong>Saved JSON:</strong> <a href="{{ output_json }}" target="_blank">{{ output_json }}</a>{% endif %}
+    </p>
 
     <!-- Optional fallback non-streaming HTTP form -->
     <h3>Or use non-streaming (HTTP) submit</h3>
@@ -51,16 +54,70 @@
       <button type="submit">Submit (HTTP, no streaming)</button>
     </form>
 
-    <p><a href="/">Back</a> | <a href="/frames/{{ video_id }}">Extract Frames</a></p>
+    <p><a href="/">Back</a> | <a href="/frames/{{ video_id }}">Extract Frames</a>{% if video_id %} | <a id="expert-preview-link" href="{{ expert_preview_link or ("/expert-preview?video=" ~ video_id) }}">Expert Preview</a>{% endif %}</p>
 
     <script>
       const form = document.getElementById('ws-form');
       const out = document.getElementById('stream');
+      const savedJsonEl = document.getElementById('saved-json');
+      const expertPreviewLink = document.getElementById('expert-preview-link');
+      const currentVideoId = {{ video_id|tojson }};
+
+      function deriveExpertPreviewHref(url) {
+        if (url) {
+          let normalized = url;
+          if (/^https?:\/\//i.test(normalized)) {
+            try {
+              const parsed = new URL(normalized);
+              normalized = parsed.pathname + parsed.search + parsed.hash;
+            } catch (err) {
+              normalized = normalized.substring(normalized.indexOf('/'));
+            }
+          }
+          normalized = normalized.replace(/^\/?, '');
+          if (normalized.startsWith('downloads/')) {
+            normalized = normalized.substring('downloads/'.length);
+          }
+          return `/expert-preview?file=${encodeURIComponent(normalized)}`;
+        }
+        if (!currentVideoId) {
+          return '/expert-preview';
+        }
+        return `/expert-preview?video=${encodeURIComponent(currentVideoId)}`;
+      }
+
+      function updateSavedJsonLink(url) {
+        if (expertPreviewLink) {
+          expertPreviewLink.href = deriveExpertPreviewHref(url);
+        }
+        if (!savedJsonEl) {
+          return;
+        }
+        savedJsonEl.innerHTML = '';
+        if (!url) {
+          return;
+        }
+        const label = document.createElement('strong');
+        label.textContent = 'Saved JSON:';
+        const link = document.createElement('a');
+        link.href = url;
+        link.textContent = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        savedJsonEl.appendChild(label);
+        savedJsonEl.appendChild(document.createTextNode(' '));
+        savedJsonEl.appendChild(link);
+      }
+
+      const initialSavedJson = {{ output_json|tojson }};
+      if (initialSavedJson) {
+        updateSavedJsonLink(initialSavedJson);
+      }
 
       function log(obj) {
         try {
           out.textContent += (typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2)) + "\n";
-        } catch (e) {
+        } catch (err) {
           out.textContent += String(obj) + "\n";
         }
       }
@@ -68,6 +125,7 @@
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         out.textContent = "";
+        updateSavedJsonLink(null);
 
         const startSeconds = parseInt(document.getElementById('start_seconds').value || "0", 10);
         const intervalSeconds = parseInt(document.getElementById('interval_seconds').value || "60", 10);
@@ -96,17 +154,18 @@
               log({segment: `${data.start}-${data.end}`, result: data.result});
             } else if (data.type === 'done') {
               log({done: true, segments_count: data.segments_count, output_json: data.output_json});
+              updateSavedJsonLink(data.output_json || null);
             } else if (data.type === 'error') {
               log({error: data.message});
             } else {
               log(data);
             }
-          } catch (e) {
+          } catch (err) {
             log(event.data);
           }
         };
 
-        ws.onerror = (err) => {
+        ws.onerror = () => {
           log({type: "error", message: "WebSocket error"});
         };
 

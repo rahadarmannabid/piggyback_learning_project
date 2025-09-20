@@ -6,8 +6,10 @@ import base64
 import io
 import json
 import asyncio
+from datetime import datetime
+from urllib.parse import quote
 
-from fastapi import FastAPI, Form, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Form, Request, WebSocket, WebSocketDisconnect, Body, Query, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -40,6 +42,20 @@ app.mount("/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="downloa
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".mov"}
+EXPERT_QUESTION_TYPES = [
+    ("character", "Character"),
+    ("setting", "Setting"),
+    ("feeling", "Feeling"),
+    ("action", "Action"),
+    ("causal", "Causal"),
+    ("outcome", "Outcome"),
+    ("prediction", "Prediction"),
+]
+EXPERT_QUESTION_TYPE_VALUES = {value for value, _ in EXPERT_QUESTION_TYPES}
+EXPERT_QUESTION_TYPE_LABELS = {value: label for value, label in EXPERT_QUESTION_TYPES}
+
 
 # -----------------------------
 # Download helpers
@@ -813,6 +829,8 @@ def questions_page(request: Request, video_id: str):
             "start_seconds": None,
             "interval_seconds": None,
             "full_duration": False,
+            "expert_preview_file": None,
+            "expert_preview_link": build_expert_preview_link(video_id, None),
             "error": None,
         },
     )
@@ -844,6 +862,8 @@ def generate_questions_http(
                 "start_seconds": start_seconds,
                 "interval_seconds": interval_seconds,
                 "full_duration": bool(full_duration),
+                "expert_preview_file": None,
+                "expert_preview_link": build_expert_preview_link(video_id, None),
                 "error": "Frames not found. Please extract frames first.",
             },
         )
@@ -875,6 +895,8 @@ def generate_questions_http(
                 "result": None,
                 "full_result": json.dumps(full_outcome.get("aggregated"), indent=2, ensure_ascii=False) if full_outcome.get("aggregated") else None,
                 "output_json": full_outcome.get("output_json"),
+                "expert_preview_file": full_outcome.get("output_json"),
+                "expert_preview_link": build_expert_preview_link(video_id, full_outcome.get("output_json")),
                 "start_seconds": int(start_seconds or 0),
                 "interval_seconds": int(interval_seconds),
                 "full_duration": True,
@@ -889,21 +911,265 @@ def generate_questions_http(
         end = duration_seconds
 
     result_text = generate_questions_for_segment(video_id, start, end, api_key)
+    pretty_result = result_text
+    saved_json_url = None
+    if result_text:
+        try:
+            parsed_result = json.loads(result_text)
+        except Exception:
+            parsed_result = None
+        if parsed_result is not None:
+            pretty_result = json.dumps(parsed_result, indent=2, ensure_ascii=False)
+            saved_json_url = persist_segment_questions_json(video_id, start, end, parsed_result)
     return templates.TemplateResponse(
         "questions.html",
         {
             "request": request,
             "video_id": video_id,
             "duration_seconds": duration_seconds,
-            "result": result_text,
+            "result": pretty_result,
             "full_result": None,
-            "output_json": None,
+            "output_json": saved_json_url,
+            "expert_preview_file": saved_json_url,
+            "expert_preview_link": build_expert_preview_link(video_id, saved_json_url),
             "start_seconds": start,
             "interval_seconds": int(interval_seconds),
             "full_duration": False,
             "error": None if result_text else "Failed to generate questions. Verify API key and time window.",
         },
     )
+
+
+@app.get("/expert-preview", response_class=HTMLResponse)
+def expert_preview(
+    request: Request,
+    file: Optional[str] = Query(None),
+    video: Optional[str] = Query(None),
+):
+    question_files = list_question_json_files()
+    selected_file_path: Optional[Path] = None
+    selected_file_rel = None
+    selection_error = None
+
+    if not file and video:
+        for item in question_files:
+            if item["video_id"] == video:
+                file = item["rel_path"]
+                break
+
+    if file:
+        candidate = resolve_question_file_param(file)
+        if candidate and candidate.exists():
+            selected_file_path = candidate
+            selected_file_rel = candidate.relative_to(DOWNLOADS_DIR).as_posix()
+        else:
+            selection_error = "Selected question JSON could not be found."
+
+    segments_info: List[Dict[str, Any]] = []
+    segments_for_js: List[Dict[str, Any]] = []
+    existing_annotations: List[Dict[str, Any]] = []
+    existing_annotations_map: Dict[str, Any] = {}
+    selected_json_pretty = None
+    video_url = None
+    annotation_rel_path = None
+    selected_video_id = None
+    selected_file_name = None
+
+    if selected_file_path:
+        selected_file_name = selected_file_path.name
+        selected_video_dir = selected_file_path.parent.parent
+        selected_video_id = selected_video_dir.name
+        try:
+            raw_data = json.loads(selected_file_path.read_text(encoding="utf-8"))
+        except Exception:
+            raw_data = {}
+        segments_info = serialize_question_segments(raw_data)
+        for segment in segments_info:
+            parsed = segment.get("parsed")
+            best_question = None
+            questions_payload = None
+            if isinstance(parsed, dict):
+                questions_payload = parsed.get("questions")
+                best_question = parsed.get("best_question")
+            segments_for_js.append(
+                {
+                    "index": segment["index"],
+                    "start": segment["start"],
+                    "end": segment["end"],
+                    "questions": questions_payload,
+                    "best_question": best_question,
+                }
+            )
+        selected_json_pretty = json.dumps(raw_data, indent=2, ensure_ascii=False)
+
+        video_candidate = find_primary_video_file(selected_video_dir)
+        if video_candidate:
+            video_url = f"/downloads/{video_candidate.relative_to(DOWNLOADS_DIR).as_posix()}"
+
+        annotations_bundle = load_expert_annotations(selected_file_path, selected_video_id)
+        annotations_data = annotations_bundle["data"]
+        annotations_list = annotations_data.get("annotations", [])
+        if isinstance(annotations_list, list):
+            existing_annotations = annotations_list
+            for entry in annotations_list:
+                key = f"{entry.get('start')}-{entry.get('end')}"
+                existing_annotations_map[key] = entry
+        try:
+            annotation_rel_path = annotations_bundle["path"].relative_to(DOWNLOADS_DIR).as_posix()
+        except ValueError:
+            annotation_rel_path = None
+
+    context = {
+        "request": request,
+        "question_files": question_files,
+        "selected_file_rel": selected_file_rel,
+        "selected_file_name": selected_file_name,
+        "selected_video_id": selected_video_id,
+        "video_url": video_url,
+        "segments": segments_info,
+        "segments_for_js": segments_for_js,
+        "existing_annotations": existing_annotations,
+        "existing_annotations_map": existing_annotations_map,
+        "selected_json_pretty": selected_json_pretty,
+        "annotations_rel_path": annotation_rel_path,
+        "selection_error": selection_error,
+        "question_type_options": [
+            {"value": value, "label": label} for value, label in EXPERT_QUESTION_TYPES
+        ],
+        "question_file_url": f"/downloads/{selected_file_rel}" if selected_file_rel else None,
+    }
+    return templates.TemplateResponse("expert_preview.html", context)
+
+
+@app.post("/api/expert-annotations")
+async def save_expert_annotation(payload: Dict[str, Any] = Body(...)):
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Invalid payload.")
+
+    question_file = resolve_question_file_param(payload.get("file"))
+    if not question_file or not question_file.exists():
+        raise HTTPException(status_code=400, detail="Invalid question file.")
+
+    try:
+        start = int(payload.get("start"))
+        end = int(payload.get("end"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Invalid segment bounds.")
+
+    skip_requested = bool(payload.get("skip"))
+
+    segment_index = payload.get("segment_index")
+    try:
+        segment_index = int(segment_index) if segment_index is not None else None
+    except (TypeError, ValueError):
+        segment_index = None
+
+    video_dir = question_file.parent.parent
+    video_id = video_dir.name
+
+    annotations_bundle = load_expert_annotations(question_file, video_id)
+    annotations_data = annotations_bundle["data"]
+    annotations_data["video_id"] = video_id
+    annotations_data["question_file"] = question_file.name
+    annotations_list = annotations_data.setdefault("annotations", [])
+
+    timestamp = datetime.utcnow().isoformat(timespec="seconds") + "Z"
+
+    best_question_data = None
+    if skip_requested:
+        entry = {
+            "segment_index": segment_index,
+            "start": start,
+            "end": end,
+            "question_type": "skip",
+            "question_type_label": "Skipped",
+            "question": "(skipped)",
+            "answer": "",
+            "skipped": True,
+            "saved_at": timestamp,
+        }
+    else:
+        question = (payload.get("question") or "").strip()
+        answer = (payload.get("answer") or "").strip()
+        question_type_raw = (payload.get("question_type") or "").strip().lower()
+        if not question or not answer:
+            raise HTTPException(status_code=400, detail="Question and answer are required.")
+        if question_type_raw not in EXPERT_QUESTION_TYPE_VALUES:
+            raise HTTPException(status_code=400, detail="Invalid question type.")
+
+        entry = {
+            "segment_index": segment_index,
+            "start": start,
+            "end": end,
+            "question_type": question_type_raw,
+            "question_type_label": EXPERT_QUESTION_TYPE_LABELS.get(
+                question_type_raw, question_type_raw.title()
+            ),
+            "question": question,
+            "answer": answer,
+            "skipped": False,
+            "saved_at": timestamp,
+        }
+
+        best_question_payload = payload.get("best_question")
+        if isinstance(best_question_payload, dict):
+            best_question_question = (best_question_payload.get("question") or "").strip()
+            best_question_answer = (best_question_payload.get("answer") or "").strip()
+            approved_raw = best_question_payload.get("approved")
+            if isinstance(approved_raw, bool):
+                approved_value = approved_raw
+            elif isinstance(approved_raw, str):
+                approved_value = approved_raw.lower() in {"true", "1", "yes", "approved"}
+            else:
+                approved_value = None
+            comment_text = (best_question_payload.get("comment") or "").strip()
+            if approved_value is False and not comment_text:
+                raise HTTPException(status_code=400, detail="Provide a comment when disapproving the best question.")
+            if any([best_question_question, best_question_answer, approved_value is not None, comment_text]):
+                if approved_value is None:
+                    approved_value = True
+                best_question_data = {
+                    "question": best_question_question,
+                    "answer": best_question_answer,
+                    "approved": approved_value,
+                    "comment": comment_text if not approved_value else "",
+                }
+        if best_question_data is not None:
+            entry["best_question"] = best_question_data
+
+    updated = False
+    for idx, existing in enumerate(list(annotations_list)):
+        if isinstance(existing, dict) and existing.get("start") == start and existing.get("end") == end:
+            if not skip_requested and best_question_data is None and existing.get("best_question") is not None:
+                entry["best_question"] = existing.get("best_question")
+            annotations_list[idx] = entry
+            updated = True
+            break
+    if not updated:
+        annotations_list.append(entry)
+
+    annotations_list.sort(key=lambda item: (item.get("start", 0), item.get("end", 0)))
+
+    annotations_path = annotations_bundle["path"]
+    annotations_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        annotations_path.write_text(
+            json.dumps(annotations_data, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to store annotation: {exc}")
+
+    try:
+        annotation_rel = annotations_path.relative_to(DOWNLOADS_DIR).as_posix()
+    except ValueError:
+        annotation_rel = None
+
+    return JSONResponse({
+        "success": True,
+        "annotation": entry,
+        "annotations_file": annotation_rel,
+        "updated": updated,
+    })
 
 
 # -----------------------------
@@ -946,13 +1212,16 @@ async def ws_questions(websocket: WebSocket, video_id: str):
             await websocket.send_json({"type": "status", "message": f"Generating questions for {start}-{end}s..."})
             # offload blocking work to thread
             result_text = await asyncio.to_thread(generate_questions_for_segment, video_id, start, end, api_key)
+            result_payload = _maybe_parse_json(result_text)
+            payload_for_save = result_payload if isinstance(result_payload, (dict, list)) else result_text
+            saved_json_url = persist_segment_questions_json(video_id, start, end, payload_for_save)
             await websocket.send_json({
                 "type": "segment_result",
                 "start": start,
                 "end": end,
-                "result": _maybe_parse_json(result_text)
+                "result": result_payload
             })
-            await websocket.send_json({"type": "done"})
+            await websocket.send_json({"type": "done", "output_json": saved_json_url})
             await websocket.close()
             return
 
@@ -1018,7 +1287,175 @@ async def ws_questions(websocket: WebSocket, video_id: str):
 def _maybe_parse_json(text: Optional[str]):
     if text is None:
         return None
+    if isinstance(text, (dict, list)):
+        return text
+    if not isinstance(text, str):
+        return text
+    cleaned = text.strip()
+    if cleaned.startswith('```'):
+        cleaned = cleaned[3:].lstrip()
+        if cleaned.lower().startswith('json'):
+            cleaned = cleaned[4:].lstrip()
+        if cleaned.endswith('```'):
+            cleaned = cleaned[:-3].rstrip()
     try:
-        return json.loads(text)
+        return json.loads(cleaned)
     except Exception:
         return text  # return raw text if not valid JSON
+
+
+def persist_segment_questions_json(video_id: str, start: int, end: int, payload: Any) -> Optional[str]:
+    """Persist a single segment's questions JSON to disk and return a downloads URL."""
+    if payload is None:
+        return None
+
+    if isinstance(payload, (dict, list)):
+        data = payload
+    elif isinstance(payload, str):
+        try:
+            data = json.loads(payload)
+        except Exception:
+            return None
+    else:
+        return None
+
+    try:
+        start_int = int(start)
+    except Exception:
+        start_int = None
+    try:
+        end_int = int(end)
+    except Exception:
+        end_int = None
+
+    if start_int is not None and end_int is not None:
+        filename = f"questions_{start_int:05d}-{end_int:05d}.json"
+    else:
+        filename = f"questions_{start}-{end}.json"
+
+    questions_dir = DOWNLOADS_DIR / video_id / "questions"
+    questions_dir.mkdir(parents=True, exist_ok=True)
+    out_path = questions_dir / filename
+
+    try:
+        out_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception as exc:
+        print(f"Failed to write questions JSON for {video_id} {start}-{end}: {exc}")
+        return None
+
+    return f"/downloads/{out_path.relative_to(DOWNLOADS_DIR).as_posix()}"
+
+
+
+def resolve_question_file_param(value: Optional[str]) -> Optional[Path]:
+    if not value:
+        return None
+    cleaned = value.strip()
+    if cleaned.startswith('/'):
+        cleaned = cleaned.lstrip('/')
+    if cleaned.startswith('downloads/'):
+        cleaned = cleaned[len('downloads/'):]
+    rel_path = Path(cleaned)
+    if rel_path.is_absolute() or '..' in rel_path.parts:
+        return None
+    candidate = DOWNLOADS_DIR / rel_path
+    if candidate.is_file() and candidate.suffix.lower() == '.json':
+        try:
+            candidate.relative_to(DOWNLOADS_DIR)
+        except ValueError:
+            return None
+        return candidate
+    return None
+
+
+def list_question_json_files() -> List[Dict[str, str]]:
+    files: List[Dict[str, str]] = []
+    if not DOWNLOADS_DIR.exists():
+        return files
+    for video_dir in sorted(DOWNLOADS_DIR.iterdir()):
+        if not video_dir.is_dir():
+            continue
+        questions_dir = video_dir / 'questions'
+        if not questions_dir.is_dir():
+            continue
+        for json_file in sorted(questions_dir.glob('*.json')):
+            try:
+                rel_path = json_file.relative_to(DOWNLOADS_DIR).as_posix()
+            except ValueError:
+                continue
+            files.append({
+                'video_id': video_dir.name,
+                'name': json_file.name,
+                'rel_path': rel_path,
+            })
+    files.sort(key=lambda item: (item['video_id'], item['name']))
+    return files
+
+
+def find_primary_video_file(video_dir: Path) -> Optional[Path]:
+    if not video_dir.exists() or not video_dir.is_dir():
+        return None
+    for candidate in sorted(video_dir.iterdir()):
+        if candidate.is_file() and candidate.suffix.lower() in VIDEO_EXTENSIONS:
+            return candidate
+    return None
+
+
+def load_expert_annotations(question_file: Path, video_id: str) -> Dict[str, Any]:
+    annotations_path = question_file.with_suffix(question_file.suffix + '.expert.json')
+    payload: Dict[str, Any] = {
+        'video_id': video_id,
+        'question_file': question_file.name,
+        'annotations': [],
+    }
+    if annotations_path.exists():
+        try:
+            loaded = json.loads(annotations_path.read_text(encoding='utf-8'))
+            if isinstance(loaded, dict):
+                payload.update({
+                    'annotations': loaded.get('annotations', []),
+                })
+        except Exception:
+            pass
+    return {
+        'path': annotations_path,
+        'data': payload,
+    }
+
+
+def serialize_question_segments(question_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    segments: List[Dict[str, Any]] = []
+    for idx, seg in enumerate(question_data.get('segments', [])):
+        start = int(seg.get('start', 0))
+        end = int(seg.get('end', start))
+        result_raw = seg.get('result')
+        parsed = _maybe_parse_json(result_raw)
+        if isinstance(parsed, dict):
+            display_payload = json.dumps(parsed, indent=2, ensure_ascii=False)
+            parsed_for_js = parsed
+        elif isinstance(parsed, list):
+            display_payload = json.dumps(parsed, indent=2, ensure_ascii=False)
+            parsed_for_js = parsed
+        else:
+            display_payload = result_raw if isinstance(result_raw, str) else json.dumps(result_raw, indent=2, ensure_ascii=False)
+            parsed_for_js = None
+        segments.append({
+            'index': idx,
+            'start': start,
+            'end': end,
+            'parsed': parsed_for_js,
+            'display': display_payload,
+        })
+    return segments
+
+
+def build_expert_preview_link(video_id: Optional[str], file_path: Optional[str]) -> str:
+    if file_path:
+        cleaned = file_path.lstrip('/')
+        if cleaned.startswith('downloads/'):
+            cleaned = cleaned[len('downloads/'):]
+        return f"/expert-preview?file={quote(cleaned)}"
+    if video_id:
+        return f"/expert-preview?video={quote(str(video_id))}"
+    return "/expert-preview"
+
