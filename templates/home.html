@@ -1,0 +1,508 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Educational Video Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        
+        .user-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .user-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+        
+        .user-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+        
+        .user-card.admin {
+            border-color: #dc3545;
+        }
+        
+        .user-card.admin:hover {
+            border-color: #dc3545;
+            background: linear-gradient(135deg, #fff 0%, #fff5f5 100%);
+        }
+        
+        .user-card.expert {
+            border-color: #ffc107;
+        }
+        
+        .user-card.expert:hover {
+            border-color: #ffc107;
+            background: linear-gradient(135deg, #fff 0%, #fffdf0 100%);
+        }
+        
+        .user-card.children {
+            border-color: #28a745;
+        }
+        
+        .user-card.children:hover {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #fff 0%, #f8fff8 100%);
+        }
+        
+        .user-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .admin .user-icon {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .expert .user-icon {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+        }
+        
+        .children .user-icon {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        }
+        
+        .user-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .user-description {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            font-size: 1rem;
+        }
+        
+        .user-button {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            width: 100%;
+        }
+        
+        .admin .user-button {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .expert .user-button {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #212529;
+        }
+        
+        .children .user-button {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        }
+        
+        .user-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        /* Password Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            animation: modalFadeIn 0.3s ease;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-30px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .modal-header {
+            margin-bottom: 30px;
+        }
+        
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .modal-subtitle {
+            color: #6c757d;
+            font-size: 1rem;
+        }
+        
+        .password-form {
+            margin-bottom: 25px;
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .password-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .header p {
+                font-size: 1.1rem;
+            }
+            
+            .user-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .user-card {
+                padding: 30px 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Educational Video Platform</h1>
+            <p>Choose your role to access the appropriate tools and content</p>
+        </div>
+        
+        <div class="user-cards">
+            <!-- Admin Card -->
+            <div class="user-card admin" onclick="showPasswordModal('admin')">
+                <div class="user-icon">⚙️</div>
+                <h3 class="user-title">Administrator</h3>
+                <p class="user-description">
+                    Access the full platform administration including video processing, 
+                    frame extraction, and question generation tools.
+                </p>
+                <button class="user-button">Enter Admin Panel</button>
+            </div>
+            
+            <!-- Expert Card -->
+            <div class="user-card expert" onclick="showPasswordModal('expert')">
+                <div class="user-icon">👨‍🏫</div>
+                <h3 class="user-title">Expert Reviewer</h3>
+                <p class="user-description">
+                    Review and validate generated questions, provide expert annotations, 
+                    and ensure educational content quality.
+                </p>
+                <button class="user-button">Expert Dashboard</button>
+            </div>
+            
+            <!-- Children Card -->
+            <div class="user-card children" onclick="accessChildren()">
+                <div class="user-icon">🎓</div>
+                <h3 class="user-title">Young Learners</h3>
+                <p class="user-description">
+                    Interactive learning experience with educational videos 
+                    and age-appropriate comprehension questions.
+                </p>
+                <button class="user-button">Start Learning</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Educational Video Processing Platform &copy; 2024</p>
+        </div>
+    </div>
+    
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Access Required</h3>
+                <p class="modal-subtitle">Please enter your password to continue</p>
+            </div>
+            
+            <div class="error-message" id="errorMessage">
+                Incorrect password. Please try again.
+            </div>
+            
+            <form class="password-form" id="passwordForm">
+                <input 
+                    type="password" 
+                    class="password-input" 
+                    id="passwordInput" 
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    required
+                />
+                <div class="modal-buttons">
+                    <button type="button" class="modal-btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="modal-btn btn-primary">Access</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let currentUserType = null;
+        
+        // Use server-side password verification
+        async function verifyPassword(userType, password) {
+            try {
+                const formData = new FormData();
+                formData.append('user_type', userType);
+                formData.append('password', password);
+                
+                const response = await fetch('/api/verify-password', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                return { success: false, message: 'Connection error' };
+            }
+        }
+        
+        function showPasswordModal(userType) {
+            currentUserType = userType;
+            const modal = document.getElementById('passwordModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const passwordInput = document.getElementById('passwordInput');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Update modal title
+            modalTitle.textContent = userType === 'admin' ? 'Administrator Access' : 'Expert Access';
+            
+            // Reset form
+            passwordInput.value = '';
+            errorMessage.style.display = 'none';
+            
+            // Show modal
+            modal.style.display = 'block';
+            
+            // Focus on password input
+            setTimeout(() => {
+                passwordInput.focus();
+            }, 100);
+        }
+        
+        function closeModal() {
+            const modal = document.getElementById('passwordModal');
+            modal.style.display = 'none';
+            currentUserType = null;
+        }
+        
+        function accessChildren() {
+            // Direct access for children - no password required
+            window.location.href = '/children';
+        }
+        
+        // Handle password form submission
+// Handle password form submission
+document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const passwordInput = document.getElementById('passwordInput');
+    const errorMessage = document.getElementById('errorMessage');
+    const enteredPassword = passwordInput.value;
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Verifying...';
+    submitBtn.disabled = true;
+    
+    try {
+        const result = await verifyPassword(currentUserType, enteredPassword);
+        
+        if (result.success) {
+            window.location.href = result.redirect;
+        } else {
+            // Incorrect password
+            errorMessage.textContent = result.message || 'Incorrect password. Please try again.';
+            errorMessage.style.display = 'block';
+            passwordInput.value = '';
+            passwordInput.focus();
+            
+            // Add shake animation
+            passwordInput.style.animation = 'shake 0.5s ease-in-out';
+            setTimeout(() => {
+                passwordInput.style.animation = '';
+            }, 500);
+        }
+    } catch (error) {
+        errorMessage.textContent = 'Connection error. Please try again.';
+        errorMessage.style.display = 'block';
+    } finally {
+        // Reset button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+});
+        // Close modal when clicking outside
+        window.addEventListener('click', function(e) {
+            const modal = document.getElementById('passwordModal');
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
+        // Add shake animation CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

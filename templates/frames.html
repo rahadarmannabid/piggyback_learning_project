@@ -1,47 +1,112 @@
 <!doctype html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
-    <title>Extract Frames</title>
-  </head>
-  <body>
+    <title>Extract Frames - {{ video_id }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .status-success { color: #28a745; font-weight: bold; }
+        .status-error { color: #dc3545; font-weight: bold; }
+        .file-list { list-style: none; padding: 0; }
+        .file-list li { margin: 5px 0; padding: 8px; background: #f8f9fa; border-radius: 4px; }
+        .file-list a { text-decoration: none; color: #007bff; }
+        .file-list a:hover { text-decoration: underline; }
+        .progress-info { background: #e3f2fd; padding: 15px; border-radius: 4px; margin: 15px 0; }
+        .button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .button:hover { background: #0056b3; }
+        .button-success { background: #28a745; }
+        .button-success:hover { background: #1e7e34; }
+        #extract-btn { margin: 10px 0; }
+        .loading { display: none; }
+    </style>
+</head>
+<body>
     <h1>Extract Frames (1 per second)</h1>
-
-    <p><strong>Video ID:</strong> {{ video_id }}</p>
+    
+    <div class="progress-info">
+        <strong>Video ID:</strong> {{ video_id }}<br>
+        <strong>Process:</strong> This will extract one frame per second from your video for analysis.
+    </div>
 
     <!-- Step 1: Extract frames -->
-    <form action="/frames/{{ video_id }}" method="post">
-      <button type="submit">Extract Frames</button>
+    {% if not ran %}
+    <form action="/frames/{{ video_id }}" method="post" id="extract-form">
+        <button type="submit" class="button" id="extract-btn">Extract Frames</button>
+        <div class="loading" id="loading-msg">
+            <p>⏳ Extracting frames... This may take a few minutes for longer videos.</p>
+        </div>
     </form>
-
-    {% if ran %}
-      <h2>Result</h2>
-      <p><strong>Status:</strong> {{ "Success" if success else "Failed" }}</p>
-      <p><strong>Message:</strong> {{ message }}</p>
-
-      {% if success %}
-        <p><strong>Extracted Frames:</strong> {{ count }}</p>
-        {% if output_dir %}
-          <p><strong>Output Folder:</strong> <a href="{{ output_dir }}">{{ output_dir }}</a></p>
-        {% endif %}
-
-        {% if files %}
-          <h3>Files</h3>
-          <ul>
-            {% for f in files %}
-              <li><a href="{{ f }}" download>{{ f }}</a></li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-
-        <!-- Step 2: Generate Questions -->
-        <h2>Next Step</h2>
-        <form action="/questions/{{ video_id }}" method="get">
-          <button type="submit">Generate Questions</button>
-        </form>
-      {% endif %}
     {% endif %}
 
-    <p><a href="/">Back</a></p>
-  </body>
+    {% if ran %}
+        <h2>Extraction Result</h2>
+        
+        <p class="{{ 'status-success' if success else 'status-error' }}">
+            Status: {{ "✅ Success" if success else "❌ Failed" }}
+        </p>
+        
+        {% if message %}
+        <p><strong>Details:</strong> {{ message }}</p>
+        {% endif %}
+
+        {% if success %}
+            <div class="progress-info">
+                <strong>Extracted Frames:</strong> {{ count }}<br>
+                {% if output_dir %}
+                <strong>Output Folder:</strong> <a href="{{ output_dir }}" target="_blank">{{ output_dir }}</a>
+                {% endif %}
+            </div>
+
+            {% if files %}
+            <h3>Generated Files</h3>
+            <ul class="file-list">
+                {% for f in files %}
+                <li>
+                    <a href="{{ f }}" download>📁 {{ f.split('/')[-1] }}</a>
+                    <small style="color: #6c757d; margin-left: 10px;">
+                        {% if f.endswith('.csv') %}(Frame data)
+                        {% elif f.endswith('.json') %}(Metadata)
+                        {% elif f.endswith('.jpg') %}(Frame image)
+                        {% endif %}
+                    </small>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            <!-- Step 2: Generate Questions -->
+            <h2>Next Step</h2>
+            <p>Now that frames are extracted, you can generate comprehension questions:</p>
+            <a href="/questions/{{ video_id }}" class="button button-success">
+                Generate Questions →
+            </a>
+        {% else %}
+            <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                <strong>Extraction failed.</strong> Please check that:
+                <ul>
+                    <li>The video file exists and is playable</li>
+                    <li>You have sufficient disk space</li>
+                    <li>The video format is supported (MP4, WebM, MKV)</li>
+                </ul>
+                <a href="/frames/{{ video_id }}" class="button" style="margin-top: 10px;">Try Again</a>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <hr style="margin: 30px 0;">
+    <p>
+        <a href="/" class="button" style="background: #6c757d;">← Back to Home</a>
+        {% if success %}
+        <a href="/questions/{{ video_id }}" class="button" style="margin-left: 10px;">Skip to Questions →</a>
+        {% endif %}
+    </p>
+
+    <script>
+        // Show loading message when form is submitted
+        document.getElementById('extract-form')?.addEventListener('submit', function() {
+            document.getElementById('extract-btn').style.display = 'none';
+            document.getElementById('loading-msg').style.display = 'block';
+        });
+    </script>
+</body>
 </html>

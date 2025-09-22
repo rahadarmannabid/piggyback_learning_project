@@ -621,15 +621,38 @@ async def verify_password(request: Request, user_type: str = Form(...), password
     }
     
     if user_type in valid_passwords and password == valid_passwords[user_type]:
-        if user_type == "admin":
-            return JSONResponse({"success": True, "redirect": "/admin"})
-        elif user_type == "expert":
-            return JSONResponse({"success": True, "redirect": "/expert-preview"})
+        return JSONResponse({"success": True, "redirect": f"/{user_type}"})
     else:
         return JSONResponse({"success": False, "message": "Invalid password"})
 
 
+@app.post("/download", response_class=HTMLResponse)
+def do_download(request: Request, url: str = Form(...)):
+    outcome = download_youtube(url)
 
+    # Links for the current download
+    links = [f"/downloads/{rel}" for rel in outcome.get("files", [])]
+
+    # Build list of all downloads
+    all_downloads = list_all_downloads()
+
+    # Find the current video's playable URL + subtitle URL
+    vid = outcome.get("video_id")
+    media = find_current_video_and_sub(vid)
+
+    return templates.TemplateResponse(
+        "preview.html",
+        {
+            "request": request,
+            "success": outcome["success"],
+            "message": outcome["message"],
+            "video_id": vid,
+            "files": links,
+            "all_downloads": all_downloads,
+            "current_video_url": media["video"],
+            "current_sub_url": media["sub"],
+        },
+    )
 
 
 # -----------------------------
@@ -950,25 +973,83 @@ async def yt_search(
             status_code=500,
             content={"success": False, "message": f"Server error: {e}"},
         )
-    
+
+
+@app.get("/frames/{video_id}", response_class=HTMLResponse)
+def frames_page(request: Request, video_id: str):
+    return templates.TemplateResponse(
+        "frames.html",
+        {
+            "request": request,
+            "video_id": video_id,
+            "ran": False,
+            "success": None,
+            "message": None,
+            "count": 0,
+            "output_dir": None,
+            "files": [],
+        },
+    )
+
+
+@app.post("/frames/{video_id}", response_class=HTMLResponse)
+def run_extraction(request: Request, video_id: str):
+    outcome = extract_frames_per_second_for_video(video_id)
+    return templates.TemplateResponse(
+        "frames.html",
+        {
+            "request": request,
+            "video_id": video_id,
+            "ran": True,
+            "success": outcome.get("success", False),
+            "message": outcome.get("message", ""),
+            "count": outcome.get("count", 0),
+            "output_dir": outcome.get("output_dir"),
+            "files": outcome.get("files", []),
+        },
+    )
+
+
+@app.get("/questions/{video_id}", response_class=HTMLResponse)
+def questions_page(request: Request, video_id: str):
+    """
+    Show a form to stream question generation results via WebSocket only.
+    """
+    # Try to read duration (from frame_data.json), otherwise leave blank
+    frames_dir = DOWNLOADS_DIR / video_id / "extracted_frames"
+    duration_seconds = None
+    json_path = frames_dir / "frame_data.json"
+    if json_path.exists():
+        try:
+            info = json.loads(json_path.read_text(encoding="utf-8"))
+            duration_seconds = int(float(info.get("video_info", {}).get("duration_seconds", 0)))
+        except Exception:
+            duration_seconds = None
+
+    return templates.TemplateResponse(
+        "questions.html",
+        {
+            "request": request,
+            "video_id": video_id,
+            "duration_seconds": duration_seconds,
+            "expert_preview_link": build_expert_preview_link(video_id, None),
+            "output_json": None,
+        },
+    )
+
+
 @app.get("/expert-preview", response_class=HTMLResponse)
 def expert_preview(
     request: Request,
     file: Optional[str] = Query(None),
     video: Optional[str] = Query(None),
-    mode: Optional[str] = Query("review")  # Add mode parameter
 ):
     question_files = list_question_json_files()
     selected_file_path: Optional[Path] = None
     selected_file_rel = None
     selection_error = None
 
-    # Handle video selection for create mode
-    if mode == "create" and video:
-        # For create mode, we don't need existing question files
-        # Just set up for video-based creation
-        pass
-    elif not file and video:
+    if not file and video:
         for item in question_files:
             if item["video_id"] == video:
                 file = item["rel_path"]
@@ -1011,7 +1092,7 @@ def expert_preview(
             segments_for_js.append(
                 {
                     "index": segment["index"],
-                    "start": segment["start"], 
+                    "start": segment["start"],
                     "end": segment["end"],
                     "questions": questions_payload,
                     "best_question": best_question,
@@ -1036,35 +1117,6 @@ def expert_preview(
         except ValueError:
             annotation_rel_path = None
 
-    # Handle create mode video selection
-    elif mode == "create" and video:
-        selected_video_id = video
-        video_dir = DOWNLOADS_DIR / video
-        if video_dir.exists():
-            video_candidate = find_primary_video_file(video_dir)
-            if video_candidate:
-                video_url = f"/downloads/{video_candidate.relative_to(DOWNLOADS_DIR).as_posix()}"
-            
-            # Load existing expert annotations for create mode
-            expert_questions_dir = video_dir / "expert_questions"
-            expert_file = expert_questions_dir / f"expert_{video}.json"
-            
-            if expert_file.exists():
-                try:
-                    expert_data = json.loads(expert_file.read_text(encoding="utf-8"))
-                    annotations_list = expert_data.get("annotations", [])
-                    if isinstance(annotations_list, list):
-                        existing_annotations = annotations_list
-                        for entry in annotations_list:
-                            key = f"{entry.get('start')}-{entry.get('end')}"
-                            existing_annotations_map[key] = entry
-                    try:
-                        annotation_rel_path = expert_file.relative_to(DOWNLOADS_DIR).as_posix()
-                    except ValueError:
-                        annotation_rel_path = None
-                except Exception:
-                    pass
-
     context = {
         "request": request,
         "question_files": question_files,
@@ -1083,61 +1135,19 @@ def expert_preview(
             {"value": value, "label": label} for value, label in EXPERT_QUESTION_TYPES
         ],
         "question_file_url": f"/downloads/{selected_file_rel}" if selected_file_rel else None,
-        "mode": mode,
     }
     return templates.TemplateResponse("expert_preview.html", context)
+
 
 @app.post("/api/expert-annotations")
 async def save_expert_annotation(payload: Dict[str, Any] = Body(...)):
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Invalid payload.")
 
-    mode = payload.get("mode", "review")  # "create" or "review"
-    
-    if mode == "create":
-        # Handle Create mode - save to expert_video_id file
-        video_id = payload.get("video_id")
-        if not video_id:
-            raise HTTPException(status_code=400, detail="Missing video_id for create mode.")
-            
-        video_dir = DOWNLOADS_DIR / video_id
-        if not video_dir.exists():
-            raise HTTPException(status_code=400, detail="Video directory not found.")
-            
-        # Create expert questions file
-        expert_questions_dir = video_dir / "expert_questions"
-        expert_questions_dir.mkdir(exist_ok=True)
-        
-        expert_file = expert_questions_dir / f"expert_{video_id}.json"
-        
-        # Load existing expert data
-        if expert_file.exists():
-            try:
-                expert_data = json.loads(expert_file.read_text(encoding="utf-8"))
-            except Exception:
-                expert_data = {"video_id": video_id, "mode": "create", "annotations": []}
-        else:
-            expert_data = {"video_id": video_id, "mode": "create", "annotations": []}
-            
-        annotations_list = expert_data.setdefault("annotations", [])
-        
-    else:
-        # Handle Review mode - existing logic
-        question_file = resolve_question_file_param(payload.get("file"))
-        if not question_file or not question_file.exists():
-            raise HTTPException(status_code=400, detail="Invalid question file.")
-            
-        video_dir = question_file.parent.parent
-        video_id = video_dir.name
-        
-        annotations_bundle = load_expert_annotations(question_file, video_id)
-        expert_data = annotations_bundle["data"]
-        expert_data["video_id"] = video_id
-        expert_data["question_file"] = question_file.name
-        annotations_list = expert_data.setdefault("annotations", [])
-        expert_file = annotations_bundle["path"]
+    question_file = resolve_question_file_param(payload.get("file"))
+    if not question_file or not question_file.exists():
+        raise HTTPException(status_code=400, detail="Invalid question file.")
 
-    # Common processing for both modes
     try:
         start = int(payload.get("start"))
         end = int(payload.get("end"))
@@ -1145,33 +1155,41 @@ async def save_expert_annotation(payload: Dict[str, Any] = Body(...)):
         raise HTTPException(status_code=400, detail="Invalid segment bounds.")
 
     skip_requested = bool(payload.get("skip"))
+
     segment_index = payload.get("segment_index")
     try:
         segment_index = int(segment_index) if segment_index is not None else None
     except (TypeError, ValueError):
         segment_index = None
 
+    video_dir = question_file.parent.parent
+    video_id = video_dir.name
+
+    annotations_bundle = load_expert_annotations(question_file, video_id)
+    annotations_data = annotations_bundle["data"]
+    annotations_data["video_id"] = video_id
+    annotations_data["question_file"] = question_file.name
+    annotations_list = annotations_data.setdefault("annotations", [])
+
     timestamp = datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
-    # Create annotation entry
+    best_question_data = None
     if skip_requested:
         entry = {
             "segment_index": segment_index,
             "start": start,
             "end": end,
             "question_type": "skip",
-            "question_type_label": "Skipped", 
+            "question_type_label": "Skipped",
             "question": "(skipped)",
             "answer": "",
             "skipped": True,
             "saved_at": timestamp,
-            "mode": mode
         }
     else:
         question = (payload.get("question") or "").strip()
         answer = (payload.get("answer") or "").strip()
         question_type_raw = (payload.get("question_type") or "").strip().lower()
-        
         if not question or not answer:
             raise HTTPException(status_code=400, detail="Question and answer are required.")
         if question_type_raw not in EXPERT_QUESTION_TYPE_VALUES:
@@ -1189,77 +1207,69 @@ async def save_expert_annotation(payload: Dict[str, Any] = Body(...)):
             "answer": answer,
             "skipped": False,
             "saved_at": timestamp,
-            "mode": mode
         }
 
-        # Handle best question for review mode only
-        if mode == "review":
-            best_question_payload = payload.get("best_question")
-            if isinstance(best_question_payload, dict):
-                best_question_question = (best_question_payload.get("question") or "").strip()
-                best_question_answer = (best_question_payload.get("answer") or "").strip()
-                approved_raw = best_question_payload.get("approved")
-                
-                if isinstance(approved_raw, bool):
-                    approved_value = approved_raw
-                elif isinstance(approved_raw, str):
-                    approved_value = approved_raw.lower() in {"true", "1", "yes", "approved"}
-                else:
-                    approved_value = None
-                    
-                comment_text = (best_question_payload.get("comment") or "").strip()
-                
-                if approved_value is False and not comment_text:
-                    raise HTTPException(status_code=400, detail="Provide a comment when disapproving the best question.")
-                    
-                if any([best_question_question, best_question_answer, approved_value is not None, comment_text]):
-                    if approved_value is None:
-                        approved_value = True
-                        
-                    entry["best_question"] = {
-                        "question": best_question_question,
-                        "answer": best_question_answer,
-                        "approved": approved_value,
-                        "comment": comment_text if not approved_value else "",
-                    }
+        best_question_payload = payload.get("best_question")
+        if isinstance(best_question_payload, dict):
+            best_question_question = (best_question_payload.get("question") or "").strip()
+            best_question_answer = (best_question_payload.get("answer") or "").strip()
+            approved_raw = best_question_payload.get("approved")
+            if isinstance(approved_raw, bool):
+                approved_value = approved_raw
+            elif isinstance(approved_raw, str):
+                approved_value = approved_raw.lower() in {"true", "1", "yes", "approved"}
+            else:
+                approved_value = None
+            comment_text = (best_question_payload.get("comment") or "").strip()
+            if approved_value is False and not comment_text:
+                raise HTTPException(status_code=400, detail="Provide a comment when disapproving the best question.")
+            if any([best_question_question, best_question_answer, approved_value is not None, comment_text]):
+                if approved_value is None:
+                    approved_value = True
+                best_question_data = {
+                    "question": best_question_question,
+                    "answer": best_question_answer,
+                    "approved": approved_value,
+                    "comment": comment_text if not approved_value else "",
+                }
+        if best_question_data is not None:
+            entry["best_question"] = best_question_data
 
-    # Update annotations list
     updated = False
     for idx, existing in enumerate(list(annotations_list)):
         if isinstance(existing, dict) and existing.get("start") == start and existing.get("end") == end:
-            if not skip_requested and mode == "review" and entry.get("best_question") is None and existing.get("best_question") is not None:
+            if not skip_requested and best_question_data is None and existing.get("best_question") is not None:
                 entry["best_question"] = existing.get("best_question")
             annotations_list[idx] = entry
             updated = True
             break
-            
     if not updated:
         annotations_list.append(entry)
 
     annotations_list.sort(key=lambda item: (item.get("start", 0), item.get("end", 0)))
 
-    # Save the file
-    expert_file.parent.mkdir(parents=True, exist_ok=True)
+    annotations_path = annotations_bundle["path"]
+    annotations_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        expert_file.write_text(
-            json.dumps(expert_data, indent=2, ensure_ascii=False), encoding="utf-8"
+        annotations_path.write_text(
+            json.dumps(annotations_data, indent=2, ensure_ascii=False), encoding="utf-8"
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to store annotation: {exc}")
 
     try:
-        annotation_rel = expert_file.relative_to(DOWNLOADS_DIR).as_posix()
+        annotation_rel = annotations_path.relative_to(DOWNLOADS_DIR).as_posix()
     except ValueError:
         annotation_rel = None
-
 
     return JSONResponse({
         "success": True,
         "annotation": entry,
         "annotations_file": annotation_rel,
         "updated": updated,
-        "mode": mode
     })
+
+
 # -----------------------------
 # WebSocket endpoint for streaming interval results
 # -----------------------------
@@ -1538,12 +1548,7 @@ def build_expert_preview_link(video_id: Optional[str], file_path: Optional[str])
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin_page(request: Request):
-    # Get all downloads for the admin interface
-    all_downloads = list_all_downloads()
-    return templates.TemplateResponse("admin.html", {
-        "request": request,
-        "all_downloads": all_downloads
-    })
+    return templates.TemplateResponse("admin.html", {"request": request})
 
 @app.post("/api/download")
 async def api_download(url: str = Form(...)):
@@ -1577,7 +1582,8 @@ async def submit_questions(payload: Dict[str, Any] = Body(...)):
     questions_dir = DOWNLOADS_DIR / video_id / "questions"
     questions_dir.mkdir(parents=True, exist_ok=True)
     
-    out_path = questions_dir / f"{video_id}.json"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = questions_dir / f"submitted_questions_{timestamp}.json"
     
     try:
         out_path.write_text(json.dumps(aggregated, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -1591,65 +1597,3 @@ async def submit_questions(payload: Dict[str, Any] = Body(...)):
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save: {e}")
-
-@app.get("/api/videos-list")
-async def list_videos():
-    """List all downloaded videos available for expert question creation"""
-    try:
-        videos = []
-        if not DOWNLOADS_DIR.exists():
-            return JSONResponse({"success": True, "videos": []})
-        
-        for video_dir in sorted(DOWNLOADS_DIR.iterdir()):
-            if not video_dir.is_dir():
-                continue
-                
-            video_id = video_dir.name
-            
-            # Find video file
-            video_file = None
-            for ext in ("*.mp4", "*.webm", "*.mkv"):
-                video_files = list(video_dir.glob(ext))
-                if video_files:
-                    video_file = video_files[0]
-                    break
-            
-            if not video_file:
-                continue
-                
-            # Get video duration from frame data if available
-            duration = 0
-            frames_dir = video_dir / "extracted_frames"
-            json_path = frames_dir / "frame_data.json"
-            if json_path.exists():
-                try:
-                    info = json.loads(json_path.read_text(encoding="utf-8"))
-                    duration = int(float(info.get("video_info", {}).get("duration_seconds", 0)))
-                except Exception:
-                    duration = 0
-            
-            # Count files
-            file_count = len([f for f in video_dir.iterdir() if f.is_file()])
-            
-            # Create video URL
-            video_url = f"/downloads/{video_file.relative_to(DOWNLOADS_DIR).as_posix()}"
-            
-            videos.append({
-                "id": video_id,
-                "title": video_id,  # Could be enhanced to get actual title
-                "duration": duration,
-                "fileCount": file_count,
-                "videoUrl": video_url
-            })
-        
-        return JSONResponse({
-            "success": True,
-            "videos": videos
-        })
-        
-    except Exception as e:
-        return JSONResponse({
-            "success": False,
-            "message": f"Error listing videos: {e}",
-            "videos": []
-        })

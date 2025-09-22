@@ -1,178 +1,726 @@
-<!doctype html>
+// Keep HTTP form synchronized
+        const httpForm = document.getElementById('http-form');
+        if (httpForm) {
+            const syncHttpHidden = () => {
+                httpForm.querySelector('input[name="start_seconds"]').value =
+                    document.getElementById('start_seconds').value || "0";
+                httpForm.querySelector('input[name="interval_seconds"]').value =
+                    document.getElementById('interval_seconds').value || "60";
+                httpForm.querySelector('input[name="full_duration"]').value =
+                    document.getElementById('full_duration').checked ? "on" : "";
+            };
+            
+            ['start_seconds','interval_seconds','full_duration'].forEach(id => {
+                document.getElementById(id).addEventListener('change', syncHttpHidden);
+                document.getElementById(id).addEventListener('input', syncHttpHidden);
+            });
+            syncHttpHidden();
+        }<!doctype html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
-    <title>Generate Questions</title>
-  </head>
-  <body>
-    <h1>Generate Questions</h1>
+    <title>Generate Questions - {{ video_id }}</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            line-height: 1.6;
+            background: #f8f9fa;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .video-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .security-note {
+            background: #fff3cd;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+            font-size: 0.9em;
+        }
+        
+        fieldset { 
+            margin-bottom: 20px; 
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        legend {
+            font-weight: 600;
+            color: #495057;
+            padding: 0 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label { 
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        input[type="number"] { 
+            width: 120px; 
+            padding: 8px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            font-weight: normal;
+        }
+        
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background-color 0.2s;
+        }
+        
+        .button:hover { background: #0056b3; }
+        .button:disabled { 
+            opacity: 0.6; 
+            cursor: not-allowed; 
+            background: #6c757d;
+        }
+        
+        .button-primary { background: #28a745; }
+        .button-primary:hover { background: #1e7e34; }
+        
+        .button-secondary { background: #6c757d; }
+        .button-secondary:hover { background: #545b62; }
+        
+        .progress-section {
+            margin-top: 30px;
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .progress-stats {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        
+        .results-section {
+            margin-top: 30px;
+        }
+        
+        .results-table-container {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        .results-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
+        }
+        
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+        }
+        
+        .results-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .time-range {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .question-category {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .question-text {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+        
+        .answer-text {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .best-question-marker {
+            background: #28a745;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        
+        .status-processing {
+            color: #ffc107;
+            font-style: italic;
+        }
+        
+        .status-completed {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .status-error {
+            color: #dc3545;
+            font-style: italic;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        #stream { 
+            white-space: pre-wrap; 
+            border: 1px solid #dee2e6; 
+            padding: 15px; 
+            border-radius: 8px; 
+            background: #f8f9fa; 
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 200px;
+            overflow-y: auto;
+            min-height: 80px;
+        }
+        
+        .stream-empty {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .fallback-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        .navigation {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            text-align: center;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-ready { background: #28a745; }
+        .status-running { background: #ffc107; animation: pulse 1.5s infinite; }
+        .status-error { background: #dc3545; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .help-text {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .collapsible-section {
+            margin-top: 20px;
+        }
+        
+        .collapsible-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .collapsible-header:hover {
+            background: #e9ecef;
+        }
+        
+        .collapsible-content {
+            display: none;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+        
+        .collapsible-content.open {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 20px; }
+            .form-group { margin-bottom: 20px; }
+            input[type="number"] { width: 100%; max-width: 200px; }
+            .progress-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .results-table { font-size: 0.9em; }
+            .results-table th, .results-table td { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generate Questions</h1>
 
-    <p><strong>Video ID:</strong> {{ video_id }}</p>
-    {% if duration_seconds %}
-      <p><strong>Approx. Duration:</strong> {{ duration_seconds }} seconds</p>
-    {% endif %}
+        <div class="video-info">
+            <strong>Video ID:</strong> {{ video_id }}
+            {% if duration_seconds %}
+            <br><strong>Duration:</strong> {{ duration_seconds }} seconds ({{ "%.1f"|format(duration_seconds/60) }} minutes)
+            {% endif %}
+        </div>
 
-    <!-- WebSocket-driven form -->
-    <form id="ws-form">
-      <fieldset>
-        <legend>Interval Settings</legend>
+        <div class="security-note">
+            <strong>Security:</strong> The server uses <code>OPENAI_API_KEY</code> from its environment. No API key is sent from your browser.
+        </div>
 
-        <label for="start_seconds">Start (seconds):</label>
-        <input type="number" id="start_seconds" name="start_seconds" value="{{ start_seconds or 0 }}" min="0" required>
+        <!-- WebSocket-driven form -->
+        <form id="ws-form">
+            <fieldset>
+                <legend>Question Generation Settings</legend>
 
-        <label for="interval_seconds">Interval length (seconds):</label>
-        <input type="number" id="interval_seconds" name="interval_seconds" value="{{ interval_seconds or 60 }}" min="1" required>
-      </fieldset>
+                <div class="form-group">
+                    <label for="start_seconds">Start Time (seconds)</label>
+                    <input type="number" id="start_seconds" name="start_seconds" value="{{ start_seconds or 0 }}" min="0" required>
+                    <div class="help-text">When to start generating questions in the video</div>
+                </div>
 
-      <p>
-        <label>
-          <input type="checkbox" id="full_duration" name="full_duration" {% if full_duration %}checked{% endif %}>
-          Generate for the <em>full duration</em> (loop 0-60, 61-120, ...)
-        </label>
-      </p>
+                <div class="form-group">
+                    <label for="interval_seconds">Interval Length (seconds)</label>
+                    <input type="number" id="interval_seconds" name="interval_seconds" value="{{ interval_seconds or 60 }}" min="1" max="300" required>
+                    <div class="help-text">How many seconds of video to analyze per question set (recommended: 30-120 seconds)</div>
+                </div>
 
-      <p>
-        <label for="api_key">OpenAI API Key (optional; else use env):</label>
-        <input type="password" id="api_key" name="api_key" placeholder="sk-...">
-      </p>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="full_duration" name="full_duration" {% if full_duration %}checked{% endif %}>
+                    <span>Generate for the <strong>full duration</strong> (creates questions for entire video in intervals)</span>
+                </label>
+                <div class="help-text" style="margin-left: 28px;">
+                    When checked, creates question sets like 0-60s, 61-120s, etc. until the end of the video
+                </div>
+            </fieldset>
 
-      <button type="submit">Start WebSocket Generation</button>
-    </form>
+            <button id="ws-submit" type="submit" class="button button-primary">
+                <span class="status-indicator status-ready" id="status-indicator"></span>
+                Start Question Generation
+            </button>
+        </form>
 
-    <h2>Live Output</h2>
-    <pre id="stream" style="white-space: pre-wrap;"></pre>
-    <p id="saved-json">
-      {% if output_json %}<strong>Saved JSON:</strong> <a href="{{ output_json }}" target="_blank">{{ output_json }}</a>{% endif %}
-    </p>
+        <!-- Results Section -->
+        <div class="results-section" id="results-section" style="display: none;">
+            <div class="progress-header">
+                <h2>Generated Questions</h2>
+                <div class="progress-stats" id="results-stats">0 segments completed</div>
+            </div>
+            
+            <div class="results-table-container">
+                <table class="results-table" id="results-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Time Range</th>
+                            <th style="width: 120px;">Category</th>
+                            <th>Question</th>
+                            <th>Answer</th>
+                            <th style="width: 80px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody">
+                        <!-- Results will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="no-results" id="no-results">
+                No questions generated yet. Start the generation process above.
+            </div>
+        </div>
 
-    <!-- Optional fallback non-streaming HTTP form -->
-    <h3>Or use non-streaming (HTTP) submit</h3>
-    <form action="/questions/{{ video_id }}" method="post">
-      <input type="hidden" name="start_seconds" value="{{ start_seconds or 0 }}">
-      <input type="hidden" name="interval_seconds" value="{{ interval_seconds or 60 }}">
-      <input type="hidden" name="full_duration" value="">
-      <button type="submit">Submit (HTTP, no streaming)</button>
-    </form>
+        <!-- Progress Log (Collapsible) -->
+        <div class="collapsible-section">
+            <div class="collapsible-header" id="log-header">
+                <span>Generation Log</span>
+                <span id="log-toggle">▼</span>
+            </div>
+            <div class="collapsible-content" id="log-content">
+                <pre id="stream"><div class="stream-empty">Click "Start Question Generation" to begin...</div></pre>
+            </div>
+        </div>
 
-    <p><a href="/">Back</a> | <a href="/frames/{{ video_id }}">Extract Frames</a>{% if video_id %} | <a id="expert-preview-link" href="{{ expert_preview_link or ("/expert-preview?video=" ~ video_id) }}">Expert Preview</a>{% endif %}</p>
+
+
+        <div class="navigation">
+            <a href="/" class="button button-secondary">← Back to Home</a>
+            <a href="/frames/{{ video_id }}" class="button">Extract Frames</a>
+            {% if video_id %}
+            <a id="expert-preview-link" href="{{ expert_preview_link or ('/expert-preview?video=' ~ video_id) }}" class="button">Expert Preview</a>
+            {% endif %}
+        </div>
+    </div>
 
     <script>
-      const form = document.getElementById('ws-form');
-      const out = document.getElementById('stream');
-      const savedJsonEl = document.getElementById('saved-json');
-      const expertPreviewLink = document.getElementById('expert-preview-link');
-      const currentVideoId = {{ video_id|tojson }};
+        const form = document.getElementById('ws-form');
+        const submitBtn = document.getElementById('ws-submit');
+        const out = document.getElementById('stream');
+        const statusIndicator = document.getElementById('status-indicator');
+        const resultsSection = document.getElementById('results-section');
+        const resultsTable = document.getElementById('results-table');
+        const resultsTbody = document.getElementById('results-tbody');
+        const resultsStats = document.getElementById('results-stats');
+        const noResults = document.getElementById('no-results');
+        const expertPreviewLink = document.getElementById('expert-preview-link');
+        const logHeader = document.getElementById('log-header');
+        const logContent = document.getElementById('log-content');
+        const logToggle = document.getElementById('log-toggle');
+        const currentVideoId = {{ video_id|tojson }};
+        
+        let segmentCount = 0;
+        let totalSegments = 0;
+        let isRunning = false;
+        let generatedQuestions = new Map();
 
-      function deriveExpertPreviewHref(url) {
-        if (url) {
-          let normalized = url;
-          if (/^https?:\/\//i.test(normalized)) {
-            try {
-              const parsed = new URL(normalized);
-              normalized = parsed.pathname + parsed.search + parsed.hash;
-            } catch (err) {
-              normalized = normalized.substring(normalized.indexOf('/'));
-            }
-          }
-          normalized = normalized.replace(/^\/?, '');
-          if (normalized.startsWith('downloads/')) {
-            normalized = normalized.substring('downloads/'.length);
-          }
-          return `/expert-preview?file=${encodeURIComponent(normalized)}`;
-        }
-        if (!currentVideoId) {
-          return '/expert-preview';
-        }
-        return `/expert-preview?video=${encodeURIComponent(currentVideoId)}`;
-      }
-
-      function updateSavedJsonLink(url) {
-        if (expertPreviewLink) {
-          expertPreviewLink.href = deriveExpertPreviewHref(url);
-        }
-        if (!savedJsonEl) {
-          return;
-        }
-        savedJsonEl.innerHTML = '';
-        if (!url) {
-          return;
-        }
-        const label = document.createElement('strong');
-        label.textContent = 'Saved JSON:';
-        const link = document.createElement('a');
-        link.href = url;
-        link.textContent = url;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        savedJsonEl.appendChild(label);
-        savedJsonEl.appendChild(document.createTextNode(' '));
-        savedJsonEl.appendChild(link);
-      }
-
-      const initialSavedJson = {{ output_json|tojson }};
-      if (initialSavedJson) {
-        updateSavedJsonLink(initialSavedJson);
-      }
-
-      function log(obj) {
-        try {
-          out.textContent += (typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2)) + "\n";
-        } catch (err) {
-          out.textContent += String(obj) + "\n";
-        }
-      }
-
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        out.textContent = "";
-        updateSavedJsonLink(null);
-
-        const startSeconds = parseInt(document.getElementById('start_seconds').value || "0", 10);
-        const intervalSeconds = parseInt(document.getElementById('interval_seconds').value || "60", 10);
-        const fullDuration = document.getElementById('full_duration').checked;
-        const apiKey = document.getElementById('api_key').value || null;
-
-        const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + "/ws/questions/{{ video_id }}";
-        const ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-          ws.send(JSON.stringify({
-            start_seconds: startSeconds,
-            interval_seconds: intervalSeconds,
-            full_duration: fullDuration,
-            api_key: apiKey
-          }));
-          log({type: "connected", message: "WebSocket opened. Generation started."});
-        };
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type === 'status') {
-              log({status: data.message});
-            } else if (data.type === 'segment_result') {
-              log({segment: `${data.start}-${data.end}`, result: data.result});
-            } else if (data.type === 'done') {
-              log({done: true, segments_count: data.segments_count, output_json: data.output_json});
-              updateSavedJsonLink(data.output_json || null);
-            } else if (data.type === 'error') {
-              log({error: data.message});
+        // Collapsible log functionality
+        logHeader.addEventListener('click', () => {
+            const isOpen = logContent.classList.contains('open');
+            if (isOpen) {
+                logContent.classList.remove('open');
+                logToggle.textContent = '▼';
             } else {
-              log(data);
+                logContent.classList.add('open');
+                logToggle.textContent = '▲';
             }
-          } catch (err) {
-            log(event.data);
-          }
-        };
+        });
 
-        ws.onerror = () => {
-          log({type: "error", message: "WebSocket error"});
-        };
+        function setRunning(running) {
+            isRunning = running;
+            submitBtn.disabled = running;
+            if (running) {
+                submitBtn.innerHTML = '<span class="status-indicator status-running"></span>Generating...';
+                resultsSection.style.display = 'block';
+                noResults.style.display = 'table-row';
+                segmentCount = 0;
+                generatedQuestions.clear();
+                resultsTbody.innerHTML = '';
+            } else {
+                submitBtn.innerHTML = '<span class="status-indicator status-ready"></span>Start Question Generation';
+            }
+            updateResultsStats();
+        }
 
-        ws.onclose = () => {
-          log({type: "closed", message: "WebSocket closed."});
-        };
-      });
+        function updateResultsStats() {
+            if (segmentCount > 0) {
+                resultsStats.textContent = `${segmentCount} segment(s) completed`;
+                noResults.style.display = 'none';
+            } else {
+                resultsStats.textContent = '0 segments completed';
+                if (!isRunning) {
+                    noResults.style.display = 'table-row';
+                }
+            }
+        }
+
+        function formatTimeRange(start, end) {
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+            return `${formatTime(start)}-${formatTime(end)}`;
+        }
+
+        function addQuestionToTable(start, end, questions, bestQuestion) {
+            const timeRange = formatTimeRange(start, end);
+            const segmentKey = `${start}-${end}`;
+            
+            // Remove existing rows for this segment if any
+            const existingRows = resultsTbody.querySelectorAll(`[data-segment="${segmentKey}"]`);
+            existingRows.forEach(row => row.remove());
+            
+            if (!questions || typeof questions !== 'object') {
+                // Add error row
+                const row = document.createElement('tr');
+                row.setAttribute('data-segment', segmentKey);
+                row.innerHTML = `
+                    <td><span class="time-range">${timeRange}</span></td>
+                    <td>-</td>
+                    <td class="status-error">No questions generated</td>
+                    <td>-</td>
+                    <td><span class="status-error">Error</span></td>
+                `;
+                resultsTbody.appendChild(row);
+                return;
+            }
+
+            // Add rows for each question category
+            const categories = ['character', 'setting', 'feeling', 'action', 'causal', 'outcome', 'prediction'];
+            let firstRow = true;
+            
+            categories.forEach(category => {
+                const questionData = questions[category];
+                if (questionData && questionData.q) {
+                    const row = document.createElement('tr');
+                    row.setAttribute('data-segment', segmentKey);
+                    
+                    const isBestQuestion = bestQuestion && 
+                        (bestQuestion === questionData.q || bestQuestion.includes(questionData.q));
+                    
+                    row.innerHTML = `
+                        <td>${firstRow ? `<span class="time-range">${timeRange}</span>` : ''}</td>
+                        <td>
+                            <span class="question-category">${category}</span>
+                            ${isBestQuestion ? '<span class="best-question-marker">BEST</span>' : ''}
+                        </td>
+                        <td class="question-text">${questionData.q}</td>
+                        <td class="answer-text">${questionData.a || 'No answer provided'}</td>
+                        <td><span class="status-completed">✓</span></td>
+                    `;
+                    resultsTbody.appendChild(row);
+                    firstRow = false;
+                }
+            });
+            
+            // If no questions were added, show error
+            if (firstRow) {
+                const row = document.createElement('tr');
+                row.setAttribute('data-segment', segmentKey);
+                row.innerHTML = `
+                    <td><span class="time-range">${timeRange}</span></td>
+                    <td>-</td>
+                    <td class="status-error">No valid questions found</td>
+                    <td>-</td>
+                    <td><span class="status-error">Error</span></td>
+                `;
+                resultsTbody.appendChild(row);
+            }
+        }
+
+        function deriveExpertPreviewHref(url) {
+            if (url) {
+                let normalized = url;
+                if (/^https?:\/\//i.test(normalized)) {
+                    try {
+                        const parsed = new URL(normalized);
+                        normalized = parsed.pathname + parsed.search + parsed.hash;
+                    } catch (err) {
+                        normalized = normalized.substring(normalized.indexOf('/'));
+                    }
+                }
+                normalized = normalized.replace(/^\/+/, '');
+                if (normalized.startsWith('downloads/')) {
+                    normalized = normalized.substring('downloads/'.length);
+                }
+                return `/expert-preview?file=${encodeURIComponent(normalized)}`;
+            }
+            if (!currentVideoId) {
+                return '/expert-preview';
+            }
+            return `/expert-preview?video=${encodeURIComponent(currentVideoId)}`;
+        }
+
+        function updateExpertPreviewLink(url) {
+            if (expertPreviewLink) {
+                expertPreviewLink.href = deriveExpertPreviewHref(url);
+            }
+        }
+
+        const initialSavedJson = {{ output_json|tojson }};
+        if (initialSavedJson) {
+            updateExpertPreviewLink(initialSavedJson);
+        }
+
+        function log(obj) {
+            // Clear the empty state message if this is the first log
+            if (out.querySelector('.stream-empty')) {
+                out.innerHTML = '';
+            }
+            
+            try {
+                const content = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2);
+                out.textContent += content + "\n";
+                out.scrollTop = out.scrollHeight;
+            } catch (e) {
+                out.textContent += String(obj) + "\n";
+                out.scrollTop = out.scrollHeight;
+            }
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            if (isRunning) return;
+            
+            setRunning(true);
+            out.innerHTML = '';
+
+            const startSeconds = parseInt(document.getElementById('start_seconds').value || "0", 10);
+            const intervalSeconds = parseInt(document.getElementById('interval_seconds').value || "60", 10);
+            const fullDuration = document.getElementById('full_duration').checked;
+
+            const wsUrl = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + "/ws/questions/{{ video_id }}";
+            const ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({
+                    start_seconds: startSeconds,
+                    interval_seconds: intervalSeconds,
+                    full_duration: fullDuration
+                }));
+                log("Connected to server. Starting question generation...\n");
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'status') {
+                        log(`Status: ${data.message}`);
+                    } else if (data.type === 'segment_result') {
+                        segmentCount++;
+                        log(`Segment ${data.start}-${data.end}s completed`);
+                        
+                        // Add to results table
+                        if (data.result && data.result.questions) {
+                            addQuestionToTable(data.start, data.end, data.result.questions, data.result.best_question);
+                            log(`  Questions generated successfully\n`);
+                        } else {
+                            addQuestionToTable(data.start, data.end, null, null);
+                            log(`  No questions generated for this segment\n`);
+                        }
+                        updateResultsStats();
+                        
+                    } else if (data.type === 'done') {
+                        log(`Generation complete!`);
+                        log(`Total segments: ${data.segments_count || segmentCount}`);
+                        if (data.output_json) {
+                            log(`Results saved: ${data.output_json}\n`);
+                            updateExpertPreviewLink(data.output_json);
+                        }
+                        setRunning(false);
+                    } else if (data.type === 'error') {
+                        log(`Error: ${data.message}\n`);
+                        setRunning(false);
+                    } else {
+                        log(data);
+                    }
+                } catch (err) {
+                    log(event.data);
+                }
+            };
+
+            ws.onerror = (err) => {
+                log("WebSocket connection error. Please refresh the page and try again.\n");
+                setRunning(false);
+            };
+
+            ws.onclose = () => {
+                if (isRunning) {
+                    log("Connection closed unexpectedly.\n");
+                }
+                setRunning(false);
+            };
+        });
+
+        // Keep HTTP form synchronizedx
+        const httpForm = document.getElementById('http-form');
+        if (httpForm) {
+            const syncHttpHidden = () => {
+                httpForm.querySelector('input[name="start_seconds"]').value =
+                    document.getElementById('start_seconds').value || "0";
+                httpForm.querySelector('input[name="interval_seconds"]').value =
+                    document.getElementById('interval_seconds').value || "60";
+                httpForm.querySelector('input[name="full_duration"]').value =
+                    document.getElementById('full_duration').checked ? "on" : "";
+            };
+            
+            ['start_seconds','interval_seconds','full_duration'].forEach(id => {
+                document.getElementById(id).addEventListener('change', syncHttpHidden);
+                document.getElementById(id).addEventListener('input', syncHttpHidden);
+            });
+            syncHttpHidden();
+        }
     </script>
-  </body>
+</body>
 </html>
