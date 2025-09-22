@@ -4,6 +4,11 @@
 <head>
   <meta charset="utf-8">
   <title>Kids Videos | Piggyback</title>
+
+  <!-- ==================================================
+       GLOBAL STYLES
+       - Handles page layout, header, grid, player, sidebar, responsiveness
+       ================================================== -->
   <style>
     * {
       box-sizing: border-box;
@@ -19,7 +24,10 @@
       align-items: center;
     }
 
-    /* Header with left-aligned back button + centered title */
+    /* ==================================================
+       HEADER BAR
+       - Title + Back button
+       ================================================== */
     h1 {
       position: relative;
       background: #0077cc;
@@ -49,7 +57,10 @@
       background: #004a85;
     }
 
-    /* Grid for video cards */
+    /* ==================================================
+       VIDEO LIBRARY GRID
+       - Cards with thumbnails + titles
+       ================================================== */
     #video-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -95,7 +106,10 @@
       color: #666;
     }
 
-    /* Quiz player wrapper */
+    /* ==================================================
+       QUIZ PLAYER LAYOUT
+       - Main wrapper with video + character + sidebar
+       ================================================== */
     #player-container {
       display: none;
       margin-top: 20px;
@@ -105,7 +119,7 @@
       gap: 16px;
     }
 
-    /* Row with video (left) + character (right) */
+    /* Row: video (left) + character (right) */
     #video-wrapper {
       display: flex;
       justify-content: center;
@@ -114,7 +128,9 @@
       width: 100%;
     }
 
-    /* Character column */
+    /* ==================================================
+       CHARACTER PANEL
+       ================================================== */
     #character {
       flex: 0 0 220px;
       text-align: center;
@@ -186,7 +202,9 @@
       }
     }
 
-    /* Video container */
+    /* ==================================================
+       VIDEO PLAYER
+       ================================================== */
     #video-container {
       position: relative;
       display: inline-block;
@@ -203,7 +221,7 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
-    /* Question box overlay */
+    /* Question overlay */
     #question-box {
       position: absolute;
       top: 20px;
@@ -233,7 +251,7 @@
       font-style: italic;
     }
 
-    /* Transparent blocker */
+    /* Transparent blocker to disable video interaction */
     #blocker {
       position: absolute;
       inset: 0;
@@ -243,7 +261,9 @@
       pointer-events: auto;
     }
 
-    /* Floating toggle button */
+    /* ==================================================
+       DEV MODE SIDEBAR
+       ================================================== */
     #toggle-sidebar {
       position: absolute;
       top: 10px;
@@ -264,7 +284,6 @@
       background: rgba(0, 95, 163, 0.95);
     }
 
-    /* Sidebar (dev/testing) */
     #sidebar {
       width: 30%;
       border-left: 2px solid #ddd;
@@ -302,7 +321,9 @@
       display: none !important;
     }
 
-    /* Responsive tweaks */
+    /* ==================================================
+       RESPONSIVE TWEAKS
+       ================================================== */
     @media (max-width: 1024px) {
       #character {
         flex-basis: 180px;
@@ -354,8 +375,7 @@
         border-color: transparent transparent #fff transparent;
       }
 
-      /* progress bar*/
-
+      /* Progress bar inside video player */
       #progress-wrapper {
         margin-top: 12px;
         text-align: center;
@@ -387,37 +407,55 @@
   </style>
 </head>
 
+
 <body>
+  <!-- ==================================================
+       HEADER BAR
+       ================================================== -->
   <h1>
     <button id="back-button">⬅️ Back to Library</button>
     🐷 Piggyback
   </h1>
 
-  <!-- Video library -->
+  <!-- ==================================================
+       VIDEO LIBRARY SECTION
+       ================================================== -->
   <div id="video-grid"></div>
 
-  <!-- Quiz Player -->
+  <!-- ==================================================
+       QUIZ PLAYER SECTION
+       ================================================== -->
   <div id="player-container">
     <div id="video-wrapper">
-      <!-- Video on the left -->
+
+      <!-- Video Player (Left Column) -->
       <div id="video-container">
+        <!-- Progress bar -->
         <div id="progress-wrapper">
           <div id="progress-bar">
             <div id="progress-fill"></div>
           </div>
           <p id="progress-text">Question 0 of 0</p>
         </div>
+
+        <!-- HTML5 video element -->
         <video id="player" controls></video>
+
+        <!-- Transparent blocker (disables interaction during questions) -->
         <div id="blocker" aria-hidden="true"></div>
+
+        <!-- Overlay for question + feedback -->
         <div id="question-box">
           <h3 id="question"></h3>
           <p id="timestamp"></p>
           <p id="feedback"></p>
         </div>
+
+        <!-- Sidebar toggle button -->
         <button id="toggle-sidebar" title="Toggle question list">📑</button>
       </div>
 
-      <!-- Character on the right -->
+      <!-- Character Panel (Right Column) -->
       <div id="character">
         <div class="speech-bubble" id="speech-bubble">Hi! Let's be friends!.</div>
         <img id="character-img" src="/static/character/neutral.png" alt="Friendly Character">
@@ -425,27 +463,25 @@
       </div>
     </div>
 
-    <!-- Sidebar -->
+    <!-- Developer / Testing Sidebar -->
     <div id="sidebar" class="hidden">
       <h3>📝 Questions</h3>
       <ul id="question-list"></ul>
     </div>
   </div>
 
+  <!-- ==================================================
+       JAVASCRIPT LOGIC
+       ================================================== -->
   <script>
-    // ===============================
+    // ==================================================
     // CONFIGURATION
-    // ===============================
-    const DEV_MODE = true; // set false to hide sidebar & toggle in production
+    // ==================================================
+    const DEV_MODE = true; // NOTE: set false in production to hide sidebar
 
-    const THRESHOLDS = {
-      phrase: { correct: 0.6, borderline: 0.5 },
-      number: { correct: 0.7, borderline: 0.6 }
-    };
-
-    // ===============================
-    // Global State
-    // ===============================
+    // ==================================================
+    // GLOBAL STATE VARIABLES
+    // ==================================================
     let segments = {};
     let asked = new Set();
     let checkInterval = null;
@@ -456,9 +492,13 @@
     let totalQuestions = 0;
     let correctAnswers = 0;
 
-
     const player = document.getElementById("player");
-    // If anything triggers play while a question is active, immediately pause again
+
+    // ==================================================
+    // VIDEO SAFETY GUARDS
+    // ==================================================
+
+    // Prevent play while question is active
     player.addEventListener("play", (e) => {
       if (activeQuestion) {
         e.preventDefault?.();
@@ -466,7 +506,7 @@
       }
     });
 
-    // Prevent keyboard shortcuts (space, k, media keys) during questions
+    // Prevent skipping questions via keyboard shortcuts
     document.addEventListener("keydown", (e) => {
       if (!activeQuestion) return;
       const k = e.key.toLowerCase();
@@ -476,25 +516,26 @@
       }
     }, { capture: true });
 
+    // ==================================================
+    // DEV MODE SIDEBAR TOGGLE
+    // ==================================================
     const sidebar = document.getElementById("sidebar");
     const toggleBtn = document.getElementById("toggle-sidebar");
 
-    // DEV mode visibility
     if (!DEV_MODE) {
       sidebar.classList.add("hidden");
       toggleBtn.classList.add("hidden");
     }
 
-    // Sidebar toggle (single source of truth via .hidden class)
     toggleBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
       sidebar.classList.toggle("hidden");
     });
 
-    // ===============================
-    // Load Videos for Library
-    // ===============================
+    // ==================================================
+    // VIDEO LIBRARY LOADING
+    // ==================================================
     async function loadVideos() {
       try {
         const res = await fetch("/api/kids_videos?nocache=" + Date.now());
@@ -508,65 +549,78 @@
           const card = document.createElement("div");
           card.className = "video-card";
           card.innerHTML = `
-          <img class="video-thumb" src="${video.thumbnail}" alt="Thumbnail">
-          <div class="video-info">
-            <p class="video-title">${video.title}</p>
-          </div>
-        `;
+            <img class="video-thumb" src="${video.thumbnail}" alt="Thumbnail">
+            <div class="video-info">
+              <p class="video-title">${video.title}</p>
+            </div>`;
           card.onclick = () => startQuiz(video);
           grid.appendChild(card);
         });
       } catch (err) {
         console.error("❌ Error loading kids_videos:", err);
-        document.getElementById("video-grid").innerHTML = "<p>⚠️ Error loading videos.</p>";
+        document.getElementById("video-grid").innerHTML =
+          "<p>⚠️ Error loading videos.</p>";
       }
     }
 
-    // ===============================
-    // Start Quiz for Selected Video
-    // ===============================
+    // ==================================================
+    // HELPER: Random Choice Utility
+    // ==================================================
+    function randomChoice(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // Encouraging phrases for feedback
+    const PHRASES = {
+      correct: ["Great job!", "Awesome work!", "You nailed it!", "That’s right, well done!"],
+      almost: ["Hmm, close!", "Almost there!", "Not bad, let’s try again.", "You’re on the right track!"],
+      wrong: ["Not quite, but keep trying!", "That wasn’t it, let’s go again.", "Oops, not correct.", "Don’t give up, you can do it!"]
+    };
+
+    // ==================================================
+    // START QUIZ FOR SELECTED VIDEO
+    // ==================================================
     function startQuiz(video) {
-      // Hide library, show quiz player
+      // Switch from library to player
       document.getElementById("video-grid").style.display = "none";
       document.getElementById("player-container").style.display = "flex";
       document.getElementById("back-button").style.display = "inline-block";
 
-
-      // Load video file
+      // Load video source
       player.src = video.local_path;
       player.play();
 
-      // Load matching questions
+      // Load matching questions JSON
       fetch(`/static/questions.json?nocache=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
           segments = data;
-
-          // Count all questions
           totalQuestions = 0;
           correctAnswers = 0;
+
+          // Count all questions
           for (let seg in segments) {
             for (let key in segments[seg]) {
               if (key.startsWith("question_")) totalQuestions++;
             }
           }
           updateProgress();
-
           populateSidebar();
           startMonitoring();
         })
         .catch(err => console.error("❌ Failed to load questions:", err));
     }
 
-    // ===============================
-    // Monitor Video Playback
-    // ===============================
+    // ==================================================
+    // MONITOR VIDEO PLAYBACK
+    // - Checks timing to trigger questions
+    // ==================================================
     function startMonitoring() {
       clearInterval(checkInterval);
       checkInterval = setInterval(() => {
         let currentTime = Math.floor(player.currentTime);
 
-        // --- Skip-lock ---
+        // --- Skip-lock enforcement ---
         if (!skipLockBypass && currentTime > maxAllowedTime + 2) {
           console.warn("⏪ Skip attempt detected!");
           player.currentTime = maxAllowedTime;
@@ -580,7 +634,7 @@
           return;
         }
 
-        // --- Question Triggers ---
+        // --- Question triggers ---
         for (let segKey in segments) {
           let segment = segments[segKey];
           let segStart = toSeconds(segment.segment_range_start);
@@ -598,43 +652,40 @@
             }
           }
         }
-
         previousTime = currentTime;
       }, 700);
     }
 
-    // ===============================
-    // Asking + Answering Questions
-    // ===============================
+
+    // ==================================================
+    // ASKING + ANSWERING QUESTIONS
+    // ==================================================
     function askQuestion(q, segStart, segEnd) {
       activeQuestion = true;
       lockVideoControls();
       player.pause();
 
+      // Show overlay
       document.getElementById("question-box").style.display = "block";
       document.getElementById("question").innerText = q.question;
       document.getElementById("timestamp").innerHTML =
         `⏱ Appears at <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>`;
       document.getElementById("feedback").innerText = "";
 
+      // Update character + bubble
       setCharacter("asking");
-      const bubble = document.getElementById("speech-bubble");
-      bubble.innerText = q.question;
+      document.getElementById("speech-bubble").innerText = q.question;
 
+      // Speak the question, then start listening
       speakLine(q.question, () => {
-        // Start Whisper-based recording instead of SpeechRecognition
         startListening(q, segStart, segEnd);
       });
     }
 
-    // ===============================
-    // Whisper Recording + Transcription
-    // ===============================
-    const listeningPhrases = [
-      "I'm listening 👂",
-      "Go ahead, tell me!",
-      "I’m paying attention…"
-    ];
+    // ==================================================
+    // MICROPHONE RECORDING + WHISPER TRANSCRIPTION
+    // ==================================================
+    const listeningPhrases = ["I'm listening 👂", "Go ahead, tell me!", "I’m paying attention…"];
 
     async function startListening(q, segStart, segEnd) {
       const micIndicator = document.getElementById("mic-indicator");
@@ -653,7 +704,7 @@
 
       recorder.onstart = () => {
         micIndicator.style.display = "block";
-        bubble.innerText = listeningPhrases[Math.floor(Math.random() * listeningPhrases.length)];
+        bubble.innerText = randomChoice(listeningPhrases);
       };
 
       recorder.ondataavailable = (e) => {
@@ -667,10 +718,7 @@
         formData.append("file", blob, "speech.webm");
 
         try {
-          const res = await fetch("/api/transcribe", {
-            method: "POST",
-            body: formData
-          });
+          const res = await fetch("/api/transcribe", { method: "POST", body: formData });
           const data = await res.json();
           if (data.success && data.text.trim()) {
             bubble.innerText = `You said: "${data.text.trim()}"`;
@@ -690,11 +738,13 @@
       };
 
       recorder.start();
-      setTimeout(() => recorder.stop(), 12000);
+      setTimeout(() => recorder.stop(), 12000); // hard cutoff after 12s
       console.log("🎤 Recorded chunks:", chunks);
-
     }
 
+    // ==================================================
+    // PROCESSING ANSWERS
+    // ==================================================
     function processAnswer(spoken, q, segStart, segEnd) {
       const quesSec = toSeconds(q.ques_time);
       const askedInSegment = Array.from(asked).filter(t => t >= segStart && t <= segEnd);
@@ -704,34 +754,35 @@
       fetch("/api/check_answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ expected: q.answer, user: spoken })
+        body: JSON.stringify({ question: q.question, expected: q.answer, user: spoken })
       })
         .then(res => res.json())
         .then(data => {
           console.log("✅ Local check response:", data);
 
           const feedbackEl = document.getElementById("feedback");
-          const sim = parseFloat(data.similarity);
-          const t = data.is_numeric ? THRESHOLDS.number : THRESHOLDS.phrase;
+          const status = data.status || "wrong";
+          const reason = data.reason || "";
 
-          if (sim >= t.correct) {
-            feedbackEl.innerText = `✅ Correct! (similarity: ${sim})`;
+          if (status === "correct") {
+            feedbackEl.innerText = `✅ Correct!`;
             feedbackEl.style.color = "green";
-            asked.add(quesSec);
 
             setCharacter("correct");
-            speakLine("Great job! You got it right!");
+            speakLine(randomChoice(PHRASES.correct));
+
+            asked.add(toSeconds(q.ques_time));
+            setTimeout(resumeVideo, 700);
 
             correctAnswers++;
             updateProgress();
 
-            setTimeout(resumeVideo, 700);
-
-          } else if (sim >= t.borderline) {
-            feedbackEl.innerText = `🤔 Almost correct (similarity: ${sim}). Rewinding...`;
+          } else if (status === "almost") {
+            feedbackEl.innerText = `🤔 Almost correct. ${reason}`;
             feedbackEl.style.color = "orange";
 
             setCharacter("almost", "Hmm, close! Let’s try again.");
+            speakLine(randomChoice(PHRASES.almost));
 
             setTimeout(() => {
               let rewindTo = askedInSegment.length > 0
@@ -742,10 +793,11 @@
             }, 1500);
 
           } else {
-            feedbackEl.innerText = `❌ Wrong. (similarity: ${sim}) Rewinding...`;
+            feedbackEl.innerText = `❌ Wrong. ${reason} Rewinding...`;
             feedbackEl.style.color = "red";
 
             setCharacter("wrong", "Not quite, but you can do it!");
+            speakLine(randomChoice(PHRASES.wrong));
 
             setTimeout(() => {
               let rewindTo = askedInSegment.length > 0
@@ -763,18 +815,18 @@
         });
     }
 
+    // Resume playback after question
     function resumeVideo() {
       activeQuestion = false;
-      const box = document.getElementById("question-box");
-      box.style.display = "none"; // hide overlay
-      document.getElementById("feedback").innerText = ""; // clear feedback
-      unlockVideoControls();          // unlock here
+      document.getElementById("question-box").style.display = "none";
+      document.getElementById("feedback").innerText = "";
+      unlockVideoControls();
       player.play();
     }
 
-    // ===============================
-    // Sidebar Helpers
-    // ===============================
+    // ==================================================
+    // SIDEBAR HELPERS
+    // ==================================================
     function populateSidebar() {
       const list = document.getElementById("question-list");
       list.innerHTML = "";
@@ -785,23 +837,23 @@
             let q = segment[key];
             let li = document.createElement("li");
             li.innerHTML = `
-            <strong>${seg}</strong> —
-            <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>
-            <br>${q.question}
-          `;
+              <strong>${seg}</strong> —
+              <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>
+              <br>${q.question}`;
             list.appendChild(li);
           }
         }
       }
     }
+
     function seekWithBypass(seconds) {
       skipLockBypass = true;
       player.currentTime = seconds;
     }
 
-    // ===============================
-    // Back Button
-    // ===============================
+    // ==================================================
+    // BACK BUTTON
+    // ==================================================
     document.getElementById("back-button").onclick = () => {
       player.pause();
       clearInterval(checkInterval);
@@ -810,9 +862,9 @@
       document.getElementById("back-button").style.display = "none";
     };
 
-    // ===============================
-    // Helpers
-    // ===============================
+    // ==================================================
+    // GENERAL HELPERS
+    // ==================================================
     function toSeconds(timeStr) {
       if (!timeStr) return 0;
       const parts = timeStr.split(":").map(Number);
@@ -828,43 +880,19 @@
         `Correct: ${correctAnswers} of ${totalQuestions}`;
     }
 
-
-
-
-    // ===============================
-    // character
-    // ===============================
+    // ==================================================
+    // CHARACTER STATE + SPEECH
+    // ==================================================
     function setCharacter(state, line = null) {
       const img = document.getElementById("character-img");
       const bubble = document.getElementById("speech-bubble");
-      const character = document.getElementById("character");
 
       const phrases = {
-        asking: [
-          "Hmm... let’s think!",
-          "Can you tell me?",
-          "What do you think?"
-        ],
-        correct: [
-          "Great job! 🎉",
-          "Yay! High five ✋",
-          "You got it, smarty!"
-        ],
-        almost: [
-          "Hmm, close! Let’s try again.",
-          "Almost there!",
-          "Not quite, but keep trying!"
-        ],
-        wrong: [
-          "Not quite, but you can do it!",
-          "Let’s give it another shot!",
-          "Hmm, that’s okay. We’ll try again!"
-        ],
-        neutral: [
-          "Ready?",
-          "Let’s go!",
-          "I’m excited to learn with you!"
-        ]
+        asking: ["Hmm... let’s think!", "Can you tell me?", "What do you think?"],
+        correct: ["Great job! 🎉", "Yay! High five ✋", "You got it, smarty!"],
+        almost: ["Hmm, close! Let’s try again.", "Almost there!", "Not quite, but keep trying!"],
+        wrong: ["Not quite, but you can do it!", "Let’s give it another shot!", "Hmm, that’s okay. We’ll try again!"],
+        neutral: ["Ready?", "Let’s go!", "I’m excited to learn with you!"]
       };
 
       function pick(arr) {
@@ -894,12 +922,10 @@
       }
 
       if (line) speakLine(line);
-
     }
 
     function speakLine(line, onDone = null) {
       const utter = new SpeechSynthesisUtterance(line);
-
       const voices = speechSynthesis.getVoices();
       const friendly = voices.find(v =>
         v.name.includes("Google US English Female") ||
@@ -922,24 +948,24 @@
       speechSynthesis.speak(utter);
     }
 
+    // Lock/Unlock video during questions
     function lockVideoControls() {
-      const blocker = document.getElementById("blocker");
-      blocker.style.display = "block";
-      player.controls = false;          // hide native controls
-      player.pause();                   // ensure paused
+      document.getElementById("blocker").style.display = "block";
+      player.controls = false;
+      player.pause();
     }
 
     function unlockVideoControls() {
-      const blocker = document.getElementById("blocker");
-      blocker.style.display = "none";
-      player.controls = true;           // restore controls
+      document.getElementById("blocker").style.display = "none";
+      player.controls = true;
     }
 
-
-
-    // Init
+    // ==================================================
+    // INITIALIZATION
+    // ==================================================
     loadVideos();
 
+    // Idle chatter from character every 20s
     const idlePhrases = [
       "This is fun! 😄",
       "I like learning with you!",
@@ -950,11 +976,9 @@
     setInterval(() => {
       if (!activeQuestion) {
         const bubble = document.getElementById("speech-bubble");
-        bubble.innerText = idlePhrases[Math.floor(Math.random() * idlePhrases.length)];
+        bubble.innerText = randomChoice(idlePhrases);
       }
-    }, 20000); // every 20 seconds
-
-
+    }, 20000);
   </script>
 </body>
 

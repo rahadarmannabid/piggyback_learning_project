@@ -18,6 +18,8 @@ import io
 import json
 import asyncio
 import re
+from config import GRADING_CONFIG
+
 
 # ---------- FastAPI ----------
 from fastapi import (
@@ -1265,77 +1267,87 @@ def kids_page(request: Request):
 # rapidfuzz compare answers
 # ============================================================
 
-NUM_WORDS = {
-    "zero": 0,
-    "one": 1,
-    "two": 2,
-    "three": 3,
-    "four": 4,
-    "five": 5,
-    "six": 6,
-    "seven": 7,
-    "eight": 8,
-    "nine": 9,
-    "ten": 10,
-    "eleven": 11,
-    "twelve": 12,
-    "thirteen": 13,
-    "fourteen": 14,
-    "fifteen": 15,
-    "sixteen": 16,
-    "seventeen": 17,
-    "eighteen": 18,
-    "nineteen": 19,
-    "twenty": 20,
-    "thirty": 30,
-    "forty": 40,
-    "fifty": 50,
-    "sixty": 60,
-    "seventy": 70,
-    "eighty": 80,
-    "ninety": 90,
-}
 
+NUM_WORDS = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4,
+    "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
+    "fourteen": 14, "fifteen": 15, "sixteen": 16,
+    "seventeen": 17, "eighteen": 18, "nineteen": 19,
+    "twenty": 20,
+}
 SCALE_WORDS = {"hundred": 100, "thousand": 1000, "million": 1_000_000}
 
-STOPWORDS = {"the", "a", "an", "is", "are", "and", "of", "to", "it"}
+STOPWORDS = {
+    "the","a","an","is","are","and","of","to","it","in","on","at","for",
+    "was","were","be","being","been","am","do","did","does","done",
+    "they","them","their","there","here","that","this","these","those",
+    "i","you","he","she","we","me","my","your","his","her","our","ours",
+    "with","by","from"
+}
+FILLER_WORDS = {"um","uh","like","you know","hmm","well","okay","so"}
 
+SYNONYMS = {
+    # Feelings
+    "scared": "afraid", "frightened": "afraid", "fearful": "afraid",
+    "nervous": "afraid", "worried": "afraid",
+    "sad": "unhappy", "crying": "unhappy",
+    "mad": "angry", "upset": "angry", "annoyed": "angry",
+    "happy": "happy", "glad": "happy", "joyful": "happy",
+    "excited": "happy", "fun": "happy", "laughing": "happy", "smiling": "happy",
+    # Family
+    "mom": "mother", "mommy": "mother",
+    "dad": "father", "daddy": "father",
+    "grandma": "grandmother", "grandpa": "grandfather",
+    "bro": "brother", "sis": "sister", "sissy": "sister",
+    # Animals
+    "puppy": "dog", "puppies": "dog",
+    "kitten": "cat", "kitties": "cat",
+    "bunny": "rabbit", "hare": "rabbit",
+    "pony": "horse",
+    # Food
+    "soda": "drink", "juice": "drink", "milk": "drink", "water": "drink",
+    "snack": "food", "meal": "food",
+    "candy": "sweet", "sweets": "sweet", "chocolate": "sweet",
+    "cookie": "sweet", "icecream": "sweet", "ice cream": "sweet",
+    "cake": "sweet", "pie": "sweet",
+    # Everyday objects
+    "automobile": "car", "truck": "car", "bus": "car",
+    "bike": "bicycle",
+    "tv": "television", "show": "movie", "cartoon": "movie", "film": "movie",
+    # Size
+    "large": "big", "huge": "big", "giant": "big", "enormous": "big",
+    "little": "small", "tiny": "small", "short": "small",
+    # Speed
+    "quick": "fast", "speedy": "fast",
+    # Yes/No
+    "yeah": "yes", "yep": "yes", "yup": "yes", "nope": "no", "nah": "no"
+}
 
-# ----------------------------
+# ============================================================
 # Helpers
-# ----------------------------
+# ============================================================
 def words_to_numbers(text: str) -> list[int]:
-    """
-    Extract ALL numbers (digits or words) from a phrase.
-    Supports 0 → millions. Returns a list of ints.
-    """
+    """Extract numbers (digits or words) from text."""
     text = text.lower().strip()
-    numbers = []
+    numbers = [int(d) for d in re.findall(r"\d+", text)]
 
-    # Digits
-    for d in re.findall(r"\d+", text):
-        numbers.append(int(d))
-
-    # Words
     tokens = re.split(r"[-\s]+", text)
-    total, current = 0, 0
-    found_number = False
+    total, current, found_number = 0, 0, False
 
-    for token in tokens + ["end"]:  # sentinel flush
+    for token in tokens + ["end"]:
         if token in NUM_WORDS:
             found_number = True
             current += NUM_WORDS[token]
-
         elif token in SCALE_WORDS:
             found_number = True
             scale = SCALE_WORDS[token]
             if current == 0:
                 current = 1
             current *= scale
-            if scale > 100:  # thousand/million
+            if scale > 100:
                 total += current
                 current = 0
-
         else:
             if found_number:
                 total += current
@@ -1344,25 +1356,67 @@ def words_to_numbers(text: str) -> list[int]:
 
     return numbers
 
+def normalize_text(text: str) -> str:
+    """Clean text: lowercase, strip fillers/stopwords, map synonyms."""
+    tokens = re.findall(r"[a-z]+", text.lower())
+    normalized = []
+    for t in tokens:
+        if t in STOPWORDS or t in FILLER_WORDS or t in NUM_WORDS or t in SCALE_WORDS:
+            continue
+        normalized.append(SYNONYMS.get(t, t))
+    return " ".join(normalized)
 
-def clean_text(text: str) -> str:
-    """Remove stopwords and punctuation for fuzzy matching."""
-    return " ".join(
-        w
-        for w in re.findall(r"[a-z]+", text.lower())
-        if w not in STOPWORDS and w not in NUM_WORDS and w not in SCALE_WORDS
-    )
+def keyword_overlap(expected: str, user: str) -> float:
+    exp_words = set(expected.split())
+    usr_words = set(user.split())
+    return len(exp_words & usr_words) / max(1, len(exp_words))
 
+def simplify_item(item: str) -> str:
+    item = item.strip()
+    m = re.search(r"\bcalled\s+(.+)", item)
+    if m:
+        item = m.group(1)
+    norm = normalize_text(item)
+    toks = norm.split()
+    if len(toks) > 3:
+        norm = " ".join(toks[-3:])
+    return norm
 
-# ----------------------------
+def extract_items(expected_raw: str) -> list[str]:
+    parts = [p for p in re.split(r",|\sand\s", expected_raw, flags=re.IGNORECASE) if p.strip()]
+    return [simplify_item(p) for p in parts if simplify_item(p)]
+
+def list_match(expected_raw: str, user_raw: str) -> tuple[int, int, list[str]]:
+    items = extract_items(expected_raw)
+    user_norm = normalize_text(user_raw)
+
+    matched = set()
+    for item in items:
+        score = max(fuzz.partial_ratio(item, user_norm), fuzz.token_set_ratio(item, user_norm))
+        if score >= 60:
+            matched.add(item)
+    return len(matched), len(items), list(matched)
+
+def required_items_from_question(question: str, expected: str) -> int:
+    total_expected = len([p for p in re.split(r",|and", expected) if p.strip()])
+    if not question:
+        return total_expected
+    num_map = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+    for word, val in num_map.items():
+        if word in question.lower():
+            return min(val, total_expected)
+    return total_expected
+
+# ============================================================
 # API Route
-# ----------------------------
+# ============================================================
 @app.post("/api/check_answer")
 async def check_answer(payload: dict = Body(...)):
     expected = payload.get("expected", "").strip().lower()
     user = payload.get("user", "").strip().lower()
+    question = payload.get("question", "").strip().lower() if payload.get("question") else ""
 
-    print(f"🔎 Checking answers | Expected='{expected}' | User='{user}'")
+    print(f"🔎 Checking answers | Q='{question}' | Expected='{expected}' | User='{user}'")
 
     if not expected or not user:
         return {
@@ -1370,75 +1424,80 @@ async def check_answer(payload: dict = Body(...)):
             "expected": expected,
             "user": user,
             "is_numeric": False,
+            "status": "wrong",
+            "reason": "Empty input"
         }
 
-    # --- Extract numbers ---
-    exp_nums = words_to_numbers(expected)
-    usr_nums = words_to_numbers(user)
+    # --- Quick RapidFuzz similarity ---
+    exp_clean = normalize_text(expected)
+    usr_clean = normalize_text(user)
 
-    # --- If expected has numbers, enforce strict equality ---
-    if exp_nums:
-        if sorted(exp_nums) != sorted(usr_nums):
-            return {
-                "similarity": 0.0,
-                "expected": expected,
-                "user": user,
-                "is_numeric": True,
-                "reason": f"Numbers mismatch (expected {exp_nums}, got {usr_nums})",
-            }
+    pr = fuzz.partial_ratio(exp_clean, usr_clean) / 100.0
+    tsr = fuzz.token_set_ratio(exp_clean, usr_clean) / 100.0
+    score = max(pr, tsr)
 
-        # Numbers match → check words
-        exp_clean = clean_text(expected)
-        usr_clean = clean_text(user)
+    print(f"  RapidFuzz → pr={pr:.3f}, tsr={tsr:.3f}, final={score:.3f}")
 
-        # If expected is just a number, treat as correct
-        if not exp_clean:
-            return {
-                "similarity": 1.0,
-                "expected": expected,
-                "user": user,
-                "is_numeric": True,
-                "reason": "Pure numeric match",
-            }
-
-        # If user only said the number → still accept as correct
-        if not usr_clean:
-            return {
-                "similarity": 1.0,
-                "expected": expected,
-                "user": user,
-                "is_numeric": True,
-                "reason": "User gave numeric-only answer",
-            }
-
-        # Otherwise run fuzzy
-        pr = fuzz.partial_ratio(exp_clean, usr_clean) / 100.0
-        tsr = fuzz.token_set_ratio(exp_clean, usr_clean) / 100.0
-        ratio = max(pr, tsr)
-
-        print(f"  numeric fuzzy → pr={pr:.3f}, tsr={tsr:.3f}, final={ratio:.3f}")
-
+    if score >= GRADING_CONFIG["rapidfuzz_correct"]:
         return {
-            "similarity": round(ratio, 3),
+            "similarity": round(score, 3),
             "expected": expected,
             "user": user,
-            "is_numeric": True,
+            "is_numeric": False,
+            "status": "correct",
+            "reason": f"High RapidFuzz score {score:.2f}"
         }
 
-    # --- No numbers: plain fuzzy check ---
-    pr = fuzz.partial_ratio(expected, user) / 100.0
-    tsr = fuzz.token_set_ratio(expected, user) / 100.0
-    ratio = max(pr, tsr)
+    if score <= GRADING_CONFIG["rapidfuzz_wrong"]:
+        return {
+            "similarity": round(score, 3),
+            "expected": expected,
+            "user": user,
+            "is_numeric": False,
+            "status": "wrong",
+            "reason": f"Low RapidFuzz score {score:.2f}"
+        }
 
-    print(f"  plain fuzzy → pr={pr:.3f}, tsr={tsr:.3f}, final={ratio:.3f}")
+    # --- Borderline → escalate to AI ---
+    if GRADING_CONFIG["use_ai"]:
+        try:
+            resp = client.chat.completions.create(
+                model=GRADING_CONFIG["ai_model"],
+                temperature=GRADING_CONFIG["ai_temperature"],
+                max_tokens=GRADING_CONFIG["ai_max_tokens"],
+                messages=[
+                    {"role": "system", "content": "You are a teacher grading a child’s answer. Respond with only one word: correct, almost, or wrong."},
+                    {"role": "user", "content": f"Question: {question}\nExpected answer: {expected}\nChild's answer: {user}"}
+                ],
+                timeout=GRADING_CONFIG["ai_timeout"]
+            )
+            ai_label = resp.choices[0].message.content.strip().lower()
+            if ai_label not in ["correct", "almost", "wrong"]:
+                ai_label = "almost"  # default fallback
+            return {
+                "similarity": round(score, 3),
+                "expected": expected,
+                "user": user,
+                "is_numeric": False,
+                "status": ai_label,
+                "reason": f"AI judged borderline case (RapidFuzz={score:.2f})"
+            }
+        except Exception as e:
+            print("⚠️ AI call failed:", e)
 
+    # --- Fallback if AI off or failed ---
     return {
-        "similarity": round(ratio, 3),
+        "similarity": round(score, 3),
         "expected": expected,
         "user": user,
         "is_numeric": False,
+        "status": "almost",
+        "reason": f"Borderline case defaulted (RapidFuzz={score:.2f})"
     }
 
+# ===============================
+# Whisper Transcription Route
+# ===============================
 
 app.add_middleware(
     CORSMiddleware,
@@ -1447,11 +1506,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# ===============================
-# Whisper Transcription Route
-# ===============================
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -1470,10 +1524,10 @@ async def transcribe_audio(file: UploadFile = File(...)):
         # Send to Whisper
         transcription = client.audio.transcriptions.create(
             model="whisper-1",  # could switch to gpt-4o-mini-transcribe later
-            file=("speech.webm", audio_bytes, file.content_type)
+            file=("speech.webm", audio_bytes, file.content_type),
         )
 
-        # 👇 Debug logging
+        # Debug logging
         print("Whisper raw response:", transcription)
 
         return {"success": True, "text": transcription.text}
@@ -1481,6 +1535,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
     except Exception as e:
         print("❌ Whisper transcription error:", e)
         return {"success": False, "error": str(e)}
+
 
 # ============================================================
 # STATIC FILES
