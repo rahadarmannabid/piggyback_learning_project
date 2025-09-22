@@ -1,0 +1,11 @@
+{
+  "segment_1": {
+    "segment_range_start": "00:00",
+    "segment_range_end": "01:00",
+    "question_1": {
+      "ques_time": "00:30",
+      "question": "What color is the cat?",
+      "answer": "orange"
+    }
+  }
+}

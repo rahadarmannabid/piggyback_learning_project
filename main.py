@@ -24,6 +24,11 @@ import httpx
 import re
 from dotenv import load_dotenv
 
+
+import io
+from fastapi import UploadFile, File
+from openai import OpenAI
+
 # OpenAI SDK v1.x (pip install openai>=1.30)
 from openai import OpenAI  # uses OPENAI_API_KEY env var by default
 
@@ -593,9 +598,6 @@ def build_segments_from_duration(duration_seconds: int, interval_seconds: int, s
         start = end + 1
     return segments
 
-
-# -----------------------------
-# Routes (HTML pages)
 # -----------------------------
 @app.get("/", response_class=HTMLResponse)
 def home_page(request: Request):
@@ -1591,6 +1593,190 @@ async def submit_questions(payload: Dict[str, Any] = Body(...)):
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save: {e}")
+    
+
+@app.get("/api/kids_videos")
+def list_kids_videos():
+    """Return JSON of all locally available kids videos"""
+    videos = []
+    if not DOWNLOADS_DIR.exists():
+        return {"success": True, "count": 0, "videos": videos}
+
+    for item in sorted(DOWNLOADS_DIR.iterdir()):
+        if not item.is_dir():
+            continue
+
+        vid = item.name
+
+        # Find video file
+        video_files = list(item.glob("*.mp4")) + list(item.glob("*.webm")) + list(item.glob("*.mkv"))
+        if not video_files:
+            continue
+        video_file = video_files[0]
+
+        # Get title from metadata if available
+        title = vid
+        info_json = next(item.glob("*.info.json"), None)
+        if info_json:
+            try:
+                info = json.loads(info_json.read_text(encoding="utf-8"))
+                title = info.get("title", vid)
+            except Exception:
+                pass
+
+        # Find thumbnail
+        thumb_url = None
+        for ext in ("jpg", "png", "webp"):
+            thumb_file = next(item.glob(f"*.{ext}"), None)
+            if thumb_file:
+                thumb_url = f"/downloads/{vid}/{thumb_file.name}"
+                break
+        
+        # Get duration from frame data if available
+        duration = None
+        duration_sec = None
+        frame_json = item / "extracted_frames" / "frame_data.json"
+        if frame_json.exists():
+            try:
+                info = json.loads(frame_json.read_text(encoding="utf-8"))
+                duration_sec = int(float(info["video_info"]["duration_seconds"]))
+                m, s = divmod(duration_sec, 60)
+                duration = f"{m:02d}:{s:02d}"
+            except Exception:
+                pass
+
+        videos.append({
+            "video_id": vid,
+            "title": title,
+            "duration": duration,
+            "duration_seconds": duration_sec,
+            "local_path": f"/downloads/{vid}/{video_file.name}",
+            "thumbnail": thumb_url or "/static/default-thumbnail.png",
+        })
+
+    return {"success": True, "count": len(videos), "videos": videos}
+
+
+
+from rapidfuzz import fuzz
+import re
+
+# Add these helper functions
+NUM_WORDS = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+    "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+    "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
+}
+
+SCALE_WORDS = {"hundred": 100, "thousand": 1000, "million": 1_000_000}
+STOPWORDS = {"the", "a", "an", "is", "are", "and", "of", "to", "it"}
+
+def words_to_numbers(text: str) -> list[int]:
+    """Extract ALL numbers (digits or words) from a phrase."""
+    text = text.lower().strip()
+    numbers = []
+
+    # Digits
+    for d in re.findall(r"\d+", text):
+        numbers.append(int(d))
+
+    # Words
+    tokens = re.split(r"[-\s]+", text)
+    total, current = 0, 0
+    found_number = False
+
+    for token in tokens + ["end"]:  # sentinel flush
+        if token in NUM_WORDS:
+            found_number = True
+            current += NUM_WORDS[token]
+        elif token in SCALE_WORDS:
+            found_number = True
+            scale = SCALE_WORDS[token]
+            if current == 0:
+                current = 1
+            current *= scale
+            if scale > 100:  # thousand/million
+                total += current
+                current = 0
+        else:
+            if found_number:
+                total += current
+                numbers.append(total)
+                total, current, found_number = 0, 0, False
+
+    return numbers
+
+def clean_text(text: str) -> str:
+    """Remove stopwords and punctuation for fuzzy matching."""
+    return " ".join(
+        w for w in re.findall(r"[a-z]+", text.lower())
+        if w not in STOPWORDS and w not in NUM_WORDS and w not in SCALE_WORDS
+    )
+
+@app.post("/api/check_answer")
+async def check_answer(payload: dict = Body(...)):
+    expected = payload.get("expected", "").strip().lower()
+    user = payload.get("user", "").strip().lower()
+
+    if not expected or not user:
+        return {
+            "similarity": 0.0,
+            "expected": expected,
+            "user": user,
+            "is_numeric": False,
+        }
+
+    # Extract numbers
+    exp_nums = words_to_numbers(expected)
+    usr_nums = words_to_numbers(user)
+
+    # If expected has numbers, enforce strict equality
+    if exp_nums:
+        if sorted(exp_nums) != sorted(usr_nums):
+            return {
+                "similarity": 0.0,
+                "expected": expected,
+                "user": user,
+                "is_numeric": True,
+                "reason": f"Numbers mismatch (expected {exp_nums}, got {usr_nums})",
+            }
+
+        # Numbers match → check words
+        exp_clean = clean_text(expected)
+        usr_clean = clean_text(user)
+
+        if not exp_clean or not usr_clean:
+            return {
+                "similarity": 1.0,
+                "expected": expected,
+                "user": user,
+                "is_numeric": True,
+            }
+
+        pr = fuzz.partial_ratio(exp_clean, usr_clean) / 100.0
+        tsr = fuzz.token_set_ratio(exp_clean, usr_clean) / 100.0
+        ratio = max(pr, tsr)
+
+        return {
+            "similarity": round(ratio, 3),
+            "expected": expected,
+            "user": user,
+            "is_numeric": True,
+        }
+
+    # No numbers: plain fuzzy check
+    pr = fuzz.partial_ratio(expected, user) / 100.0
+    tsr = fuzz.token_set_ratio(expected, user) / 100.0
+    ratio = max(pr, tsr)
+
+    return {
+        "similarity": round(ratio, 3),
+        "expected": expected,
+        "user": user,
+        "is_numeric": False,
+    }
 
 @app.get("/api/videos-list")
 async def list_videos():
@@ -1653,3 +1839,33 @@ async def list_videos():
             "message": f"Error listing videos: {e}",
             "videos": []
         })
+    
+
+@app.post("/api/transcribe")
+async def transcribe_audio(file: UploadFile = File(...)):
+    """
+    Accepts audio (webm, wav, mp3, etc), sends to Whisper,
+    no temp file saved (in-memory BytesIO).
+    """
+    try:
+        # Read file into memory
+        contents = await file.read()
+        audio_bytes = io.BytesIO(contents)
+
+        # Initialize OpenAI client
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+        # Send to Whisper
+        transcription = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=("speech.webm", audio_bytes, file.content_type)
+        )
+
+        return {"success": True, "text": transcription.text}
+
+    except Exception as e:
+        print("❌ Whisper transcription error:", e)
+        return {"success": False, "error": str(e)}
+    
+
+app.mount("/static", StaticFiles(directory="static"), name="static")

@@ -12,3 +12,7 @@ venv/
 .DS_Store
 .git bash commands.txt
 Thumbs.db
+backend.txt
+frontend.txt
+__pycache__/
+git bash commands.txt
