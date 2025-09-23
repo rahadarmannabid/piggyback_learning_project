@@ -4,8 +4,17 @@
     "segment_range_end": "01:00",
     "question_1": {
       "ques_time": "00:30",
-      "question": "What color is the cat?",
-      "answer": "orange"
+      "question": "What color is the animal?",
+      "answer": "brown"
+    }
+  },
+  "segment_2": {
+    "segment_range_start": "01:00", 
+    "segment_range_end": "02:00",
+    "question_1": {
+      "ques_time": "01:30",
+      "question": "Where is the animal?",
+      "answer": "forest"
     }
   }
 }
