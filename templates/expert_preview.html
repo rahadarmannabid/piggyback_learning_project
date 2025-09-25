@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -155,6 +155,7 @@
         .control-buttons {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         
         .btn-sm {
@@ -168,6 +169,90 @@
         
         .btn-secondary:hover {
             background: #4a5568;
+        }
+        
+        .btn-add-question {
+            background: #38a169;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .btn-add-question:hover {
+            background: #2f855a;
+        }
+        
+        /* Manual Add Question Modal */
+        .add-question-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .add-question-modal.active {
+            display: flex;
+        }
+        
+        .add-question-content {
+            background: white;
+            padding: 32px;
+            border-radius: 14px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+        }
+        
+        .add-question-header {
+            margin-bottom: 24px;
+        }
+        
+        .add-question-header h3 {
+            margin: 0 0 8px 0;
+            color: #2d3748;
+            font-size: 1.4rem;
+        }
+        
+        .add-question-header p {
+            margin: 0;
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+        
+        .timestamp-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .timestamp-label {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .timestamp-value {
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: #3182ce;
+        }
+        
+        .timestamp-input {
+            padding: 6px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 1rem;
         }
         
         .pause-overlay {
@@ -190,21 +275,82 @@
         
         .pause-message {
             background: white;
-            padding: 30px;
-            border-radius: 12px;
-            text-align: center;
-            max-width: 400px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            padding: 32px;
+            border-radius: 14px;
+            max-width: 560px;
+            width: 100%;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            text-align: left;
         }
-        
+
         .pause-message h3 {
-            margin-bottom: 15px;
+            margin: 0;
+            color: #2d3748;
+            font-size: 1.4rem;
+        }
+
+        .pause-message p {
+            margin: 0;
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+
+        .pause-hint {
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+
+        .pause-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .pause-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .pause-field label {
+            font-weight: 600;
+            font-size: 0.9rem;
             color: #2d3748;
         }
-        
-        .pause-message p {
-            margin-bottom: 20px;
-            color: #4a5568;
+
+        .pause-field select,
+        .pause-field textarea,
+        .pause-field input {
+            padding: 10px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .pause-field textarea {
+            min-height: 80px;
+        }
+
+        .pause-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .form-feedback {
+            min-height: 18px;
+            font-size: 0.85rem;
+            color: #e53e3e;
+        }
+
+        .form-feedback.success {
+            color: #2f855a;
         }
         
         .questions-panel {
@@ -256,7 +402,22 @@
             padding: 15px;
             margin-bottom: 15px;
         }
-        
+
+        .question-item.skipped {
+            background: #fffaf0;
+            border: 1px solid #fbd38d;
+        }
+
+        .question-item.skipped .question-type-badge {
+            background: #dd6b20;
+        }
+
+        .question-meta {
+            font-size: 0.8rem;
+            color: #718096;
+            margin-top: 8px;
+        }
+
         .question-type-badge {
             display: inline-block;
             background: #3182ce;
@@ -345,6 +506,552 @@
             background: #2f855a;
         }
         
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            color: #2d3748;
+        }
+        .page-header h1 {
+            margin-bottom: 8px;
+        }
+        .page-header p {
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+        .steps {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .step {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+            background: rgba(255,255,255,0.85);
+            border-radius: 12px;
+            padding: 16px 20px;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -12px;
+            width: 24px;
+            height: 2px;
+            background: rgba(255,255,255,0.4);
+            transform: translateY(-50%);
+        }
+        .steps .step:last-child::after {
+            display: none;
+        }
+        .step .step-number {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .step-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .step-label {
+            font-weight: 600;
+        }
+        .step-subtitle {
+            font-size: 0.85rem;
+            color: #4a5568;
+        }
+        .step.step-disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+        .step.active {
+            background: #3182ce;
+            border-color: #3182ce;
+            color: white;
+        }
+        .step.active .step-number {
+            background: white;
+            color: #3182ce;
+        }
+        .step.completed {
+            background: rgba(56,161,105,0.12);
+            border-color: #38a169;
+            color: #22543d;
+        }
+        .step.completed .step-number {
+            background: #38a169;
+            color: white;
+        }
+        .step-content {
+            display: none;
+        }
+        .step-content.active {
+            display: block;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-stack {
+            margin-bottom: 20px;
+        }
+        .selection-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .selection-help {
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+        .selection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .selection-text {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .video-card-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .video-card {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(49, 130, 206, 0.1);
+            border-color: #3182ce;
+        }
+        .video-card.selected {
+            border-color: #3182ce;
+            background: #ebf8ff;
+            box-shadow: 0 12px 28px rgba(49, 130, 206, 0.15);
+        }
+        .video-card.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .video-card-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 6px;
+        }
+        .video-card-subtitle {
+            font-size: 0.85rem;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        .video-card-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.85rem;
+            color: #4a5568;
+        }
+        .video-list-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #718096;
+            padding: 20px;
+            background: #f7fafc;
+            border: 1px dashed #cbd5e0;
+            border-radius: 10px;
+        }
+        .review-button-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        .review-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .review-card h2 {
+            margin-bottom: 10px;
+        }
+        .review-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 0.95rem;
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+        .review-questions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        /* Accordion styles */
+        .accordion-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .accordion-header {
+            padding: 16px 20px;
+            background: #f7fafc;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        
+        .accordion-header:hover {
+            background: #edf2f7;
+        }
+        
+        .accordion-header.active {
+            background: #3182ce;
+            color: white;
+        }
+        
+        .accordion-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .accordion-arrow {
+            transition: transform 0.3s;
+            font-size: 1.2rem;
+        }
+        
+        .accordion-header.active .accordion-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .accordion-content.active {
+            max-height: 2000px;
+        }
+        
+        .accordion-inner {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .question-column {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .column-header {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .expert-column {
+            background: #f0fff4;
+        }
+        
+        .llm-column {
+            background: #f7fafc;
+        }
+        
+        .editable-question {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .editable-question.collapsed {
+            padding: 10px 12px;
+        }
+        
+        .editable-question.best-question {
+            background: #fef5e7;
+            border: 2px solid #f39c12;
+        }
+        
+        .editable-question.trashed {
+            opacity: 0.5;
+            background: #fed7d7;
+        }
+        
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .question-summary {
+            flex: 1;
+            cursor: pointer;
+        }
+        
+        .question-type-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #4a5568;
+            margin-bottom: 4px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .best-indicator {
+            display: inline-block;
+            background: #f39c12;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        
+        .question-preview {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+        
+        .answer-preview {
+            color: #718096;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .question-field {
+            margin-bottom: 10px;
+            display: none;
+        }
+        
+        .editable-question.editing .question-field {
+            display: block;
+            margin-top: 12px;
+        }
+        
+        .editable-question.editing .question-summary {
+            display: none;
+        }
+        
+        .question-field label {
+            display: block;
+            font-size: 0.85rem;
+            color: #718096;
+            margin-bottom: 4px;
+        }
+        
+        .question-field input,
+        .question-field textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+        
+        .question-field textarea {
+            min-height: 60px;
+        }
+        
+        .question-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-icon {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-edit {
+            background: #3182ce;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #2c5aa0;
+        }
+        
+        .btn-trash {
+            background: #fc8181;
+            color: white;
+        }
+        
+        .btn-trash:hover {
+            background: #f56565;
+        }
+        
+        .btn-restore {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-restore:hover {
+            background: #38a169;
+        }
+        
+        .btn-save-edit {
+            background: #38a169;
+            color: white;
+        }
+        
+        .btn-save-edit:hover {
+            background: #2f855a;
+        }
+        
+        .btn-cancel-edit {
+            background: #718096;
+            color: white;
+        }
+        
+        .btn-cancel-edit:hover {
+            background: #4a5568;
+        }
+        
+        .btn-save-changes {
+            background: #3182ce;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 20px;
+        }
+        
+        .accordion-header.approved {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        
+        .accordion-header.approved .segment-index::after {
+            content: " ✓";
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .segment-approve-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .btn-approve-segment {
+            background: #28a745;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .btn-approve-segment:hover {
+            background: #218838;
+        }
+        
+        .btn-approve-segment:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .expert-question-display {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .expert-question-display.skipped {
+            background: #fffaf0;
+            border: 1px solid #fbd38d;
+        }
+
+        .review-placeholder {
+            text-align: center;
+            color: #718096;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e0;
+        }
+        .review-actions {
+            margin-top: 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        @media (max-width: 900px) {
+            .steps {
+                flex-direction: column;
+            }
+            .step::after {
+                display: none;
+            }
+        }
+
         @media (max-width: 1200px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -366,91 +1073,227 @@
                 flex-wrap: wrap;
                 justify-content: center;
             }
+            
+            .selection-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .video-card-list {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <div class="page-header">
             <h1>Expert Preview - Video Question Review</h1>
-            
-            <div class="video-selector">
-                <label for="video-select">Select Video:</label>
-                <select id="video-select" onchange="loadVideo()">
-                    <option value="">Choose a video...</option>
-                </select>
-                <button class="btn" onclick="loadVideoList()">Refresh List</button>
+            <p>Walk through the downloaded video, refine each AI segment, and prepare the final set of comprehension questions.</p>
+        </div>
+
+        <div class="steps" id="expert-steps">
+            <div class="step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-text">
+                    <div class="step-label">Select a Video</div>
+                    <div class="step-subtitle">Choose from the downloads folder</div>
+                </div>
+            </div>
+            <div class="step step-disabled" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-text">
+                    <div class="step-label">Add Questions</div>
+                    <div class="step-subtitle">Play, pause, and approve segments</div>
+                </div>
+            </div>
+            <div class="step step-disabled" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-text">
+                    <div class="step-label">Review Questions</div>
+                    <div class="step-subtitle">Check the full question set</div>
+                </div>
             </div>
         </div>
-        
-        <div class="main-grid">
-            <!-- Video Section -->
-            <div class="video-section">
-                <div class="video-container">
-                    <div id="video-container">
-                        <div class="video-loading">
-                            Select a video to begin
+
+        <div id="global-status-messages" class="status-stack"></div>
+
+        <div class="step-content active" id="step-1" data-step="1">
+            <div class="selection-card">
+                <div class="selection-header">
+                    <div class="selection-text">
+                        <h2>Select a video to review</h2>
+                        <p class="selection-help">Pick a processed video from the downloads folder to preview and refine the AI-generated questions.</p>
+                    </div>
+                    <button class="btn" id="refresh-videos-btn" onclick="loadVideoList()">Refresh List</button>
+                </div>
+                <div id="video-card-list" class="video-card-list">
+                    <div class="video-list-empty">Loading available videos...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-content" id="step-2" data-step="2">
+            <div class="main-grid">
+                <div class="video-section">
+                    <div class="video-container">
+                        <div id="video-container">
+                            <div class="video-loading">
+                                Select a video to begin
+                            </div>
+                        </div>
+                        <div class="timeline-annotations" id="timeline-annotations" style="display: none;">
+                            <!-- Timeline pause points will be added here -->
+                        </div>
+                        <div class="pause-overlay" id="pause-overlay">
+                            <div class="pause-message">
+                                <div>
+                                    <h3>Add Expert Question</h3>
+                                    <p class="pause-hint">Segment <span id="expert-segment-number">1</span> | <span id="expert-segment-time">00:00 - 00:59</span> | Paused at <span id="expert-pause-timestamp">00:00</span></p>
+                                </div>
+                                <form id="expert-question-form" class="pause-form">
+                                    <div class="pause-field">
+                                        <label for="expert-question-type">Question Type <span style="color: red;">*</span></label>
+                                        <select id="expert-question-type" required>
+                                            <option value="">Select a question type...</option>
+                                            <option value="character">Character</option>
+                                            <option value="setting">Setting</option>
+                                            <option value="feeling">Feeling</option>
+                                            <option value="action">Action</option>
+                                            <option value="causal">Causal</option>
+                                            <option value="outcome">Outcome</option>
+                                            <option value="prediction">Prediction</option>
+                                        </select>
+                                    </div>
+                                    <div class="pause-field">
+                                        <label for="expert-question-text">Question <span style="color: red;">*</span></label>
+                                        <textarea id="expert-question-text" placeholder="Enter your question (required)" required></textarea>
+                                    </div>
+                                    <div class="pause-field">
+                                        <label for="expert-answer-text">Answer <span style="color: red;">*</span></label>
+                                        <textarea id="expert-answer-text" placeholder="Enter the answer (required)" required></textarea>
+                                    </div>
+                                    <div class="form-feedback" id="expert-form-feedback"></div>
+                                    <div class="pause-actions">
+                                        <button type="button" class="btn btn-secondary" id="expert-skip-button">Skip Segment</button>
+                                        <button type="submit" class="btn btn-success" id="expert-submit-button">Save Question</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="timeline-annotations" id="timeline-annotations" style="display: none;">
-                        <!-- Timeline pause points will be added here -->
-                    </div>
-                    
-                    <div class="pause-overlay" id="pause-overlay">
-                        <div class="pause-message">
-                            <h3>Video Paused</h3>
-                            <p id="pause-reason">Review the AI-generated questions on the right</p>
-                            <button class="btn btn-success" onclick="approveAndContinue()">Approve & Continue</button>
-                            <button class="btn btn-secondary" onclick="skipSegment()" style="margin-left: 10px;">Skip</button>
+                    <div class="video-controls">
+                        <div class="time-display" id="time-display">00:00 / 00:00</div>
+                        <div class="control-buttons">
+                            <button class="btn btn-secondary btn-sm" onclick="jumpToSegment(-1)">Previous</button>
+                            <button class="btn btn-sm" id="play-pause-btn" onclick="togglePlayPause()">Play</button>
+                            <button class="btn btn-secondary btn-sm" onclick="jumpToSegment(1)">Next</button>
+                            <button class="btn btn-secondary btn-sm" onclick="seekVideo(-10)">-10s</button>
+                            <button class="btn btn-secondary btn-sm" onclick="seekVideo(10)">+10s</button>
+                            <button class="btn btn-sm btn-add-question" onclick="openAddQuestionModal()">Add Question</button>
                         </div>
                     </div>
                 </div>
-                
-                <div class="video-controls">
-                    <div class="time-display" id="time-display">00:00 / 00:00</div>
-                    <div class="control-buttons">
-                        <button class="btn btn-secondary btn-sm" onclick="jumpToSegment(-1)">← Previous</button>
-                        <button class="btn btn-sm" id="play-pause-btn" onclick="togglePlayPause()">Play</button>
-                        <button class="btn btn-secondary btn-sm" onclick="jumpToSegment(1)">Next →</button>
-                        <button class="btn btn-secondary btn-sm" onclick="seekVideo(-10)">-10s</button>
-                        <button class="btn btn-secondary btn-sm" onclick="seekVideo(10)">+10s</button>
+
+                <div class="questions-panel">
+                    <div class="panel-header">
+                        <h3>Expert Questions:</h3>
                     </div>
+                    <div class="progress-indicator">
+                        <div id="progress-text">Select a video to begin</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="segment-info" id="segment-info" style="display: none;">
+                        <div class="segment-time" id="segment-time">00:00 - 00:00</div>
+                        <div class="segment-duration" id="segment-duration">Duration: 0 seconds</div>
+                    </div>
+                    <div class="ai-questions" id="expert-questions">
+                        <!-- AI questions will be populated here -->
+                    </div>
+                    <div class="approve-section" id="approve-section" style="display: none;">
+                        <h3>Ready to Approve?</h3>
+                        <p>Review the questions above and click approve to continue to the next segment</p>
+                        <button class="btn btn-success" onclick="approveAndContinue()">Approve & Continue</button>
+                    </div>
+                    <div class="review-button-bar">
+                        <button class="btn" id="review-button" onclick="handleReviewQuestions()" disabled>Review Questions</button>
+                    </div>
+                    <div id="status-messages"></div>
                 </div>
             </div>
             
-            <!-- Questions Panel -->
-            <div class="questions-panel">
-                <div class="panel-header">
-                    <h2>AI Generated Questions</h2>
-                    <div class="status-message status-info">Review Mode</div>
-                </div>
-                
-                <div class="progress-indicator">
-                    <div id="progress-text">Select a video to begin</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            <!-- Manual Add Question Modal -->
+            <div class="add-question-modal" id="add-question-modal">
+                <div class="add-question-content">
+                    <div class="add-question-header">
+                        <h3>Add Expert Question</h3>
+                        <p>Add a custom question at the current timestamp</p>
                     </div>
+                    
+                    <form id="manual-question-form">
+                        <div class="timestamp-display">
+                            <span class="timestamp-label">Timestamp:</span>
+                            <input type="text" 
+                                   class="timestamp-input" 
+                                   id="manual-timestamp" 
+                                   placeholder="0:00"
+                                   pattern="^(?:(?:([0-9]+):)?([0-5]?[0-9]):)?([0-5]?[0-9])$"
+                                   title="Enter time as MM:SS or HH:MM:SS"
+                                   required>
+                            <span class="timestamp-value" id="manual-timestamp-display" style="display: none;">00:00</span>
+                        </div>
+                        
+                        <div class="pause-field">
+                            <label for="manual-question-type">Question Type <span style="color: red;">*</span></label>
+                            <select id="manual-question-type" required>
+                                <option value="">Select a question type...</option>
+                                <option value="character">Character</option>
+                                <option value="setting">Setting</option>
+                                <option value="feeling">Feeling</option>
+                                <option value="action">Action</option>
+                                <option value="causal">Causal</option>
+                                <option value="outcome">Outcome</option>
+                                <option value="prediction">Prediction</option>
+                            </select>
+                        </div>
+                        
+                        <div class="pause-field">
+                            <label for="manual-question-text">Question <span style="color: red;">*</span></label>
+                            <textarea id="manual-question-text" placeholder="Enter your question (required)" required></textarea>
+                        </div>
+                        
+                        <div class="pause-field">
+                            <label for="manual-answer-text">Answer <span style="color: red;">*</span></label>
+                            <textarea id="manual-answer-text" placeholder="Enter the answer (required)" required></textarea>
+                        </div>
+                        
+                        <div class="form-feedback" id="manual-form-feedback"></div>
+                        
+                        <div class="pause-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeAddQuestionModal()">Cancel</button>
+                            <button type="submit" class="btn btn-success">Save Question</button>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="segment-info" id="segment-info" style="display: none;">
-                    <div class="segment-time" id="segment-time">00:00 - 00:00</div>
-                    <div class="segment-duration" id="segment-duration">Duration: 0 seconds</div>
-                </div>
-                
-                <div class="ai-questions" id="ai-questions">
-                    <!-- AI questions will be populated here -->
-                </div>
-                
-                <div class="approve-section" id="approve-section" style="display: none;">
-                    <h3>Ready to Approve?</h3>
-                    <p>Review the questions above and click approve to continue to the next segment</p>
-                    <button class="btn btn-success" onclick="approveAndContinue()">Approve & Continue</button>
-                </div>
-                
-                <div id="status-messages"></div>
             </div>
         </div>
+
+        <div class="step-content" id="step-3" data-step="3">
+            <div class="review-card">
+                <h2>Review Questions</h2>
+                <p class="selection-help">Inspect each segment and its questions before sharing them with learners.</p>
+                <div class="review-meta">
+                    <div><strong>Video:</strong> <span id="review-video-id">Not selected</span></div>
+                    <div><strong>Total segments:</strong> <span id="review-total-segments">0</span></div>
+                </div>
+                <div class="review-questions-list" id="review-questions-list">
+                    <div class="review-placeholder">Select a video on Step 1 and choose 'Review Questions' to view the full set.</div>
+                </div>
+            </div>
+        </div>
+
     </div>
     
     <script>
@@ -460,56 +1303,1528 @@
         let currentSegmentIndex = 0;
         let isVideoPaused = false;
         let autoAdvanceEnabled = true;
+        let currentStep = 1;
+        let maxAvailableStep = 1;
+        let availableVideos = [];
+        let currentVideoLabel = '';
+        let isLoadingVideo = false;
+        let expertQuestions = {};
+        let expertSaveInProgress = false;
+        let pendingSegmentIndices = [];
+        let llmQuestionEdits = {}; // Store edits made to LLM questions
+        let segmentApprovals = {}; // Store which segments have been approved
+        let manualQuestionTimestamp = null; // Store timestamp for manual questions
+        const REVIEW_TOLERANCE_BEFORE = 0.25;
         
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            initStepNavigation();
             loadVideoList();
+            resetReviewPanel();
+            updateReviewButtonState();
+
+            const expertForm = document.getElementById('expert-question-form');
+            if (expertForm) {
+                expertForm.addEventListener('submit', handleExpertQuestionSubmit);
+            }
+
+            const skipButton = document.getElementById('expert-skip-button');
+            if (skipButton) {
+                skipButton.addEventListener('click', handleExpertSkip);
+            }
+            
+            // Manual question form handler
+            const manualForm = document.getElementById('manual-question-form');
+            if (manualForm) {
+                manualForm.addEventListener('submit', handleManualQuestionSubmit);
+            }
         });
         
-        async function loadVideoList() {
-            try {
-                const response = await fetch('/api/videos-list');
-                const data = await response.json();
-                
-                const select = document.getElementById('video-select');
-                select.innerHTML = '<option value="">Choose a video...</option>';
-                
-                if (data.success && data.videos) {
-                    data.videos.forEach(video => {
-                        const option = document.createElement('option');
-                        option.value = video.id;
-                        option.textContent = `${video.title} (${formatDuration(video.duration)})`;
-                        select.appendChild(option);
-                    });
-                    
-                    showStatus('Video list loaded successfully', 'success');
-                } else {
-                    showStatus('No videos available', 'info');
+        function initStepNavigation() {
+            const stepElements = document.querySelectorAll('.step');
+            stepElements.forEach(stepEl => {
+                stepEl.addEventListener('click', () => {
+                    const targetStep = Number(stepEl.dataset.step);
+                    if (targetStep <= maxAvailableStep) {
+                        showStep(targetStep);
+                    }
+                });
+            });
+            updateStepAccess();
+            showStep(currentStep);
+        }
+
+        function updateStepAccess() {
+            document.querySelectorAll('.step').forEach(stepEl => {
+                const stepNumber = Number(stepEl.dataset.step);
+                stepEl.classList.toggle('step-disabled', stepNumber > maxAvailableStep);
+            });
+        }
+
+        function showStep(step) {
+            // Pause video if leaving step 2
+            if (currentStep === 2 && step !== 2 && videoElement) {
+                videoElement.pause();
+            }
+            
+            currentStep = step;
+            document.querySelectorAll('.step').forEach(stepEl => {
+                const stepNumber = Number(stepEl.dataset.step);
+                stepEl.classList.toggle('active', stepNumber === step);
+                stepEl.classList.toggle('completed', stepNumber < step);
+            });
+            document.querySelectorAll('.step-content').forEach(contentEl => {
+                const stepNumber = Number(contentEl.dataset.step);
+                contentEl.classList.toggle('active', stepNumber === step);
+            });
+            
+            // Resume video if returning to step 2 and it was playing before
+            if (step === 2 && videoElement && !isVideoPaused) {
+                // Only resume if we're not in a pause overlay
+                const pauseOverlay = document.getElementById('pause-overlay');
+                if (!pauseOverlay || !pauseOverlay.classList.contains('active')) {
+                    videoElement.play();
                 }
+            }
+        }
+
+        function unlockStep(step) {
+            if (step > maxAvailableStep) {
+                maxAvailableStep = step;
+            }
+            updateStepAccess();
+            showStep(step);
+        }
+
+        function findVideoById(videoId) {
+            if (!videoId) {
+                return null;
+            }
+            return availableVideos.find(video => video.id === videoId) || null;
+        }
+
+        function renderVideoList() {
+            const list = document.getElementById('video-card-list');
+            if (!list) {
+                return;
+            }
+
+            list.innerHTML = '';
+
+            if (!availableVideos.length) {
+                list.innerHTML = '<div class="video-list-empty">No downloaded videos found yet.</div>';
+                return;
+            }
+
+            availableVideos.forEach(video => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'video-card';
+                card.dataset.videoId = video.id;
+
+                if (video.id === currentVideoId) {
+                    card.classList.add('selected');
+                }
+
+                const durationText = video.duration ? formatDuration(video.duration) : '0:00';
+                const baseLabel = video.title || video.id;
+                const subtitle = video.id;
+                const fileCount = typeof video.fileCount === 'number' ? video.fileCount : 0;
+                const questionCount = typeof video.questionCount === 'number' ? video.questionCount : null;
+                const questionText = questionCount !== null ? `Questions: ${questionCount}` : 'Questions: N/A';
+
+                card.innerHTML = `
+                    <div class="video-card-title">${baseLabel}</div>
+                    <div class="video-card-subtitle">${subtitle}</div>
+                    <div class="video-card-meta">
+                        <span>Duration: ${durationText}</span>
+                        <span>Files: ${fileCount}</span>
+                        <span>${questionText}</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => handleVideoSelection(video.id));
+                card.classList.remove('loading');
+                list.appendChild(card);
+            });
+
+            if (currentVideoId) {
+                setVideoCardState(currentVideoId, 'selected');
+            }
+        }
+
+        function setVideoCardState(videoId, state) {
+            const cards = document.querySelectorAll('.video-card');
+            cards.forEach(card => {
+                const isTarget = card.dataset.videoId === videoId;
+
+                if (state === 'loading') {
+                    card.classList.remove('selected');
+                    if (isTarget) {
+                        card.classList.add('loading');
+                        card.disabled = true;
+                    } else {
+                        card.classList.remove('loading');
+                        card.disabled = false;
+                    }
+                } else if (state === 'selected') {
+                    card.classList.remove('loading');
+                    card.disabled = false;
+                    card.classList.toggle('selected', isTarget);
+                } else if (state === 'idle') {
+                    card.classList.remove('loading');
+                    card.disabled = false;
+                    if (isTarget) {
+                        card.classList.remove('selected');
+                    }
+                }
+            });
+        }
+
+        function normalizeSegmentValue(value) {
+            const num = Number(value);
+            if (Number.isNaN(num)) {
+                return 0;
+            }
+            return Number(num.toFixed(3));
+        }
+
+        function normalizeQuestionType(value) {
+            if (!value) {
+                return '';
+            }
+            return String(value).toLowerCase();
+        }
+
+        function getExpertQuestionTypeLabel(value) {
+            const labels = {
+                character: 'Character',
+                setting: 'Setting',
+                feeling: 'Feeling',
+                action: 'Action',
+                causal: 'Causal',
+                outcome: 'Outcome',
+                prediction: 'Prediction'
+            };
+
+            const normalized = normalizeQuestionType(value);
+            return labels[normalized] || (value ? String(value) : 'Unknown');
+        }
+
+        function getSegmentKey(segment) {
+            if (!segment) {
+                return '';
+            }
+            const start = normalizeSegmentValue(segment.start);
+            const end = normalizeSegmentValue(segment.end);
+            return `${start}-${end}`;
+        }
+
+        function getExpertQuestionForSegment(segment) {
+            const key = getSegmentKey(segment);
+            if (!key) {
+                return null;
+            }
+            return expertQuestions[key] || null;
+        }
+
+        function setExpertQuestionForSegment(segment, data) {
+            const key = getSegmentKey(segment);
+            if (!key) {
+                return;
+            }
+
+            if (!data) {
+                delete expertQuestions[key];
+                return;
+            }
+
+            const normalized = { ...data };
+
+            if (normalized.skip_reason && !normalized.skipReason) {
+                normalized.skipReason = normalized.skip_reason;
+            }
+            delete normalized.skip_reason;
+
+            if (!normalized.updatedAt && normalized.updated_at) {
+                normalized.updatedAt = normalized.updated_at;
+            }
+            delete normalized.updated_at;
+
+            normalized.skipped = Boolean(normalized.skipped);
+
+            if (normalized.skipped) {
+                normalized.questionType = '';
+                normalized.question = normalized.question || '';
+                normalized.answer = normalized.answer || '';
+                normalized.skipReason = normalized.skipReason ? String(normalized.skipReason) : '';
+            } else {
+                const typeValue = normalized.questionType || normalized.question_type || '';
+                normalized.questionType = normalizeQuestionType(typeValue);
+                normalized.skipReason = '';
+            }
+
+            delete normalized.question_type;
+
+            expertQuestions[key] = normalized;
+        }
+
+        function hasExpertDecision(segment) {
+            const entry = getExpertQuestionForSegment(segment);
+            if (!entry) {
+                return false;
+            }
+
+            if (entry.skipped) {
+                return true;
+            }
+
+            return Boolean(entry.question && entry.answer);
+        }
+
+        function renderExpertInfoMessage(container, message) {
+            if (!container) {
+                return;
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'question-item';
+
+            const textEl = document.createElement('div');
+            textEl.className = 'question-text';
+            textEl.style.textAlign = 'center';
+            textEl.style.color = '#718096';
+            textEl.textContent = message;
+
+            wrapper.appendChild(textEl);
+            container.appendChild(wrapper);
+        }
+
+        function updateExpertQuestionsPanel(segment = null) {
+            const container = document.getElementById('expert-questions');
+            if (!container) {
+                return;
+            }
+
+            container.innerHTML = '';
+
+            // Show all saved expert questions
+            if (currentSegments && currentSegments.length > 0) {
+                let hasAnyQuestions = false;
+                
+                // First, show questions for defined segments
+                currentSegments.forEach((seg, index) => {
+                    const entry = getExpertQuestionForSegment(seg);
+                    if (entry) {
+                        hasAnyQuestions = true;
+                        
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = 'question-item';
+                        
+                        // Add highlight if this is the current segment
+                        if (segment && seg === segment) {
+                            questionDiv.style.border = '2px solid #3182ce';
+                            questionDiv.style.backgroundColor = '#ebf8ff';
+                        }
+                        
+                        // Add segment header
+                        const segmentHeader = document.createElement('div');
+                        segmentHeader.style.fontSize = '0.85rem';
+                        segmentHeader.style.color = '#718096';
+                        segmentHeader.style.marginBottom = '8px';
+                        segmentHeader.textContent = `Segment ${index + 1} (${formatTime(seg.start)} - ${formatTime(seg.end)})`;
+                        questionDiv.appendChild(segmentHeader);
+
+                        if (entry.skipped) {
+                            questionDiv.classList.add('skipped');
+
+                            const badge = document.createElement('div');
+                            badge.className = 'question-type-badge';
+                            badge.textContent = 'Skipped';
+                            questionDiv.appendChild(badge);
+
+                            const messageEl = document.createElement('div');
+                            messageEl.className = 'question-text';
+                            messageEl.textContent = 'Segment marked as skipped';
+                            questionDiv.appendChild(messageEl);
+
+                            if (entry.skipReason) {
+                                const reasonEl = document.createElement('div');
+                                reasonEl.className = 'answer-text';
+                                reasonEl.textContent = `Reason: ${entry.skipReason}`;
+                                questionDiv.appendChild(reasonEl);
+                            }
+                        } else {
+                            const badge = document.createElement('div');
+                            badge.className = 'question-type-badge';
+                            badge.textContent = getExpertQuestionTypeLabel(entry.questionType);
+                            questionDiv.appendChild(badge);
+
+                            const questionText = document.createElement('div');
+                            questionText.className = 'question-text';
+                            questionText.textContent = entry.question || '';
+                            questionDiv.appendChild(questionText);
+
+                            const answerText = document.createElement('div');
+                            answerText.className = 'answer-text';
+                            answerText.textContent = entry.answer || '';
+                            questionDiv.appendChild(answerText);
+                        }
+
+                        container.appendChild(questionDiv);
+                    }
+                });
+                
+                // Also show manually added questions
+                Object.entries(expertQuestions).forEach(([key, entry]) => {
+                    if (entry && entry.isManual) {
+                        hasAnyQuestions = true;
+                        
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = 'question-item';
+                        questionDiv.style.borderLeft = '4px solid #38a169';
+                        
+                        // Add manual question header
+                        const segmentHeader = document.createElement('div');
+                        segmentHeader.style.fontSize = '0.85rem';
+                        segmentHeader.style.color = '#38a169';
+                        segmentHeader.style.marginBottom = '8px';
+                        segmentHeader.textContent = `Manual Question @ ${formatTime(entry.timestamp || 0)}`;
+                        questionDiv.appendChild(segmentHeader);
+                        
+                        const badge = document.createElement('div');
+                        badge.className = 'question-type-badge';
+                        badge.style.background = '#38a169';
+                        badge.textContent = getExpertQuestionTypeLabel(entry.questionType);
+                        questionDiv.appendChild(badge);
+
+                        const questionText = document.createElement('div');
+                        questionText.className = 'question-text';
+                        questionText.textContent = entry.question || '';
+                        questionDiv.appendChild(questionText);
+
+                        const answerText = document.createElement('div');
+                        answerText.className = 'answer-text';
+                        answerText.textContent = entry.answer || '';
+                        questionDiv.appendChild(answerText);
+                        
+                        container.appendChild(questionDiv);
+                    }
+                });
+                
+                if (!hasAnyQuestions) {
+                    renderExpertInfoMessage(container, 'No expert questions saved yet. Play the video to add questions at each segment or use "Add Question" button.');
+                }
+            } else {
+                renderExpertInfoMessage(container, 'Select a video to begin adding expert questions.');
+            }
+        }
+
+        function findNextIncompleteSegmentIndex(startIndex = 0) {
+            if (!currentSegments || currentSegments.length === 0) {
+                return 0;
+            }
+
+            for (let index = Math.max(0, startIndex); index < currentSegments.length; index++) {
+                if (!hasExpertDecision(currentSegments[index])) {
+                    return index;
+                }
+            }
+
+            return currentSegments.length;
+        }
+
+        function setExpertFormFeedback(message, type = 'error') {
+            const feedback = document.getElementById('expert-form-feedback');
+            if (!feedback) {
+                return;
+            }
+
+            feedback.textContent = message || '';
+            feedback.classList.remove('success');
+
+            if (message && type === 'success') {
+                feedback.classList.add('success');
+            }
+        }
+
+        function toggleExpertFormState(disabled) {
+            const form = document.getElementById('expert-question-form');
+            if (!form) {
+                return;
+            }
+
+            Array.from(form.elements).forEach(element => {
+                if (!element) {
+                    return;
+                }
+
+                if (element.id === 'expert-skip-button') {
+                    element.disabled = disabled;
+                    return;
+                }
+
+                element.disabled = disabled;
+            });
+        }
+
+        function resetExpertForm() {
+            const form = document.getElementById('expert-question-form');
+            if (form) {
+                form.reset();
+            }
+
+            setExpertFormFeedback('');
+            expertSaveInProgress = false;
+            toggleExpertFormState(false);
+        }
+
+        function populateExpertForm(segment) {
+            const typeSelect = document.getElementById('expert-question-type');
+            const questionInput = document.getElementById('expert-question-text');
+            const answerInput = document.getElementById('expert-answer-text');
+
+            const existing = getExpertQuestionForSegment(segment);
+
+            if (existing) {
+                if (existing.skipped) {
+                    if (typeSelect) {
+                        typeSelect.value = '';
+                    }
+                    if (questionInput) {
+                        questionInput.value = '';
+                    }
+                    if (answerInput) {
+                        answerInput.value = '';
+                    }
+                    setExpertFormFeedback('This segment is marked as skipped. Add a question to replace it or skip again.');
+                } else {
+                    if (typeSelect) {
+                        typeSelect.value = normalizeQuestionType(existing.questionType);
+                    }
+                    if (questionInput) {
+                        questionInput.value = existing.question || '';
+                    }
+                    if (answerInput) {
+                        answerInput.value = existing.answer || '';
+                    }
+                    setExpertFormFeedback('Existing question loaded for this segment.', 'success');
+                }
+            } else {
+                if (typeSelect) {
+                    typeSelect.value = '';
+                }
+                if (questionInput) {
+                    questionInput.value = '';
+                }
+                if (answerInput) {
+                    answerInput.value = '';
+                }
+                setExpertFormFeedback('');
+            }
+
+            expertSaveInProgress = false;
+            toggleExpertFormState(false);
+        }
+
+        async function handleVideoSelection(videoId) {
+            if (!videoId || isLoadingVideo) {
+                return;
+            }
+
+            const video = findVideoById(videoId);
+            if (!video) {
+                return;
+            }
+
+            await loadVideo(video.id, video.title);
+        }
+
+        async function handleExpertQuestionSubmit(event) {
+            event.preventDefault();
+
+            if (expertSaveInProgress) {
+                return;
+            }
+
+            if (!currentVideoId) {
+                setExpertFormFeedback('Select a video before saving questions.');
+                return;
+            }
+
+            const segment = currentSegments[currentSegmentIndex];
+            if (!segment) {
+                setExpertFormFeedback('No segment selected.');
+                return;
+            }
+
+            const typeSelect = document.getElementById('expert-question-type');
+            const questionInput = document.getElementById('expert-question-text');
+            const answerInput = document.getElementById('expert-answer-text');
+
+            const questionType = normalizeQuestionType(typeSelect ? typeSelect.value.trim() : '');
+            const question = questionInput ? questionInput.value.trim() : '';
+            const answer = answerInput ? answerInput.value.trim() : '';
+
+            // Strict validation - all fields must be filled
+            if (!questionType || questionType === '') {
+                setExpertFormFeedback('Please select a question type.');
+                typeSelect.focus();
+                return;
+            }
+
+            if (getExpertQuestionTypeLabel(questionType) === 'Unknown') {
+                setExpertFormFeedback('Please select a valid question type.');
+                typeSelect.focus();
+                return;
+            }
+
+            if (!question || question === '') {
+                setExpertFormFeedback('Please enter a question. This field is required.');
+                questionInput.focus();
+                return;
+            }
+
+            if (!answer || answer === '') {
+                setExpertFormFeedback('Please enter an answer. This field is required.');
+                answerInput.focus();
+                return;
+            }
+
+            expertSaveInProgress = true;
+            toggleExpertFormState(true);
+            setExpertFormFeedback('Saving question...', 'success');
+
+            const payload = {
+                videoId: currentVideoId,
+                segmentStart: segment.start,
+                segmentEnd: segment.end,
+                timestamp: segment.end,
+                questionType,
+                question,
+                answer
+            };
+
+            try {
+                const response = await fetch('/api/expert-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    const errorMessage = data && data.message ? data.message : 'Failed to save question.';
+                    throw new Error(errorMessage);
+                }
+
+                setExpertQuestionForSegment(segment, {
+                    videoId: currentVideoId,
+                    segmentStart: segment.start,
+                    segmentEnd: segment.end,
+                    timestamp: segment.end,
+                    questionType,
+                    question,
+                    answer,
+                    skipReason: '',
+                    updatedAt: data.updatedAt || new Date().toISOString()
+                });
+
+                updateExpertQuestionsPanel(segment);
+                approveAndContinue();
             } catch (error) {
-                showStatus('Failed to load video list: ' + error.message, 'error');
+                console.error('Failed to save expert question:', error);
+                setExpertFormFeedback(error.message || 'Failed to save question.');
+            } finally {
+                expertSaveInProgress = false;
+                toggleExpertFormState(false);
+            }
+        }
+
+        async function handleExpertSkip(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            if (expertSaveInProgress) {
+                return;
+            }
+
+            if (!currentVideoId) {
+                setExpertFormFeedback('Select a video before skipping segments.');
+                return;
+            }
+
+            const segment = currentSegments[currentSegmentIndex];
+            if (!segment) {
+                setExpertFormFeedback('No segment selected.');
+                return;
+            }
+
+            expertSaveInProgress = true;
+            toggleExpertFormState(true);
+            setExpertFormFeedback('Marking segment as skipped...', 'success');
+
+            const payload = {
+                videoId: currentVideoId,
+                segmentStart: segment.start,
+                segmentEnd: segment.end,
+                timestamp: segment.end,
+                skipped: true
+            };
+
+            try {
+                const response = await fetch('/api/expert-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    const errorMessage = data && data.message ? data.message : 'Failed to skip segment.';
+                    throw new Error(errorMessage);
+                }
+
+                const record = {
+                    videoId: currentVideoId,
+                    segmentStart: segment.start,
+                    segmentEnd: segment.end,
+                    timestamp: segment.end,
+                    skipped: true,
+                    skipReason: '',
+                    updatedAt: data.updatedAt || new Date().toISOString()
+                };
+
+                setExpertQuestionForSegment(segment, record);
+                updateExpertQuestionsPanel(segment);
+                approveAndContinue();
+            } catch (error) {
+                console.error('Failed to skip segment:', error);
+                setExpertFormFeedback(error.message || 'Failed to skip segment.');
+            } finally {
+                expertSaveInProgress = false;
+                toggleExpertFormState(false);
+            }
+        }
+
+        function getSelectedVideoLabel() {
+            if (currentVideoLabel) {
+                return currentVideoLabel;
+            }
+            const select = document.getElementById('video-select');
+            if (select && select.selectedIndex >= 0) {
+                const option = select.options[select.selectedIndex];
+                if (option) {
+                    return option.textContent;
+                }
+            }
+            return currentVideoId || '';
+        }
+
+        function resetReviewPanel() {
+            const reviewVideo = document.getElementById('review-video-id');
+            const reviewSegments = document.getElementById('review-total-segments');
+            const reviewList = document.getElementById('review-questions-list');
+
+            if (reviewVideo) {
+                reviewVideo.textContent = currentVideoId ? getSelectedVideoLabel() : 'Not selected';
+            }
+
+            if (reviewSegments) {
+                reviewSegments.textContent = currentSegments && currentSegments.length ? currentSegments.length : '0';
+            }
+
+            if (reviewList) {
+                if (currentVideoId) {
+                    reviewList.innerHTML = '<div class="review-placeholder">Choose "Review Questions" to generate a full summary.</div>';
+                } else {
+                    reviewList.innerHTML = '<div class="review-placeholder">Select a video on Step 1 to begin.</div>';
+                }
+            }
+        }
+
+        function updateReviewButtonState() {
+            const reviewButton = document.getElementById('review-button');
+            if (reviewButton) {
+                reviewButton.disabled = !(currentSegments && currentSegments.length > 0);
+            }
+        }
+
+        async function handleReviewQuestions() {
+            if (!currentVideoId) {
+                showStatus('Select a video before reviewing questions.', 'info');
+                return;
+            }
+
+            if (!currentSegments || currentSegments.length === 0) {
+                showStatus('No question segments available to review yet.', 'info');
+                return;
+            }
+
+            unlockStep(3);
+            await renderReviewQuestions();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function renderReviewQuestions() {
+            const reviewVideo = document.getElementById('review-video-id');
+            const reviewSegments = document.getElementById('review-total-segments');
+            const reviewList = document.getElementById('review-questions-list');
+
+            if (!reviewList) {
+                return;
+            }
+
+            if (reviewVideo) {
+                reviewVideo.textContent = getSelectedVideoLabel() || 'Not selected';
+            }
+
+            if (reviewSegments) {
+                reviewSegments.textContent = currentSegments.length.toString();
+            }
+
+            if (!currentSegments || currentSegments.length === 0) {
+                reviewList.innerHTML = '<div class="review-placeholder">No question segments available for this video.</div>';
+                return;
+            }
+
+            reviewList.innerHTML = '';
+
+            // Initialize llmQuestionEdits and segmentApprovals if needed
+            if (!llmQuestionEdits[currentVideoId]) {
+                llmQuestionEdits[currentVideoId] = {};
+            }
+            if (!segmentApprovals[currentVideoId]) {
+                segmentApprovals[currentVideoId] = {};
+            }
+
+            // Create accordion for each segment
+            for (let index = 0; index < currentSegments.length; index++) {
+                const segment = currentSegments[index];
+                const segmentKey = getSegmentKey(segment);
+                const questions = await resolveSegmentQuestions(segment);
+                
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item';
+
+                // Create accordion header
+                const header = document.createElement('div');
+                header.className = 'accordion-header';
+                if (index === 0 && !segmentApprovals[currentVideoId][segmentKey]) {
+                    header.classList.add('active');
+                }
+                
+                // Add approved class if segment is approved
+                if (segmentApprovals[currentVideoId][segmentKey]) {
+                    header.classList.add('approved');
+                }
+                
+                const title = document.createElement('div');
+                title.className = 'accordion-title';
+                title.innerHTML = `
+                    <span class="segment-index">Segment ${index + 1}</span>
+                    <span class="segment-time">${formatTime(segment.start)} - ${formatTime(segment.end)}</span>
+                `;
+                
+                const arrow = document.createElement('span');
+                arrow.className = 'accordion-arrow';
+                arrow.textContent = '▼';
+                
+                header.appendChild(title);
+                header.appendChild(arrow);
+                
+                // Create accordion content
+                const content = document.createElement('div');
+                content.className = 'accordion-content';
+                if (index === 0 && !segmentApprovals[currentVideoId][segmentKey]) {
+                    content.classList.add('active');
+                }
+                
+                const inner = document.createElement('div');
+                inner.className = 'accordion-inner';
+                
+                // Left column - Expert Questions
+                const expertColumn = document.createElement('div');
+                expertColumn.className = 'question-column expert-column';
+                
+                const expertHeader = document.createElement('div');
+                expertHeader.className = 'column-header';
+                expertHeader.textContent = 'Expert Questions';
+                expertColumn.appendChild(expertHeader);
+                
+                // Get expert question for this segment
+                const expertEntry = getExpertQuestionForSegment(segment);
+                
+                // Also find manual questions that fall within this segment
+                const manualQuestionsInSegment = [];
+                Object.entries(expertQuestions).forEach(([key, entry]) => {
+                    if (entry && entry.isManual && entry.timestamp >= segment.start && entry.timestamp <= segment.end) {
+                        manualQuestionsInSegment.push(entry);
+                    }
+                });
+                
+                // Display segment expert question first
+                if (expertEntry && !expertEntry.isManual) {
+                    const expertDiv = document.createElement('div');
+                    expertDiv.className = 'expert-question-display';
+                    
+                    if (expertEntry.skipped) {
+                        expertDiv.classList.add('skipped');
+                        expertDiv.innerHTML = `
+                            <div class="question-type-label">SKIPPED</div>
+                            <div style="color: #dd6b20;">Segment marked as skipped</div>
+                            ${expertEntry.skipReason ? `<div style="color: #9c4221; font-size: 0.9rem;">Reason: ${expertEntry.skipReason}</div>` : ''}
+                        `;
+                    } else {
+                        expertDiv.innerHTML = `
+                            <div class="question-type-label">${getExpertQuestionTypeLabel(expertEntry.questionType)}</div>
+                            <div style="font-weight: 600; margin-bottom: 8px;">${expertEntry.question || 'No question'}</div>
+                            <div style="color: #4a5568;">Answer: ${expertEntry.answer || 'No answer'}</div>
+                        `;
+                    }
+                    expertColumn.appendChild(expertDiv);
+                }
+                
+                // Display manual questions in this segment
+                if (manualQuestionsInSegment.length > 0) {
+                    manualQuestionsInSegment.forEach(manualEntry => {
+                        const manualDiv = document.createElement('div');
+                        manualDiv.className = 'expert-question-display';
+                        manualDiv.style.borderLeft = '4px solid #38a169';
+                        manualDiv.style.marginTop = '12px';
+                        
+                        manualDiv.innerHTML = `
+                            <div style="font-size: 0.8rem; color: #38a169; margin-bottom: 6px;">Manual @ ${formatTime(manualEntry.timestamp)}</div>
+                            <div class="question-type-label" style="background: #38a169;">${getExpertQuestionTypeLabel(manualEntry.questionType)}</div>
+                            <div style="font-weight: 600; margin-bottom: 8px;">${manualEntry.question || 'No question'}</div>
+                            <div style="color: #4a5568;">Answer: ${manualEntry.answer || 'No answer'}</div>
+                        `;
+                        expertColumn.appendChild(manualDiv);
+                    });
+                }
+                
+                if (!expertEntry && manualQuestionsInSegment.length === 0) {
+                    expertColumn.innerHTML += '<div style="color: #718096; text-align: center; padding: 20px;">No expert question added yet</div>';
+                }
+                
+                // Right column - LLM Questions (Editable)
+                const llmColumn = document.createElement('div');
+                llmColumn.className = 'question-column llm-column';
+                
+                const llmHeader = document.createElement('div');
+                llmHeader.className = 'column-header';
+                llmHeader.textContent = 'AI-Generated Questions (Editable)';
+                llmColumn.appendChild(llmHeader);
+                
+                if (questions && typeof questions === 'object' && Object.keys(questions).length > 0) {
+                    // First, identify the best question
+                    let bestQuestionText = null;
+                    if (segment.result && segment.result.best_question) {
+                        bestQuestionText = segment.result.best_question;
+                    }
+                    
+                    // Check for expert-selected best question
+                    const expertBestKey = llmQuestionEdits[currentVideoId] && 
+                                         llmQuestionEdits[currentVideoId][`${segmentKey}_expertBest`];
+                    
+                    Object.entries(questions).forEach(([type, data]) => {
+                        const questionKey = `${segmentKey}_${type}`;
+                        
+                        // Get any existing edits for this question
+                        const edits = llmQuestionEdits[currentVideoId][questionKey] || {};
+                        const isTrashed = edits.trashed || false;
+                        const currentQuestion = edits.question !== undefined ? edits.question : (data.q || '');
+                        const currentAnswer = edits.answer !== undefined ? edits.answer : (data.a || '');
+                        
+                        // Check if this is the best question
+                        const isAIBestQuestion = bestQuestionText && (data.q === bestQuestionText);
+                        const isExpertBestQuestion = expertBestKey === questionKey;
+                        
+                        const editableDiv = document.createElement('div');
+                        editableDiv.className = 'editable-question collapsed';
+                        editableDiv.id = `question-${questionKey}`;
+                        if (isTrashed) editableDiv.classList.add('trashed');
+                        if (isAIBestQuestion || isExpertBestQuestion) editableDiv.classList.add('best-question');
+                        
+                        editableDiv.innerHTML = `
+                            <div class="question-header">
+                                <div class="question-summary" onclick="toggleEditMode('${questionKey}', false)">
+                                    <div>
+                                        <span class="question-type-label">${type}</span>
+                                        ${isAIBestQuestion ? '<span class="best-indicator">AI BEST</span>' : ''}
+                                        ${isExpertBestQuestion ? '<span class="best-indicator" style="background: #27ae60;">EXPERT BEST</span>' : ''}
+                                    </div>
+                                    <div class="question-preview">${currentQuestion}</div>
+                                    <div class="answer-preview">${currentAnswer}</div>
+                                </div>
+                                <div class="question-actions">
+                                    ${isTrashed ? 
+                                        `<button class="btn-icon btn-restore" onclick="restoreLLMQuestion('${questionKey}')">Restore</button>` :
+                                        `<button class="btn-icon btn-edit" onclick="toggleEditMode('${questionKey}', true)">Edit</button>
+                                         ${!isExpertBestQuestion ? 
+                                            `<button class="btn-icon" style="background: #27ae60; color: white;" onclick="setExpertBestQuestion('${segmentKey}', '${questionKey}')">Set Best</button>` :
+                                            `<button class="btn-icon" style="background: #95a5a6; color: white;" onclick="setExpertBestQuestion('${segmentKey}', null)">Unset Best</button>`
+                                         }
+                                         <button class="btn-icon btn-trash" onclick="trashLLMQuestion('${questionKey}')">Trash</button>`
+                                    }
+                                </div>
+                            </div>
+                            <div class="question-field">
+                                <label>Question:</label>
+                                <textarea id="edit-question-${questionKey}" data-field="question" data-key="${questionKey}" ${isTrashed ? 'disabled' : ''}>${currentQuestion}</textarea>
+                            </div>
+                            <div class="question-field">
+                                <label>Answer:</label>
+                                <textarea id="edit-answer-${questionKey}" data-field="answer" data-key="${questionKey}" ${isTrashed ? 'disabled' : ''}>${currentAnswer}</textarea>
+                            </div>
+                            <div class="question-field">
+                                <div class="question-actions">
+                                    <button class="btn-icon btn-save-edit" onclick="saveEditAndClose('${questionKey}')">Save</button>
+                                    <button class="btn-icon btn-cancel-edit" onclick="toggleEditMode('${questionKey}', false)">Cancel</button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        llmColumn.appendChild(editableDiv);
+                    });
+                } else {
+                    llmColumn.innerHTML += '<div style="color: #718096; text-align: center; padding: 20px;">No AI-generated questions for this segment</div>';
+                }
+                
+                inner.appendChild(expertColumn);
+                inner.appendChild(llmColumn);
+                content.appendChild(inner);
+                
+                // Add approve segment button for ALL segments
+                const approveSection = document.createElement('div');
+                approveSection.className = 'segment-approve-section';
+                approveSection.style.gridColumn = '2';
+                approveSection.style.marginTop = '0';
+                
+                // Show approve button regardless of AI questions
+                approveSection.innerHTML = `
+                    <button class="btn-approve-segment" 
+                            onclick="approveSegment('${segmentKey}', ${index})"
+                            ${segmentApprovals[currentVideoId][segmentKey] ? 'disabled' : ''}>
+                        ${segmentApprovals[currentVideoId][segmentKey] ? 'Segment Approved ✓' : 'Approve Segment'}
+                    </button>
+                `;
+                
+                llmColumn.appendChild(approveSection);
+                
+                // Add header click handler
+                header.addEventListener('click', () => toggleAccordion(index));
+                
+                accordionItem.appendChild(header);
+                accordionItem.appendChild(content);
+                reviewList.appendChild(accordionItem);
+            }
+            
+            // Add save button
+            const saveSection = document.createElement('div');
+            saveSection.style.textAlign = 'center';
+            saveSection.innerHTML = `
+                <button class="btn-save-changes" onclick="saveAllLLMEdits()">Finalize questions and submit</button>
+            `;
+            reviewList.appendChild(saveSection);
+        }
+        
+        function approveSegment(segmentKey, segmentIndex) {
+            if (!segmentApprovals[currentVideoId]) {
+                segmentApprovals[currentVideoId] = {};
+            }
+            
+            // Mark segment as approved (no validation required)
+            segmentApprovals[currentVideoId][segmentKey] = true;
+            
+            // Close current accordion
+            const headers = document.querySelectorAll('.accordion-header');
+            const contents = document.querySelectorAll('.accordion-content');
+            
+            if (headers[segmentIndex]) {
+                headers[segmentIndex].classList.remove('active');
+                headers[segmentIndex].classList.add('approved');
+                contents[segmentIndex].classList.remove('active');
+            }
+            
+            // Open next unapproved segment
+            for (let i = segmentIndex + 1; i < currentSegments.length; i++) {
+                const nextSegmentKey = getSegmentKey(currentSegments[i]);
+                if (!segmentApprovals[currentVideoId][nextSegmentKey]) {
+                    headers[i].classList.add('active');
+                    contents[i].classList.add('active');
+                    break;
+                }
+            }
+            
+            // Re-render to update UI
+            renderReviewQuestions();
+        }
+
+        function toggleAccordion(index) {
+            const headers = document.querySelectorAll('.accordion-header');
+            const contents = document.querySelectorAll('.accordion-content');
+            
+            headers.forEach((header, i) => {
+                if (i === index) {
+                    header.classList.toggle('active');
+                    contents[i].classList.toggle('active');
+                } else {
+                    header.classList.remove('active');
+                    contents[i].classList.remove('active');
+                }
+            });
+        }
+
+        function toggleEditMode(questionKey, editMode) {
+            const questionDiv = document.getElementById(`question-${questionKey}`);
+            if (!questionDiv) return;
+            
+            if (editMode) {
+                questionDiv.classList.remove('collapsed');
+                questionDiv.classList.add('editing');
+                
+                // Focus on the question textarea
+                const questionTextarea = document.getElementById(`edit-question-${questionKey}`);
+                if (questionTextarea) {
+                    questionTextarea.focus();
+                }
+            } else {
+                questionDiv.classList.add('collapsed');
+                questionDiv.classList.remove('editing');
             }
         }
         
-async function loadVideo() {
-    const videoId = document.getElementById('video-select').value;
-    if (!videoId) return;
-    
-    currentVideoId = videoId;
-    currentSegmentIndex = 0;
-    autoAdvanceEnabled = true;  // Reset this flag
-    
-    try {
-        await loadVideoPlayer(videoId);
-        await loadSegments(videoId);
+        function saveEditAndClose(questionKey) {
+            const questionTextarea = document.getElementById(`edit-question-${questionKey}`);
+            const answerTextarea = document.getElementById(`edit-answer-${questionKey}`);
+            
+            if (questionTextarea && answerTextarea) {
+                saveLLMQuestionEdit(questionKey, 'question', questionTextarea.value);
+                saveLLMQuestionEdit(questionKey, 'answer', answerTextarea.value);
+                
+                // Update the preview text
+                const questionDiv = document.getElementById(`question-${questionKey}`);
+                if (questionDiv) {
+                    const previewQuestion = questionDiv.querySelector('.question-preview');
+                    const previewAnswer = questionDiv.querySelector('.answer-preview');
+                    
+                    if (previewQuestion) previewQuestion.textContent = questionTextarea.value;
+                    if (previewAnswer) previewAnswer.textContent = answerTextarea.value;
+                }
+            }
+            
+            toggleEditMode(questionKey, false);
+        }
         
-        updateProgress();
-        showStatus('Video loaded successfully', 'success');
-        
-    } catch (error) {
-        showStatus('Failed to load video: ' + error.message, 'error');
-    }
-}
+        function saveLLMQuestionEdit(questionKey, field, value) {
+            if (!llmQuestionEdits[currentVideoId]) {
+                llmQuestionEdits[currentVideoId] = {};
+            }
+            
+            if (!llmQuestionEdits[currentVideoId][questionKey]) {
+                llmQuestionEdits[currentVideoId][questionKey] = {};
+            }
+            
+            llmQuestionEdits[currentVideoId][questionKey][field] = value;
+            llmQuestionEdits[currentVideoId][questionKey].modified = true;
+            llmQuestionEdits[currentVideoId][questionKey].timestamp = new Date().toISOString();
+        }
+
+        function trashLLMQuestion(questionKey) {
+            if (!llmQuestionEdits[currentVideoId]) {
+                llmQuestionEdits[currentVideoId] = {};
+            }
+            
+            if (!llmQuestionEdits[currentVideoId][questionKey]) {
+                llmQuestionEdits[currentVideoId][questionKey] = {};
+            }
+            
+            llmQuestionEdits[currentVideoId][questionKey].trashed = true;
+            llmQuestionEdits[currentVideoId][questionKey].timestamp = new Date().toISOString();
+            
+            // Re-render to update UI
+            renderReviewQuestions();
+        }
+
+        function restoreLLMQuestion(questionKey) {
+            if (llmQuestionEdits[currentVideoId] && llmQuestionEdits[currentVideoId][questionKey]) {
+                llmQuestionEdits[currentVideoId][questionKey].trashed = false;
+                llmQuestionEdits[currentVideoId][questionKey].timestamp = new Date().toISOString();
+            }
+            
+            // Re-render to update UI
+            renderReviewQuestions();
+        }
+
+        function setExpertBestQuestion(segmentKey, questionKey) {
+            if (!llmQuestionEdits[currentVideoId]) {
+                llmQuestionEdits[currentVideoId] = {};
+            }
+            
+            // Store the expert's best question selection
+            if (questionKey) {
+                llmQuestionEdits[currentVideoId][`${segmentKey}_expertBest`] = questionKey;
+            } else {
+                delete llmQuestionEdits[currentVideoId][`${segmentKey}_expertBest`];
+            }
+            
+            // Re-render to update UI
+            renderReviewQuestions();
+        }
+
+        async function saveAllLLMEdits() {
+            if (!currentVideoId) {
+                showStatus('No video selected', 'error');
+                return;
+            }
+
+            // Ensure all segments are approved
+            let allApproved = true;
+            for (let index = 0; index < currentSegments.length; index++) {
+                const segment = currentSegments[index];
+                const segmentKey = getSegmentKey(segment);
+                if (!segmentApprovals[currentVideoId] || !segmentApprovals[currentVideoId][segmentKey]) {
+                    allApproved = false;
+                    break;
+                }
+            }
+
+            if (!allApproved) {
+                showStatus('Please approve all segments before saving changes', 'error');
+                return;
+            }
+
+            // Build final JSON payload
+            const finalQuestions = {
+                videoId: currentVideoId,
+                timestamp: new Date().toISOString(),
+                segments: []
+            };
+
+            for (let index = 0; index < currentSegments.length; index++) {
+                const segment = currentSegments[index];
+                const segmentKey = getSegmentKey(segment);
+
+                const segmentData = {
+                    segmentIndex: index,
+                    start: segment.start,
+                    end: segment.end,
+                    aiQuestions: [],
+                    aiOriginalBest: null,
+                    expertSelectedBest: null,
+                    approved: true
+                };
+
+                const questions = await resolveSegmentQuestions(segment);
+                if (questions) {
+                    if (segment.result && segment.result.best_question) {
+                        segmentData.aiOriginalBest = segment.result.best_question;
+                    }
+
+                    const expertBestKey = llmQuestionEdits[currentVideoId] &&
+                                            llmQuestionEdits[currentVideoId][`${segmentKey}_expertBest`];
+
+                    Object.entries(questions).forEach(([type, data]) => {
+                        const questionKey = `${segmentKey}_${type}`;
+                        const edits = (llmQuestionEdits[currentVideoId] &&
+                                    llmQuestionEdits[currentVideoId][questionKey]) || {};
+
+                        const questionData = {
+                            type,
+                            originalQuestion: data.q || '',
+                            originalAnswer: data.a || '',
+                            editedQuestion: edits.question !== undefined ? edits.question : (data.q || ''),
+                            editedAnswer: edits.answer !== undefined ? edits.answer : (data.a || ''),
+                            trashed: edits.trashed || false,
+                            modified: edits.modified || false
+                        };
+
+                        if (edits.timestamp) {
+                            questionData.lastModified = edits.timestamp;
+                        }
+
+                        segmentData.aiQuestions.push(questionData);
+
+                        if (expertBestKey === questionKey) {
+                            segmentData.expertSelectedBest = questionData.editedQuestion;
+                        }
+                    });
+                }
+
+                finalQuestions.segments.push(segmentData);
+            }
+
+            try {
+                // Use the new dedicated endpoint
+                const response = await fetch('/api/save-final-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        videoId: currentVideoId,
+                        data: finalQuestions
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showStatus('Successfully saved final questions to final_questions folder!', 'success');
+                    console.log('Saved to:', result.filepath);
+
+                    // Save to localStorage as backup
+                    localStorage.setItem(`final_questions_${currentVideoId}`, JSON.stringify(finalQuestions));
+
+                    // Update button to show success
+                    const btn = document.querySelector('.btn-save-changes');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.textContent = 'Saved to final_questions ✓';
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.textContent = 'Finalize questions and submit';
+                        }, 3000);
+                    }
+                } else {
+                    throw new Error(result.message || 'Server save failed');
+                }
+            } catch (error) {
+                console.error('Error saving final questions:', error);
+                // Fallback to localStorage
+                localStorage.setItem(`final_questions_${currentVideoId}`, JSON.stringify(finalQuestions));
+                showStatus('Saved to browser storage. Error: ' + error.message, 'warning');
+                
+                const btn = document.querySelector('.btn-save-changes');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Saved to Browser ✓';
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = 'Finalize questions and submit';
+                    }, 3000);
+                }
+            }
+        }
+
+        // Load saved edits when video is loaded
+        function loadLLMEdits(videoId) {
+            const savedEdits = localStorage.getItem(`llm_edits_${videoId}`);
+            if (savedEdits) {
+                llmQuestionEdits[videoId] = JSON.parse(savedEdits);
+            } else {
+                llmQuestionEdits[videoId] = {};
+            }
+        }
+
+        function ensureSegmentResultObject(segment) {
+            if (!segment) {
+                return;
+            }
+
+            if (!segment.result) {
+                segment.result = {};
+                return;
+            }
+
+            if (typeof segment.result === 'string') {
+                try {
+                    segment.result = JSON.parse(segment.result);
+                } catch (error) {
+                    segment.result = {};
+                }
+            }
+        }
+
+        async function resolveSegmentQuestions(segment) {
+            if (!segment) {
+                return null;
+            }
+
+            ensureSegmentResultObject(segment);
+
+            if (segment.result && segment.result.questions) {
+                return segment.result.questions;
+            }
+
+            const filename = `questions_${String(segment.start).padStart(5, '0')}-${String(segment.end).padStart(5, '0')}.json`;
+
+            try {
+                const response = await fetch(`/downloads/${currentVideoId}/questions/${filename}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    ensureSegmentResultObject(segment);
+                    if (data.questions) {
+                        segment.result.questions = data.questions;
+                    }
+                    if (data.best_question && !segment.result.best_question) {
+                        segment.result.best_question = data.best_question;
+                    }
+                    return segment.result.questions || null;
+                }
+            } catch (error) {
+                console.warn('Unable to resolve questions for segment', error);
+            }
+
+            return null;
+        }
+
+        async function loadVideoList() {
+            const list = document.getElementById('video-card-list');
+            if (list) {
+                list.innerHTML = '<div class="video-list-empty">Loading videos...</div>';
+            }
+
+            try {
+                const response = await fetch('/api/videos-list');
+                const data = await response.json();
+
+                if (data.success && Array.isArray(data.videos)) {
+                    availableVideos = data.videos;
+
+                    if (currentVideoId && !findVideoById(currentVideoId)) {
+                        currentVideoId = null;
+                        currentVideoLabel = '';
+                        currentSegments = [];
+                        currentSegmentIndex = 0;
+                        resetReviewPanel();
+                        updateReviewButtonState();
+                    }
+
+                    renderVideoList();
+                } else {
+                    availableVideos = [];
+                    renderVideoList();
+                }
+            } catch (error) {
+                availableVideos = [];
+                renderVideoList();
+            }
+        }
+
+        async function loadVideo(videoIdParam = null, labelOverride = null) {
+            let videoId = videoIdParam;
+            let displayLabel = labelOverride;
+
+            if (!videoId) {
+                const select = document.getElementById('video-select');
+                if (select) {
+                    videoId = select.value;
+                    if (select.selectedIndex >= 0) {
+                        const option = select.options[select.selectedIndex];
+                        displayLabel = option ? option.textContent : null;
+                    }
+                }
+            }
+
+            if (!videoId) {
+                showStatus('Choose a video to begin reviewing.', 'info');
+                return;
+            }
+
+            const videoMeta = findVideoById(videoId);
+
+            if (!displayLabel) {
+                if (videoMeta) {
+                    const baseLabel = videoMeta.title || videoMeta.id;
+                    const durationLabel = videoMeta.duration ? formatDuration(videoMeta.duration) : '';
+                    displayLabel = durationLabel ? `${baseLabel} (${durationLabel})` : baseLabel;
+                } else {
+                    displayLabel = videoId;
+                }
+            }
+
+            currentVideoId = videoId;
+            currentVideoLabel = displayLabel;
+            currentSegments = [];
+            currentSegmentIndex = 0;
+            autoAdvanceEnabled = true;
+            expertQuestions = {};
+            pendingSegmentIndices = [];
+            isLoadingVideo = true;
+            
+            // Load any saved LLM edits for this video
+            loadLLMEdits(videoId);
+
+            setVideoCardState(videoId, 'loading');
+
+            maxAvailableStep = 1;
+            updateStepAccess();
+            showStep(1);
+
+            resetReviewPanel();
+            updateReviewButtonState();
+
+            const timeline = document.getElementById('timeline-annotations');
+            if (timeline) {
+                timeline.style.display = 'none';
+                timeline.innerHTML = '';
+            }
+
+            const overlay = document.getElementById('pause-overlay');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+            resetExpertForm();
+
+            const segmentInfo = document.getElementById('segment-info');
+            if (segmentInfo) {
+                segmentInfo.style.display = 'none';
+            }
+
+            const approveSection = document.getElementById('approve-section');
+            if (approveSection) {
+                approveSection.style.display = 'none';
+            }
+
+            const expertPanel = document.getElementById('expert-questions');
+            if (expertPanel) {
+                expertPanel.innerHTML = '';
+                renderExpertInfoMessage(expertPanel, 'Loading video...');
+            }
+
+            const progressText = document.getElementById('progress-text');
+            if (progressText) {
+                progressText.textContent = 'Loading segments...';
+            }
+
+            const progressFill = document.getElementById('progress-fill');
+            if (progressFill) {
+                progressFill.style.width = '0%';
+            }
+
+            let loadSucceeded = false;
+
+            try {
+                await loadVideoPlayer(videoId);
+                await loadSegments(videoId);
+                await loadExpertQuestionFiles(videoId);
+
+                currentSegmentIndex = findNextIncompleteSegmentIndex(0);
+                updateTimelinePausePoints();
+                const nextSegment = currentSegments[currentSegmentIndex] || null;
+                updateExpertQuestionsPanel(nextSegment);
+
+                loadSucceeded = true;
+            } catch (error) {
+                const container = document.getElementById('video-container');
+                if (container) {
+                    container.innerHTML = '<div class="video-loading">Unable to load this video.</div>';
+                }
+            } finally {
+                resetReviewPanel();
+                updateReviewButtonState();
+                updateProgress();
+                if (loadSucceeded) {
+                    unlockStep(2);
+                }
+                isLoadingVideo = false;
+                setVideoCardState(videoId, loadSucceeded ? 'selected' : 'idle');
+            }
+        }
+
         async function loadVideoPlayer(videoId) {
             const container = document.getElementById('video-container');
             
@@ -546,9 +2861,58 @@ async function loadVideo() {
                 currentSegments = [];
                 showStatus('Failed to load question segments', 'error');
             }
-            
+
             createTimelinePausePoints();
         }
+
+        async function loadExpertQuestionFiles(videoId) {
+            expertQuestions = {};
+
+            if (!videoId) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/expert-questions/${videoId}`);
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+                if (!data || !data.success || !Array.isArray(data.questions)) {
+                    return;
+                }
+
+                data.questions.forEach(entry => {
+                    if (!entry) {
+                        return;
+                    }
+
+                    const segmentStart = entry.segment_start ?? entry.segmentStart ?? 0;
+                    const segmentEnd = entry.segment_end ?? entry.segmentEnd ?? 0;
+
+                    const normalized = {
+                        videoId: data.video_id || data.videoId || videoId,
+                        segmentStart,
+                        segmentEnd,
+                        timestamp: entry.timestamp ?? segmentEnd,
+                        questionType: normalizeQuestionType(entry.question_type ?? entry.questionType),
+                        question: entry.question || '',
+                        answer: entry.answer || '',
+                        updatedAt: entry.updated_at ?? entry.updatedAt ?? null
+                    };
+
+                    const isSkipped = Boolean(entry.skipped ?? entry.skip);
+                    normalized.skipped = isSkipped;
+                    normalized.skipReason = entry.skip_reason ?? entry.skipReason ?? '';
+
+                    setExpertQuestionForSegment({ start: segmentStart, end: segmentEnd }, normalized);
+                });
+            } catch (error) {
+                console.warn('Unable to load expert questions for video', videoId, error);
+            }
+        }
+
         
         async function loadFromQuestionFiles(videoId) {
             try {
@@ -565,7 +2929,6 @@ async function loadVideo() {
                     // Check for segments array
                     if (data.segments && Array.isArray(data.segments) && data.segments.length > 0) {
                         currentSegments = data.segments;
-                        showStatus(`Loaded ${data.segments.length} question segments from ${filename}`, 'success');
                         console.log('Successfully loaded segments:', currentSegments);
                         return;
                     } else {
@@ -582,9 +2945,9 @@ async function loadVideo() {
             } catch (error) {
                 console.error('Error in loadFromQuestionFiles:', error);
                 currentSegments = [];
-                showStatus('No question files found for this video', 'info');
             }
         }
+        
         async function loadFromIndividualQuestionFiles(videoId) {
             try {
                 // Try to find individual question files like questions_00000-00060.json
@@ -619,13 +2982,11 @@ async function loadVideo() {
                 
                 if (segments.length > 0) {
                     currentSegments = segments;
-                    showStatus(`Loaded ${segments.length} individual question files`, 'success');
                     return;
                 }
                 
                 // Final fallback - no questions found
                 currentSegments = [];
-                showStatus('No AI-generated questions found for this video', 'info');
                 
             } catch (error) {
                 console.error('Error loading individual question files:', error);
@@ -636,17 +2997,28 @@ async function loadVideo() {
         function onVideoLoaded() {
             updateTimeDisplay();
             createTimelinePausePoints();
-            
-            // Start playing the video without showing questions immediately
+
             if (videoElement) {
                 videoElement.play();
             }
-            
-            // Don't load any segment data until we reach the timestamp
-            document.getElementById('segment-info').style.display = 'none';
-            document.getElementById('approve-section').style.display = 'none';
-            document.getElementById('ai-questions').innerHTML = '<div style="text-align: center; color: #718096; padding: 20px;">Video playing... Questions will appear at segment timestamps</div>';
+
+            const segmentInfo = document.getElementById('segment-info');
+            if (segmentInfo) {
+                segmentInfo.style.display = 'none';
+            }
+
+            const approveSection = document.getElementById('approve-section');
+            if (approveSection) {
+                approveSection.style.display = 'none';
+            }
+
+            const expertPanel = document.getElementById('expert-questions');
+            if (expertPanel) {
+                expertPanel.innerHTML = '';
+                renderExpertInfoMessage(expertPanel, 'Video playing... Expert review will pause at segment endpoints.');
+            }
         }
+        
         function onVideoTimeUpdate() {
             updateTimeDisplay();
             checkForPausePoints();
@@ -662,152 +3034,131 @@ async function loadVideo() {
             isVideoPaused = true;
         }
         
-function checkForPausePoints() {
-    if (!videoElement || !autoAdvanceEnabled || currentSegments.length === 0) return;
-    
-    const currentTime = videoElement.currentTime;
-    
-    // Only check if we've reached the EXACT start time of current segment
-    if (currentSegmentIndex < currentSegments.length) {
-        const currentSegment = currentSegments[currentSegmentIndex];
-        
-        // Only pause if we're actually AT the segment start time (not before)
-        if (currentTime >= currentSegment.start && currentTime < currentSegment.start + 2.0) {
-            // Additional check: make sure we haven't already paused for this segment
-            if (autoAdvanceEnabled && !document.getElementById('pause-overlay').classList.contains('active')) {
-                pauseForReview();
+        function checkForPausePoints() {
+            if (!videoElement || !autoAdvanceEnabled || currentSegments.length === 0) return;
+
+            const currentTime = videoElement.currentTime;
+            const overlayActive = document.getElementById('pause-overlay').classList.contains('active');
+
+            for (let index = 0; index < currentSegments.length; index++) {
+                const segment = currentSegments[index];
+                if (!segment || hasExpertDecision(segment)) {
+                    continue;
+                }
+
+                const endTime = Number(segment.end ?? 0);
+                if (!Number.isFinite(endTime) || endTime <= 0) {
+                    continue;
+                }
+
+                if (currentTime >= (endTime - REVIEW_TOLERANCE_BEFORE)) {
+                    if (!pendingSegmentIndices.includes(index)) {
+                        pendingSegmentIndices.push(index);
+                        pendingSegmentIndices.sort((a, b) => a - b);
+                    }
+                }
+
+                if (currentTime < (endTime - REVIEW_TOLERANCE_BEFORE)) {
+                    break;
+                }
+            }
+
+            if (!overlayActive && pendingSegmentIndices.length > 0) {
+                const nextIndex = pendingSegmentIndices.shift();
+                pauseForReview(nextIndex);
             }
         }
-    }
-}
         
         
-        function pauseForReview() {
-            if (!videoElement) return;
-            
+        function pauseForReview(targetIndex = currentSegmentIndex) {
+            if (!videoElement || targetIndex < 0 || targetIndex >= currentSegments.length) {
+                return;
+            }
+
+            currentSegmentIndex = targetIndex;
+
+            const currentSegment = currentSegments[currentSegmentIndex];
+            if (!currentSegment) {
+                return;
+            }
+
             videoElement.pause();
+            const targetTime = Number(currentSegment.end ?? videoElement.currentTime);
+            if (!Number.isNaN(targetTime) && targetTime >= 0) {
+                const duration = videoElement.duration || targetTime;
+                videoElement.currentTime = Math.min(targetTime, duration);
+            }
+
             autoAdvanceEnabled = false;
-            
-            const segmentNum = currentSegmentIndex + 1;
-            showPauseOverlay(`Review questions for segment ${segmentNum}`);
+
+            showPauseOverlay(currentSegment);
             loadCurrentSegmentData();
-            
-            // Update timeline markers
             updateTimelinePausePoints();
+            updateProgress();
         }
+
         
         function loadCurrentSegmentData() {
             const segment = currentSegments[currentSegmentIndex];
-            if (!segment) return;
-            
-            // Show segment info
+            if (!segment) {
+                updateExpertQuestionsPanel(null);
+                return;
+            }
+
             const segmentInfo = document.getElementById('segment-info');
-            segmentInfo.style.display = 'block';
-            
+            if (segmentInfo) {
+                segmentInfo.style.display = 'block';
+            }
+
             const timeText = `${formatTime(segment.start)} - ${formatTime(segment.end)}`;
-            const duration = segment.end - segment.start;
-            
-            document.getElementById('segment-time').textContent = timeText;
-            document.getElementById('segment-duration').textContent = `Duration: ${duration} seconds`;
-            
-            // Load actual AI questions for this specific segment
-            loadAIQuestionsForSegment(segment);
-            
-            // Show approve section
-            document.getElementById('approve-section').style.display = 'block';
-        }
-        
-        async function loadAIQuestionsForSegment(segment) {
-            try {
-                // Extract questions from the segment's result data
-                if (segment.result && segment.result.questions) {
-                    displayAIQuestions(segment.result.questions);
-                } else if (segment.result && typeof segment.result === 'string') {
-                    // Try to parse JSON string
-                    try {
-                        const parsed = JSON.parse(segment.result);
-                        if (parsed.questions) {
-                            displayAIQuestions(parsed.questions);
-                        } else {
-                            showNoQuestionsMessage();
-                        }
-                    } catch (e) {
-                        showNoQuestionsMessage();
-                    }
-                } else {
-                    // Try to fetch from specific API endpoint
-                    const response = await fetch(`/downloads/${currentVideoId}/questions/questions_${String(segment.start).padStart(5, '0')}-${String(segment.end).padStart(5, '0')}.json`);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.questions) {
-                            displayAIQuestions(data.questions);
-                        } else {
-                            showNoQuestionsMessage();
-                        }
-                    } else {
-                        showNoQuestionsMessage();
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load questions for segment:', error);
-                showNoQuestionsMessage();
+            const duration = Math.max(0, segment.end - segment.start);
+
+            const timeEl = document.getElementById('segment-time');
+            if (timeEl) {
+                timeEl.textContent = timeText;
+            }
+
+            const durationEl = document.getElementById('segment-duration');
+            if (durationEl) {
+                durationEl.textContent = `Duration: ${duration} seconds`;
+            }
+
+            updateExpertQuestionsPanel(segment);
+
+            const approveSection = document.getElementById('approve-section');
+            if (approveSection) {
+                approveSection.style.display = 'block';
             }
         }
         
-        function showNoQuestionsMessage() {
-            const container = document.getElementById('ai-questions');
-            container.innerHTML = `
-                <div class="question-item">
-                    <div class="question-text" style="text-align: center; color: #718096;">
-                        No AI-generated questions available for this segment
-                    </div>
-                </div>
-            `;
-        }
-        
-        function displayAIQuestions(questions) {
-            const container = document.getElementById('ai-questions');
-            container.innerHTML = '';
-            
-            Object.entries(questions).forEach(([type, data]) => {
-                const questionDiv = document.createElement('div');
-                questionDiv.className = 'question-item';
-                
-                questionDiv.innerHTML = `
-                    <div class="question-type-badge">${type}</div>
-                    <div class="question-text">${data.q}</div>
-                    <div class="answer-text">${data.a}</div>
-                `;
-                
-                container.appendChild(questionDiv);
-            });
+        async function loadAIQuestionsForSegment(segment) {
+            updateExpertQuestionsPanel(segment);
         }
         
         function createTimelinePausePoints() {
             const timelineContainer = document.getElementById('timeline-annotations');
             timelineContainer.innerHTML = '';
-            
+
             if (!videoElement || currentSegments.length === 0) return;
-            
+
             const videoDuration = videoElement.duration || 600;
-            
+
             currentSegments.forEach((segment, index) => {
                 const pausePoint = document.createElement('div');
                 pausePoint.className = 'timeline-pause-point';
                 pausePoint.id = `timeline-point-${index}`;
-                
-                const leftPercent = (segment.start / videoDuration) * 100;
+
+                const leftPercent = (segment.end / videoDuration) * 100;
                 pausePoint.style.left = leftPercent + '%';
-                
-                // Set initial state
-                if (index < currentSegmentIndex) {
+
+                if (hasExpertDecision(segment)) {
                     pausePoint.classList.add('completed');
                 } else if (index === currentSegmentIndex) {
                     pausePoint.classList.add('current');
                 }
-                
+
                 pausePoint.title = `Segment ${index + 1}: ${formatTime(segment.start)}`;
-                
+
                 timelineContainer.appendChild(pausePoint);
             });
         }
@@ -816,10 +3167,10 @@ function checkForPausePoints() {
             currentSegments.forEach((segment, index) => {
                 const pausePoint = document.getElementById(`timeline-point-${index}`);
                 if (!pausePoint) return;
-                
+
                 pausePoint.classList.remove('completed', 'current');
-                
-                if (index < currentSegmentIndex) {
+
+                if (hasExpertDecision(segment)) {
                     pausePoint.classList.add('completed');
                 } else if (index === currentSegmentIndex) {
                     pausePoint.classList.add('current');
@@ -827,59 +3178,110 @@ function checkForPausePoints() {
             });
         }
         
-        function approveAndContinue() {
-            showStatus('Questions approved! Continuing to next segment...', 'success');
-            
-            // Clear current questions immediately
-            clearCurrentQuestions();
-            
-            // Mark current segment as completed
-            currentSegmentIndex++;
-            updateTimelinePausePoints();
-            updateProgress();
-            
-            // Hide overlays and panels
-            hidePauseOverlay();
-            document.getElementById('approve-section').style.display = 'none';
-            document.getElementById('segment-info').style.display = 'none';
-            
-            if (currentSegmentIndex >= currentSegments.length) {
-                showStatus('All segments completed!', 'success');
+        function approveAndContinue(message = null, statusType = 'success') {
+            const currentSegment = currentSegments[currentSegmentIndex];
+
+            if (currentSegment && !hasExpertDecision(currentSegment)) {
+                const warning = 'Please add an expert question or mark the segment as skipped before continuing.';
+                setExpertFormFeedback(warning);
                 return;
             }
-            
-            // Continue playing
+
+            clearCurrentQuestions();
+            hidePauseOverlay();
+
+            const segmentInfo = document.getElementById('segment-info');
+            if (segmentInfo) {
+                segmentInfo.style.display = 'none';
+            }
+
+            const approveSection = document.getElementById('approve-section');
+            if (approveSection) {
+                approveSection.style.display = 'none';
+            }
+
+            pendingSegmentIndices = pendingSegmentIndices.filter(index => index !== currentSegmentIndex);
+
+            const processedIndex = currentSegmentIndex;
+            const nextQueuedIndex = pendingSegmentIndices.length > 0 ? pendingSegmentIndices.shift() : null;
+
+            if (nextQueuedIndex !== null && nextQueuedIndex !== undefined) {
+                pauseForReview(nextQueuedIndex);
+                return;
+            }
+
+            const nextIndex = findNextIncompleteSegmentIndex(processedIndex + 1);
+            currentSegmentIndex = nextIndex;
+
+            updateTimelinePausePoints();
+            updateProgress();
+
+            if (nextIndex >= currentSegments.length) {
+                autoAdvanceEnabled = false;
+                updateExpertQuestionsPanel(null);
+                return;
+            }
+
             autoAdvanceEnabled = true;
-            if (videoElement) {
+
+            const nextSegment = currentSegments[currentSegmentIndex] || null;
+            updateExpertQuestionsPanel(nextSegment);
+
+            if (videoElement && nextSegment) {
+                const nextStart = Number(nextSegment.start ?? 0);
+                if (!Number.isNaN(nextStart) && nextStart >= 0) {
+                    videoElement.currentTime = Math.max(nextStart, 0);
+                }
                 videoElement.play();
             }
         }
         
         function clearCurrentQuestions() {
-            // Clear the questions display
-            const container = document.getElementById('ai-questions');
-            container.innerHTML = `
-                <div style="text-align: center; color: #718096; padding: 20px;">
-                    Questions approved. Playing video...
-                </div>
-            `;
+            const container = document.getElementById('expert-questions');
+            if (!container) {
+                return;
+            }
+
+            container.innerHTML = '';
+            renderExpertInfoMessage(container, 'Continuing playback...');
         }
         
         function skipSegment() {
-            showStatus('Segment skipped', 'info');
-            approveAndContinue();
+            return handleExpertSkip();
         }
         
-        function showPauseOverlay(message) {
+        function showPauseOverlay(segment) {
             const overlay = document.getElementById('pause-overlay');
-            const reason = document.getElementById('pause-reason');
-            reason.textContent = message;
+            if (!overlay) {
+                return;
+            }
+
+            const segmentNumberEl = document.getElementById('expert-segment-number');
+            if (segmentNumberEl) {
+                segmentNumberEl.textContent = (currentSegmentIndex + 1).toString();
+            }
+
+            const segmentTimeEl = document.getElementById('expert-segment-time');
+            if (segmentTimeEl) {
+                segmentTimeEl.textContent = `${formatTime(segment.start)} - ${formatTime(segment.end)}`;
+            }
+
+            const pauseTimestampEl = document.getElementById('expert-pause-timestamp');
+            if (pauseTimestampEl) {
+                pauseTimestampEl.textContent = formatTime(segment.end);
+            }
+
+            populateExpertForm(segment);
+
             overlay.classList.add('active');
         }
-        
+
         function hidePauseOverlay() {
             const overlay = document.getElementById('pause-overlay');
-            overlay.classList.remove('active');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
+            resetExpertForm();
         }
         
         function togglePlayPause() {
@@ -894,19 +3296,24 @@ function checkForPausePoints() {
         
         function jumpToSegment(direction) {
             const newIndex = currentSegmentIndex + direction;
-            
+
             if (newIndex >= 0 && newIndex < currentSegments.length) {
                 currentSegmentIndex = newIndex;
-                
+
                 const segment = currentSegments[currentSegmentIndex];
                 if (videoElement && segment) {
-                    videoElement.currentTime = segment.start;
+                    const nextStart = Number(segment.start ?? 0);
+                    videoElement.currentTime = Math.max(nextStart, 0);
                 }
-                
+
+                autoAdvanceEnabled = true;
+                hidePauseOverlay();
                 updateProgress();
                 updateTimelinePausePoints();
+                updateExpertQuestionsPanel(currentSegments[currentSegmentIndex]);
             }
         }
+
         
         function seekVideo(seconds) {
             if (!videoElement) return;
@@ -924,34 +3331,284 @@ function checkForPausePoints() {
         function updateProgress() {
             const progressText = document.getElementById('progress-text');
             const progressFill = document.getElementById('progress-fill');
-            
-            if (currentSegments.length === 0) {
+
+            if (!progressText || !progressFill) {
+                return;
+            }
+
+            if (!currentSegments.length) {
                 progressText.textContent = 'No segments available';
                 progressFill.style.width = '0%';
                 return;
             }
-            
-            const progress = (currentSegmentIndex / currentSegments.length) * 100;
-            progressText.textContent = `Segment ${currentSegmentIndex + 1} of ${currentSegments.length}`;
-            progressFill.style.width = progress + '%';
+
+            const total = currentSegments.length;
+            const completed = currentSegments.reduce((count, segment) => count + (hasExpertDecision(segment) ? 1 : 0), 0);
+
+            if (completed >= total) {
+                progressText.textContent = `All ${total} segments completed`;
+            } else {
+                progressText.textContent = `Segment ${completed + 1} of ${total}`;
+            }
+
+            const percent = (completed / total) * 100;
+            progressFill.style.width = `${percent}%`;
         }
-        
+
         function showStatus(message, type) {
-            const container = document.getElementById('status-messages');
-            
-            const statusDiv = document.createElement('div');
-            statusDiv.className = `status-message status-${type}`;
-            statusDiv.textContent = message;
-            
-            container.appendChild(statusDiv);
-            
-            setTimeout(() => {
-                if (statusDiv.parentNode) {
-                    statusDiv.parentNode.removeChild(statusDiv);
-                }
-            }, 5000);
+            const containers = [
+                document.getElementById('global-status-messages'),
+                document.getElementById('status-messages')
+            ].filter(Boolean);
+
+            if (containers.length === 0) {
+                return;
+            }
+
+            containers.forEach(container => {
+                const statusDiv = document.createElement('div');
+                statusDiv.className = `status-message status-${type}`;
+                statusDiv.textContent = message;
+                container.appendChild(statusDiv);
+
+                setTimeout(() => {
+                    if (statusDiv.parentNode) {
+                        statusDiv.parentNode.removeChild(statusDiv);
+                    }
+                }, 5000);
+            });
         }
         
+        function openAddQuestionModal() {
+            if (!videoElement || !currentVideoId) {
+                return;
+            }
+            
+            // Pause the video and remember its state
+            const wasPlaying = !videoElement.paused;
+            videoElement.pause();
+            
+            // Store whether video was playing before modal opened
+            videoElement.dataset.wasPlaying = wasPlaying;
+            
+            // Store the current timestamp
+            manualQuestionTimestamp = videoElement.currentTime;
+            
+            // Update modal display
+            const modal = document.getElementById('add-question-modal');
+            const timestampInput = document.getElementById('manual-timestamp');
+            
+            if (timestampInput) {
+                // Set the input value in time format (MM:SS or HH:MM:SS)
+                timestampInput.value = formatSecondsToTimeString(manualQuestionTimestamp);
+                
+                // Add event listener for timestamp changes
+                timestampInput.oninput = function() {
+                    // Validate and update timestamp as user types
+                    const seconds = parseTimeToSeconds(this.value);
+                    manualQuestionTimestamp = seconds;
+                };
+            }
+            
+            // Reset form
+            const form = document.getElementById('manual-question-form');
+            if (form) {
+                form.reset();
+                // Restore the timestamp after reset
+                if (timestampInput) {
+                    timestampInput.value = formatSecondsToTimeString(manualQuestionTimestamp);
+                }
+            }
+            
+            // Clear feedback
+            const feedback = document.getElementById('manual-form-feedback');
+            if (feedback) {
+                feedback.textContent = '';
+            }
+            
+            // Show modal
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+        
+        function closeAddQuestionModal() {
+            const modal = document.getElementById('add-question-modal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            
+            // Resume video if it was playing before modal opened
+            if (videoElement && videoElement.dataset.wasPlaying === 'true') {
+                videoElement.play();
+                delete videoElement.dataset.wasPlaying;
+            }
+            
+            // Clear the stored timestamp
+            manualQuestionTimestamp = null;
+        }
+        
+        async function handleManualQuestionSubmit(event) {
+            event.preventDefault();
+            
+            if (expertSaveInProgress) {
+                return;
+            }
+            
+            if (!currentVideoId) {
+                setManualFormFeedback('Invalid state. Please try again.');
+                return;
+            }
+            
+            const timestampInput = document.getElementById('manual-timestamp');
+            const typeSelect = document.getElementById('manual-question-type');
+            const questionInput = document.getElementById('manual-question-text');
+            const answerInput = document.getElementById('manual-answer-text');
+            
+            // Parse the timestamp from the time format input
+            const timestampStr = timestampInput ? timestampInput.value.trim() : '';
+            const timestamp = parseTimeToSeconds(timestampStr);
+            
+            const questionType = normalizeQuestionType(typeSelect ? typeSelect.value.trim() : '');
+            const question = questionInput ? questionInput.value.trim() : '';
+            const answer = answerInput ? answerInput.value.trim() : '';
+            
+            // Validate timestamp format
+            if (!timestampStr || timestampStr === '') {
+                setManualFormFeedback('Please enter a timestamp (e.g., 6:06 or 1:30:45).');
+                timestampInput.focus();
+                return;
+            }
+            
+            // Validate timestamp is a valid time format
+            if (!timestampStr.match(/^(?:(?:([0-9]+):)?([0-5]?[0-9]):)?([0-5]?[0-9])$/)) {
+                setManualFormFeedback('Please enter a valid time format (MM:SS or HH:MM:SS).');
+                timestampInput.focus();
+                return;
+            }
+            
+            // Validate timestamp is within video duration
+            if (timestamp < 0 || (videoElement && timestamp > videoElement.duration)) {
+                setManualFormFeedback(`Please enter a timestamp within the video duration (0:00 - ${formatSecondsToTimeString(videoElement.duration)}).`);
+                timestampInput.focus();
+                return;
+            }
+            
+            // Validate all fields are filled
+            if (!questionType || questionType === '') {
+                setManualFormFeedback('Please select a question type.');
+                typeSelect.focus();
+                return;
+            }
+            
+            if (!question || question === '') {
+                setManualFormFeedback('Please enter a question.');
+                questionInput.focus();
+                return;
+            }
+            
+            if (!answer || answer === '') {
+                setManualFormFeedback('Please enter an answer.');
+                answerInput.focus();
+                return;
+            }
+            
+            expertSaveInProgress = true;
+            toggleManualFormState(true);
+            setManualFormFeedback('Saving question...', 'success');
+            
+            // For manual questions, segmentStart and segmentEnd are the same as timestamp
+            const segmentStart = timestamp;
+            const segmentEnd = timestamp;
+            
+            const payload = {
+                videoId: currentVideoId,
+                segmentStart: segmentStart,
+                segmentEnd: segmentEnd,
+                timestamp: timestamp,
+                questionType,
+                question,
+                answer,
+                isManual: true // Flag to indicate this is a manually added question
+            };
+            
+            try {
+                const response = await fetch('/api/expert-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    const errorMessage = data && data.message ? data.message : 'Failed to save question.';
+                    throw new Error(errorMessage);
+                }
+                
+                // Create a virtual segment for display
+                const manualSegment = {
+                    start: segmentStart,
+                    end: segmentEnd,
+                    isManual: true
+                };
+                
+                setExpertQuestionForSegment(manualSegment, {
+                    videoId: currentVideoId,
+                    segmentStart: segmentStart,
+                    segmentEnd: segmentEnd,
+                    timestamp: timestamp,
+                    questionType,
+                    question,
+                    answer,
+                    isManual: true,
+                    skipReason: '',
+                    updatedAt: data.updatedAt || new Date().toISOString()
+                });
+                
+                // Refresh the expert questions panel
+                updateExpertQuestionsPanel(currentSegments[currentSegmentIndex]);
+                
+                closeAddQuestionModal();
+                
+            } catch (error) {
+                console.error('Failed to save manual question:', error);
+                setManualFormFeedback(error.message || 'Failed to save question.');
+            } finally {
+                expertSaveInProgress = false;
+                toggleManualFormState(false);
+            }
+        }
+        
+        function setManualFormFeedback(message, type = 'error') {
+            const feedback = document.getElementById('manual-form-feedback');
+            if (!feedback) {
+                return;
+            }
+            
+            feedback.textContent = message || '';
+            feedback.classList.remove('success');
+            
+            if (message && type === 'success') {
+                feedback.classList.add('success');
+            }
+        }
+        
+        function toggleManualFormState(disabled) {
+            const form = document.getElementById('manual-question-form');
+            if (!form) {
+                return;
+            }
+            
+            Array.from(form.elements).forEach(element => {
+                if (element.tagName === 'BUTTON' && element.type === 'button') {
+                    // Don't disable the cancel button
+                    return;
+                }
+                element.disabled = disabled;
+            });
+        }
+
         function formatTime(seconds) {
             if (!seconds || isNaN(seconds)) return '00:00';
             
@@ -963,6 +3620,46 @@ function checkForPausePoints() {
         function formatDuration(seconds) {
             if (!seconds) return '0:00';
             
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            if (hours > 0) {
+                return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+        
+        // Helper function to parse time string (MM:SS or HH:MM:SS) to seconds
+        function parseTimeToSeconds(timeStr) {
+            if (!timeStr) return 0;
+            
+            // Clean the input
+            timeStr = timeStr.trim();
+            
+            // Match formats like: 6:06, 06:06, 1:06:06
+            const parts = timeStr.split(':').map(part => parseInt(part, 10) || 0);
+            
+            if (parts.length === 1) {
+                // Just seconds
+                return parts[0];
+            } else if (parts.length === 2) {
+                // MM:SS
+                return parts[0] * 60 + parts[1];
+            } else if (parts.length === 3) {
+                // HH:MM:SS
+                return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            }
+            
+            return 0;
+        }
+        
+        // Helper function to format seconds to time string for display
+        function formatSecondsToTimeString(seconds) {
+            if (!seconds || isNaN(seconds)) return '0:00';
+            
+            seconds = Math.floor(seconds);
             const hours = Math.floor(seconds / 3600);
             const mins = Math.floor((seconds % 3600) / 60);
             const secs = Math.floor(seconds % 60);

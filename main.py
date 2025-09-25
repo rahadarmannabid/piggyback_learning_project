@@ -78,6 +78,12 @@ EXPERT_QUESTION_TYPES = [
 EXPERT_QUESTION_TYPE_VALUES = {value for value, _ in EXPERT_QUESTION_TYPES}
 EXPERT_QUESTION_TYPE_LABELS = {value: label for value, label in EXPERT_QUESTION_TYPES}
 
+def normalize_segment_value(value: Any) -> float:
+    try:
+        return round(float(value), 3)
+    except (TypeError, ValueError):
+        return 0.0
+
 
 # -----------------------------
 # Download helpers
@@ -1789,9 +1795,9 @@ async def list_videos():
         for video_dir in sorted(DOWNLOADS_DIR.iterdir()):
             if not video_dir.is_dir():
                 continue
-                
+
             video_id = video_dir.name
-            
+
             # Find video file
             video_file = None
             for ext in ("*.mp4", "*.webm", "*.mkv"):
@@ -1799,10 +1805,20 @@ async def list_videos():
                 if video_files:
                     video_file = video_files[0]
                     break
-            
+
             if not video_file:
                 continue
-                
+
+            questions_dir = video_dir / "questions"
+            if not questions_dir.exists() or not questions_dir.is_dir():
+                continue
+
+            question_files = [p for p in questions_dir.glob('*.json') if p.is_file()]
+            if not question_files:
+                continue
+
+            question_count = len(question_files)
+
             # Get video duration from frame data if available
             duration = 0
             frames_dir = video_dir / "extracted_frames"
@@ -1813,21 +1829,22 @@ async def list_videos():
                     duration = int(float(info.get("video_info", {}).get("duration_seconds", 0)))
                 except Exception:
                     duration = 0
-            
+
             # Count files
             file_count = len([f for f in video_dir.iterdir() if f.is_file()])
-            
+
             # Create video URL
             video_url = f"/downloads/{video_file.relative_to(DOWNLOADS_DIR).as_posix()}"
-            
+
             videos.append({
                 "id": video_id,
                 "title": video_id,  # Could be enhanced to get actual title
                 "duration": duration,
                 "fileCount": file_count,
+                "questionCount": question_count,
                 "videoUrl": video_url
             })
-        
+
         return JSONResponse({
             "success": True,
             "videos": videos
@@ -1840,6 +1857,152 @@ async def list_videos():
             "videos": []
         })
     
+
+@app.get("/api/expert-questions/{video_id}")
+async def get_expert_questions(video_id: str):
+    video_dir = DOWNLOADS_DIR / video_id
+    questions_dir = video_dir / "expert_questions"
+    file_path = questions_dir / "expert_questions.json"
+
+    if not video_dir.exists() or not questions_dir.exists() or not file_path.exists():
+        return JSONResponse({"success": True, "video_id": video_id, "questions": []})
+
+    try:
+        data = json.loads(file_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return JSONResponse({"success": False, "message": f"Unable to read expert questions: {exc}", "questions": []}, status_code=500)
+
+    questions = data.get("questions") if isinstance(data, dict) else []
+    if not isinstance(questions, list):
+        questions = []
+
+    return JSONResponse({"success": True, "video_id": video_id, "questions": questions})
+
+
+@app.post("/api/expert-questions")
+async def save_expert_question(payload: Dict[str, Any] = Body(...)):
+    video_id = str(payload.get("videoId") or payload.get("video_id") or "").strip()
+    if not video_id:
+        return JSONResponse({"success": False, "message": "videoId is required"}, status_code=400)
+
+    video_dir = DOWNLOADS_DIR / video_id
+    if not video_dir.exists():
+        return JSONResponse({"success": False, "message": "Video not found"}, status_code=404)
+
+    segment_start_value = normalize_segment_value(payload.get("segmentStart"))
+    segment_end_value = normalize_segment_value(payload.get("segmentEnd"))
+    timestamp_value = normalize_segment_value(payload.get("timestamp", segment_end_value))
+
+    skipped = bool(payload.get("skipped") or payload.get("skip") or payload.get("isSkipped"))
+    skip_reason = str(payload.get("skipReason") or payload.get("skip_reason") or "").strip()
+
+    if segment_end_value <= segment_start_value:
+        segment_end_value = segment_start_value
+
+    question_type = str(payload.get("questionType") or payload.get("question_type") or "").strip().lower()
+    question_text = str(payload.get("question") or "").strip()
+    answer_text = str(payload.get("answer") or "").strip()
+
+    if skipped:
+        question_type = ""
+        question_text = ""
+        answer_text = ""
+    else:
+        if question_type not in EXPERT_QUESTION_TYPE_VALUES:
+            return JSONResponse({"success": False, "message": "Invalid question type"}, status_code=400)
+
+        if not question_text or not answer_text:
+            return JSONResponse({"success": False, "message": "Question and answer are required"}, status_code=400)
+
+    questions_dir = video_dir / "expert_questions"
+    questions_dir.mkdir(parents=True, exist_ok=True)
+    file_path = questions_dir / "expert_questions.json"
+
+    try:
+        stored = json.loads(file_path.read_text(encoding="utf-8")) if file_path.exists() else {}
+    except Exception:
+        stored = {}
+
+    if not isinstance(stored, dict):
+        stored = {}
+
+    questions_list = stored.get("questions")
+    if not isinstance(questions_list, list):
+        questions_list = []
+
+    def matches_existing(entry: Dict[str, Any]) -> bool:
+        existing_start = normalize_segment_value(entry.get("segment_start"))
+        existing_end = normalize_segment_value(entry.get("segment_end"))
+        return abs(existing_start - segment_start_value) < 1e-3 and abs(existing_end - segment_end_value) < 1e-3
+
+    questions_list = [q for q in questions_list if not matches_existing(q)]
+
+    entry = {
+        "segment_start": segment_start_value,
+        "segment_end": segment_end_value,
+        "timestamp": timestamp_value,
+        "question_type": question_type if not skipped else None,
+        "question": question_text,
+        "answer": answer_text,
+        "skipped": skipped,
+        "skip_reason": skip_reason,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+
+    questions_list.append(entry)
+    questions_list.sort(key=lambda q: normalize_segment_value(q.get("segment_start")))
+
+    stored["video_id"] = video_id
+    stored["questions"] = questions_list
+
+    file_path.write_text(json.dumps(stored, indent=2), encoding="utf-8")
+
+    message = "Segment marked as skipped." if skipped else "Expert question saved."
+    return JSONResponse({"success": True, "message": message, "updatedAt": entry["updated_at"], "skipped": skipped})
+
+@app.post("/api/save-final-questions")
+async def save_final_questions(payload: Dict[str, Any] = Body(...)):
+    """Save final reviewed questions to a dedicated folder"""
+    video_id = str(payload.get("videoId") or "").strip()
+    if not video_id:
+        return JSONResponse({"success": False, "message": "videoId is required"}, status_code=400)
+    
+    video_dir = DOWNLOADS_DIR / video_id
+    if not video_dir.exists():
+        return JSONResponse({"success": False, "message": "Video not found"}, status_code=404)
+    
+    # Get the final questions data
+    final_data = payload.get("data")
+    if not final_data:
+        return JSONResponse({"success": False, "message": "No data provided"}, status_code=400)
+    
+    # Create final_questions directory
+    final_questions_dir = video_dir / "final_questions"
+    final_questions_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Save to final_questions.json
+    final_file_path = final_questions_dir / "final_questions.json"
+    
+    try:
+        # Add metadata
+        final_data["saved_at"] = datetime.utcnow().isoformat()
+        final_data["video_id"] = video_id
+        
+        # Write the file
+        final_file_path.write_text(json.dumps(final_data, indent=2), encoding="utf-8")
+        
+        return JSONResponse({
+            "success": True,
+            "message": "Final questions saved successfully",
+            "filepath": f"downloads/{video_id}/final_questions/final_questions.json",
+            "saved_at": final_data["saved_at"]
+        })
+        
+    except Exception as exc:
+        return JSONResponse(
+            {"success": False, "message": f"Failed to save final questions: {exc}"}, 
+            status_code=500
+        )
 
 @app.post("/api/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
