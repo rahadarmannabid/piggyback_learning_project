@@ -443,8 +443,8 @@ def generate_questions_for_segment(video_id: str, start_time: int, end_time: int
     duration = end_time - start_time + 1  # inclusive window
     
     # First attempt with standard prompt
-    base_prompt = f"""You are an early childhood educator designing comprehension questions for children ages 4–7. 
-Analyze the video content using both the visual frames and the complete transcript provided below.
+    base_prompt = f"""You are an early childhood educator designing comprehension questions for children ages 6–8. 
+    Analyze the video content using both the visual frames and the complete transcript provided below.
 
 COMPLETE TRANSCRIPT:
 ==========================================
@@ -466,18 +466,18 @@ Please do the following:
    - Outcome
    - Prediction
 
-2. After creating the questions, choose the best single question you think is most appropriate for comprehension.
+2. After creating the questions, rank the questions based on how relevant and good it is to test comprehension and active viewing, the best question will be ranked 1
 
 3. Return JSON only (no extra text) in this structure:
 {{
   "questions": {{
-    "character": {{ "q": "...", "a": "..." }},
-    "setting": {{ "q": "...", "a": "..." }},
-    "feeling": {{ "q": "...", "a": "..." }},
-    "action": {{ "q": "...", "a": "..." }},
-    "causal": {{ "q": "...", "a": "..." }},
-    "outcome": {{ "q": "...", "a": "..." }},
-    "prediction": {{ "q": "...", "a": "..." }}
+    "character": {{ "q": "...", "a": "...", "rank":"" }},
+    "setting": {{ "q": "...", "a": "...", "rank":"" }},
+    "feeling": {{ "q": "...", "a": "...", "rank":"" }},
+    "action": {{ "q": "...", "a": "...", "rank":"" }},
+    "causal": {{ "q": "...", "a": "...", "rank":"" }},
+    "outcome": {{ "q": "...", "a": "...", "rank":"" }},
+    "prediction": {{ "q": "...", "a": "...", "rank":"" }}
   }},
   "best_question": "..."
 }}
@@ -502,18 +502,18 @@ Please create ONE short, child-friendly comprehension question for EACH of the f
 - Outcome
 - Prediction
 
-After creating the questions, choose the best single question you think is most appropriate for comprehension.
+After creating the questions, please rank the questions based on how relevant and good it is to test comprehension and active viewing, the best question will be ranked 1
 
 Return JSON only (no extra text) in this structure:
 {{
   "questions": {{
-    "character": {{ "q": "...", "a": "..." }},
-    "setting": {{ "q": "...", "a": "..." }},
-    "feeling": {{ "q": "...", "a": "..." }},
-    "action": {{ "q": "...", "a": "..." }},
-    "causal": {{ "q": "...", "a": "..." }},
-    "outcome": {{ "q": "...", "a": "..." }},
-    "prediction": {{ "q": "...", "a": "..." }}
+    "character": {{ "q": "...", "a": "...", "rank":"" }},
+    "setting": {{ "q": "...", "a": "...", "rank":"" }},
+    "feeling": {{ "q": "...", "a": "...", "rank":"" }},
+    "action": {{ "q": "...", "a": "...", "rank":"" }},
+    "causal": {{ "q": "...", "a": "...", "rank":"" }},
+    "outcome": {{ "q": "...", "a": "...", "rank":"" }},
+    "prediction": {{ "q": "...", "a": "...", "rank":"" }}
   }},
   "best_question": "..."
 }}

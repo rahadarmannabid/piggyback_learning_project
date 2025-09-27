@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -982,7 +982,7 @@
         }
         
         .accordion-header.approved .segment-index::after {
-            content: " ✓";
+            content: " âœ“";
             color: #28a745;
             font-weight: bold;
         }
@@ -1083,6 +1083,314 @@
                 grid-template-columns: 1fr;
             }
         }
+            .llm-review-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(45, 55, 72, 0.6);
+            z-index: 1600;
+        }
+
+        .llm-review-modal.active {
+            display: flex;
+        }
+
+        .llm-review-content {
+            width: min(920px, 95%);
+            max-height: 90vh;
+            overflow-y: auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+            padding: 28px 32px;
+        }
+
+        .llm-review-header h3 {
+            margin: 0 0 6px;
+            font-size: 1.4rem;
+            color: #2d3748;
+        }
+
+        .llm-review-header p {
+            margin: 0;
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+
+        .llm-modal-feedback {
+            color: #c53030;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .llm-step-instructions {
+            background: #ebf8ff;
+            border: 1px solid #bee3f8;
+            color: #2b6cb0;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-bottom: 18px;
+        }
+
+        .llm-step-content {
+            display: none;
+        }
+
+        .llm-step-content.active {
+            display: block;
+        }
+
+        .llm-step-grid {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .llm-ranking-column,
+        .llm-trash-column {
+            flex: 1 1 300px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+            min-height: 220px;
+        }
+
+        .llm-ranking-list,
+        .llm-trash-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .llm-ranking-item,
+        .llm-trash-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            background: #ffffff;
+            cursor: grab;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .llm-ranking-item:active,
+        .llm-trash-item:active {
+            cursor: grabbing;
+        }
+
+        .llm-rank-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3182ce;
+            color: #ffffff;
+            display: grid;
+            place-items: center;
+            font-weight: 600;
+        }
+
+        .llm-item-text {
+            flex: 1;
+        }
+
+        .llm-item-type {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #4a5568;
+            margin-bottom: 4px;
+        }
+
+        .llm-item-question {
+            color: #1a202c;
+            font-size: 0.95rem;
+        }
+
+        .llm-trash-dropzone {
+            border: 2px dashed #cbd5e0;
+            border-radius: 10px;
+            min-height: 180px;
+            padding: 12px;
+            background: #ffffff;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .llm-trash-dropzone.drag-over {
+            border-color: #fc8181;
+            background: #fff5f5;
+        }
+
+        .llm-ranking-empty,
+        .llm-trash-empty,
+        .llm-empty-state {
+            text-align: center;
+            color: #718096;
+            font-size: 0.9rem;
+            padding: 16px;
+        }
+
+        .llm-comment-section {
+            margin-top: 18px;
+        }
+
+        .llm-comment-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #2d3748;
+        }
+
+        .llm-comment-section textarea {
+            width: 100%;
+            min-height: 90px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+
+        .llm-step-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .llm-accordion {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .llm-accordion-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: #ffffff;
+            overflow: hidden;
+        }
+
+        .llm-accordion-item.trashed {
+            border-color: #fc8181;
+            background: #fff5f5;
+        }
+
+        .llm-accordion-header {
+            width: 100%;
+            background: transparent;
+            border: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .llm-accordion-item.open .llm-accordion-header {
+            background: #ebf8ff;
+        }
+
+        .llm-accordion-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .llm-accordion-panel {
+            display: none;
+            padding: 18px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .llm-accordion-item.open .llm-accordion-panel {
+            display: block;
+        }
+
+        .llm-answer-display {
+            padding: 12px 14px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .llm-answer-display strong {
+            display: block;
+            font-size: 0.8rem;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+
+        .llm-answer-text {
+            color: #2d3748;
+            white-space: pre-wrap;
+        }
+
+        .llm-answer-empty {
+            color: #718096;
+            font-style: italic;
+        }
+
+        .llm-accordion-actions {
+            margin-top: 14px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .llm-edit-form {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .llm-modal-field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .llm-modal-field textarea {
+            width: 100%;
+            min-height: 80px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+
+        .llm-edit-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        @media (max-width: 900px) {
+            .llm-review-content {
+                width: 100%;
+                max-height: 85vh;
+                padding: 20px;
+            }
+            .llm-step-grid {
+                flex-direction: column;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -1280,6 +1588,50 @@
             </div>
         </div>
 
+        <!-- LLM Review Modal -->
+        <div class="llm-review-modal" id="llm-review-modal">
+            <div class="llm-review-content">
+                <div class="llm-review-header">
+                    <h3 id="llm-modal-step-title">Review AI Questions - Step 1 of 2</h3>
+                    <p id="llm-modal-segment-label">Segment details</p>
+                </div>
+                <div class="llm-modal-feedback" id="llm-modal-feedback"></div>
+                <div class="llm-step-content active" id="llm-step-1">
+                    <p class="llm-step-instructions">Step 1 of 2 - Rank the AI-generated questions, drop any you do not want into Trash, and leave a comment explaining your choices. You can make edits in the next step.</p>
+                    <div class="llm-step-grid">
+                        <div class="llm-ranking-column">
+                            <h4 class="llm-section-title">Ranking</h4>
+                            <p class="llm-section-help">Drag questions to reorder them. The rank badge shows the current position.</p>
+                            <ul class="llm-ranking-list" id="llm-ranking-list"></ul>
+                            <div class="llm-ranking-empty" id="llm-ranking-empty">No questions available to rank.</div>
+                        </div>
+                        <div class="llm-trash-column">
+                            <h4 class="llm-section-title">Trash</h4>
+                            <p class="llm-section-help">Drop a question here to remove it from the ranked list. You can drag it back if you change your mind.</p>
+                            <div class="llm-trash-dropzone" id="llm-trash-dropzone">
+                                <ul class="llm-trash-list" id="llm-trash-list"></ul>
+                                <div class="llm-trash-empty" id="llm-trash-empty">No questions in trash.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="llm-comment-section">
+                        <label for="llm-ranking-comment">Comment (required)</label>
+                        <textarea id="llm-ranking-comment" placeholder="Explain your ranking decisions and any questions you removed." required></textarea>
+                    </div>
+                    <div class="llm-step-footer">
+                        <button type="button" class="btn btn-success" id="llm-step-next-btn">Next: Review Answers</button>
+                    </div>
+                </div>
+                <div class="llm-step-content" id="llm-step-2">
+                    <p class="llm-step-instructions">Step 2 of 2 - Review answers, use the pencil to edit questions or answers, and trash or restore items as needed.</p>
+                    <div class="llm-accordion" id="llm-accordion-list"></div>
+                    <div class="llm-step-footer">
+                        <button type="button" class="btn btn-secondary" id="llm-step-back-btn">Back</button>
+                        <button type="button" class="btn btn-success" id="llm-review-submit-btn">Submit &amp; Continue</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="step-content" id="step-3" data-step="3">
             <div class="review-card">
                 <h2>Review Questions</h2>
@@ -1315,6 +1667,64 @@
         let segmentApprovals = {}; // Store which segments have been approved
         let manualQuestionTimestamp = null; // Store timestamp for manual questions
         const REVIEW_TOLERANCE_BEFORE = 0.25;
+
+        let llmModalState = {
+            open: false,
+            segmentKey: null,
+            segmentIndex: null,
+            questions: [],
+            rankingOrder: [],
+            trashOrder: [],
+            openQuestionKey: null,
+            draggingKey: null,
+            dragSource: null,
+            step: 1,
+            editingKey: null,
+            comment: ''
+        };
+        let modalPlaybackLockCount = 0;
+        let modalPlaybackWasPlaying = false;
+
+        let llmModalResolve = null;
+
+
+        function acquireModalPlaybackLock() {
+            if (!videoElement) {
+                return;
+            }
+
+            if (modalPlaybackLockCount === 0) {
+                modalPlaybackWasPlaying = !videoElement.paused;
+            }
+
+            modalPlaybackLockCount += 1;
+            videoElement.pause();
+        }
+
+        function releaseModalPlaybackLock(options = {}) {
+            const resume = options && typeof options.resume === 'boolean' ? options.resume : false;
+
+            if (!videoElement) {
+                modalPlaybackLockCount = Math.max(0, modalPlaybackLockCount - 1);
+                modalPlaybackWasPlaying = false;
+                return;
+            }
+
+            if (modalPlaybackLockCount > 0) {
+                modalPlaybackLockCount -= 1;
+            }
+
+            if (modalPlaybackLockCount === 0) {
+                if (resume && modalPlaybackWasPlaying) {
+                    videoElement.play();
+                }
+                modalPlaybackWasPlaying = false;
+            }
+        }
+
+        function isVideoPlaybackLocked() {
+            return modalPlaybackLockCount > 0;
+        }
         
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -1337,6 +1747,29 @@
             const manualForm = document.getElementById('manual-question-form');
             if (manualForm) {
                 manualForm.addEventListener('submit', handleManualQuestionSubmit);
+            }
+
+            const llmNextButton = document.getElementById('llm-step-next-btn');
+            if (llmNextButton) {
+                llmNextButton.addEventListener('click', handleLLMStepNext);
+            }
+
+            const llmBackButton = document.getElementById('llm-step-back-btn');
+            if (llmBackButton) {
+                llmBackButton.addEventListener('click', handleLLMStepBack);
+            }
+
+            const llmSubmitButton = document.getElementById('llm-review-submit-btn');
+            if (llmSubmitButton) {
+                llmSubmitButton.addEventListener('click', handleLLMModalSubmit);
+            }
+
+            const llmCommentInput = document.getElementById('llm-ranking-comment');
+            if (llmCommentInput) {
+                llmCommentInput.setAttribute('required', 'required');
+                llmCommentInput.addEventListener('input', () => {
+                    llmModalState.comment = llmCommentInput.value;
+                });
             }
         });
         
@@ -1932,7 +2365,7 @@
                 });
 
                 updateExpertQuestionsPanel(segment);
-                approveAndContinue();
+                await showLLMReviewForSegment(segment, currentSegmentIndex);
             } catch (error) {
                 console.error('Failed to save expert question:', error);
                 setExpertFormFeedback(error.message || 'Failed to save question.');
@@ -2000,7 +2433,7 @@
 
                 setExpertQuestionForSegment(segment, record);
                 updateExpertQuestionsPanel(segment);
-                approveAndContinue();
+                await showLLMReviewForSegment(segment, currentSegmentIndex);
             } catch (error) {
                 console.error('Failed to skip segment:', error);
                 setExpertFormFeedback(error.message || 'Failed to skip segment.');
@@ -2009,6 +2442,1699 @@
                 toggleExpertFormState(false);
             }
         }
+
+
+
+        async function showLLMReviewForSegment(segment, segmentIndex) {
+            llmModalResolve = null;
+
+            if (!segment || !currentVideoId) {
+
+                hidePauseOverlay();
+
+                releaseModalPlaybackLock({ resume: false });
+
+                approveAndContinue();
+
+                if (typeof llmModalResolve === 'function') {
+
+                    llmModalResolve();
+
+                    llmModalResolve = null;
+
+                }
+
+                return;
+
+            }
+
+
+
+            const questions = await resolveSegmentQuestions(segment);
+
+
+
+            if (!questions || Object.keys(questions).length === 0) {
+
+                hidePauseOverlay();
+
+                releaseModalPlaybackLock({ resume: false });
+
+                approveAndContinue();
+
+                if (typeof llmModalResolve === 'function') {
+
+                    llmModalResolve();
+
+                    llmModalResolve = null;
+
+                }
+
+                return;
+
+            }
+
+
+
+            const segmentKey = getSegmentKey(segment);
+
+
+
+            if (!llmQuestionEdits[currentVideoId]) {
+
+                llmQuestionEdits[currentVideoId] = {};
+
+            }
+
+
+
+            const entries = [];
+
+            Object.entries(questions).forEach(([type, data]) => {
+
+                const questionKey = `${segmentKey}_${type}`;
+
+                const edits = llmQuestionEdits[currentVideoId][questionKey] || {};
+
+
+
+                entries.push({
+
+                    questionKey,
+
+                    type,
+
+                    originalQuestion: data.q || '',
+
+                    originalAnswer: data.a || '',
+
+                    question: edits.question !== undefined ? edits.question : (data.q || ''),
+
+                    answer: edits.answer !== undefined ? edits.answer : (data.a || ''),
+
+                    trashed: Boolean(edits.trashed),
+
+                    modified: Boolean(edits.modified),
+
+                    timestamp: edits.timestamp || null
+
+                });
+
+            });
+
+
+
+            if (!entries.length) {
+
+                hidePauseOverlay();
+
+                releaseModalPlaybackLock({ resume: false });
+
+                approveAndContinue();
+
+                if (typeof llmModalResolve === 'function') {
+
+                    llmModalResolve();
+
+                    llmModalResolve = null;
+
+                }
+
+                return;
+
+            }
+
+
+
+            const rankingInfo = llmQuestionEdits[currentVideoId][`${segmentKey}_ranking`] || {};
+
+            const validKeys = entries.map(entry => entry.questionKey);
+
+
+
+            const rankingOrder = Array.isArray(rankingInfo.order)
+
+                ? rankingInfo.order.filter(key => {
+
+                    if (!validKeys.includes(key)) {
+
+                        return false;
+
+                    }
+
+                    const entry = entries.find(item => item.questionKey === key);
+
+                    return entry ? !entry.trashed : true;
+
+                })
+
+                : [];
+
+
+
+            entries.forEach(entry => {
+
+                if (!entry.trashed && !rankingOrder.includes(entry.questionKey)) {
+
+                    rankingOrder.push(entry.questionKey);
+
+                }
+
+            });
+
+
+
+            const trashOrder = [];
+
+            if (Array.isArray(rankingInfo.trashed)) {
+
+                rankingInfo.trashed.forEach(key => {
+
+                    if (validKeys.includes(key) && !trashOrder.includes(key)) {
+
+                        trashOrder.push(key);
+
+                    }
+
+                });
+
+            }
+
+            entries.forEach(entry => {
+
+                if (entry.trashed && !trashOrder.includes(entry.questionKey)) {
+
+                    trashOrder.push(entry.questionKey);
+
+                }
+
+            });
+
+
+
+            llmModalState.open = true;
+
+            llmModalState.segmentKey = segmentKey;
+
+            llmModalState.segmentIndex = segmentIndex;
+
+            llmModalState.questions = entries;
+
+            llmModalState.rankingOrder = rankingOrder;
+
+            llmModalState.trashOrder = trashOrder;
+
+            llmModalState.openQuestionKey = rankingOrder[0] || trashOrder[0] || null;
+
+            llmModalState.draggingKey = null;
+
+            llmModalState.dragSource = null;
+
+            llmModalState.step = 1;
+
+            llmModalState.editingKey = null;
+
+            llmModalState.comment = typeof rankingInfo.comment === 'string' ? rankingInfo.comment : '';
+
+
+
+            const segmentLabel = document.getElementById('llm-modal-segment-label');
+
+            if (segmentLabel) {
+
+                segmentLabel.textContent = `Segment ${segmentIndex + 1} (${formatTime(segment.start)} - ${formatTime(segment.end)})`;
+
+            }
+
+
+
+            const commentInput = document.getElementById('llm-ranking-comment');
+
+            if (commentInput) {
+
+                commentInput.value = llmModalState.comment || '';
+
+            }
+
+
+
+            const feedback = document.getElementById('llm-modal-feedback');
+
+            if (feedback) {
+
+                feedback.textContent = '';
+
+            }
+
+
+
+            hidePauseOverlay();
+
+            acquireModalPlaybackLock();
+
+            setLLMStep(1);
+
+
+
+            const modal = document.getElementById('llm-review-modal');
+
+            if (modal) {
+
+                modal.classList.add('active');
+
+            }
+
+
+
+            return new Promise(resolve => {
+
+                llmModalResolve = resolve;
+
+            });
+
+        }
+
+
+
+        function clearLLMModalState() {
+
+            llmModalState.open = false;
+
+            llmModalState.segmentKey = null;
+
+            llmModalState.segmentIndex = null;
+
+            llmModalState.questions = [];
+
+            llmModalState.rankingOrder = [];
+
+            llmModalState.trashOrder = [];
+
+            llmModalState.openQuestionKey = null;
+
+            llmModalState.draggingKey = null;
+
+            llmModalState.dragSource = null;
+
+            llmModalState.step = 1;
+
+            llmModalState.editingKey = null;
+
+            llmModalState.comment = '';
+
+        }
+
+
+
+        function closeLLMReviewModal() {
+
+            const modal = document.getElementById('llm-review-modal');
+
+            if (modal) {
+
+                modal.classList.remove('active');
+
+            }
+
+
+
+            const commentInput = document.getElementById('llm-ranking-comment');
+
+            if (commentInput) {
+
+                commentInput.value = '';
+
+            }
+
+
+
+            const feedback = document.getElementById('llm-modal-feedback');
+
+            if (feedback) {
+
+                feedback.textContent = '';
+
+            }
+
+
+
+            const dropzone = document.getElementById('llm-trash-dropzone');
+
+            if (dropzone) {
+
+                dropzone.classList.remove('drag-over');
+
+            }
+
+
+
+            clearLLMModalState();
+
+        }
+
+
+
+        function setLLMStep(step) {
+
+            llmModalState.step = step;
+
+            llmModalState.editingKey = null;
+
+
+
+            const title = document.getElementById('llm-modal-step-title');
+
+            if (title) {
+
+                title.textContent = step === 1 ? 'Review AI Questions - Step 1 of 2' : 'Review AI Questions - Step 2 of 2';
+
+            }
+
+
+
+            document.querySelectorAll('.llm-step-content').forEach(content => {
+
+                content.classList.toggle('active', content.id === `llm-step-${step}`);
+
+            });
+
+
+
+            if (step === 1) {
+
+                renderLLMStepOne();
+
+                const commentInput = document.getElementById('llm-ranking-comment');
+
+                if (commentInput) {
+
+                    commentInput.value = llmModalState.comment || '';
+
+                }
+
+            } else {
+
+                const combinedOrder = getCombinedLLMOrder();
+
+                if (!combinedOrder.includes(llmModalState.openQuestionKey)) {
+
+                    llmModalState.openQuestionKey = combinedOrder[0] || null;
+
+                }
+
+                renderLLMStepTwo();
+
+            }
+
+        }
+
+
+
+        function renderLLMStepOne() {
+
+            const rankingList = document.getElementById('llm-ranking-list');
+
+            const trashList = document.getElementById('llm-trash-list');
+
+            const rankingEmpty = document.getElementById('llm-ranking-empty');
+
+            const trashEmpty = document.getElementById('llm-trash-empty');
+
+
+
+            if (!rankingList || !trashList) {
+
+                return;
+
+            }
+
+
+
+            rankingList.innerHTML = '';
+
+            trashList.innerHTML = '';
+
+
+
+            const rankingKeys = llmModalState.rankingOrder || [];
+
+            const trashKeys = llmModalState.trashOrder || [];
+
+
+
+            rankingKeys.forEach((key, index) => {
+
+                const item = createLLMListItem(key, index, 'ranking');
+
+                if (item) {
+
+                    rankingList.appendChild(item);
+
+                }
+
+            });
+
+
+
+            trashKeys.forEach((key, index) => {
+
+                const item = createLLMListItem(key, index, 'trash');
+
+                if (item) {
+
+                    trashList.appendChild(item);
+
+                }
+
+            });
+
+
+
+            if (rankingEmpty) {
+
+                rankingEmpty.style.display = rankingKeys.length ? 'none' : 'block';
+
+            }
+
+            if (trashEmpty) {
+
+                trashEmpty.style.display = trashKeys.length ? 'none' : 'block';
+
+            }
+
+
+
+            attachLLMListListeners();
+
+        }
+
+
+
+        function attachLLMListListeners() {
+
+            const rankingList = document.getElementById('llm-ranking-list');
+
+            const trashDropzone = document.getElementById('llm-trash-dropzone');
+
+
+
+            if (rankingList && rankingList.dataset.listenersAttached !== 'true') {
+
+                rankingList.addEventListener('dragover', handleLLMRankingDragOver);
+
+                rankingList.addEventListener('drop', handleLLMRankingDrop);
+
+                rankingList.dataset.listenersAttached = 'true';
+
+            }
+
+
+
+            if (trashDropzone && trashDropzone.dataset.listenersAttached !== 'true') {
+
+                trashDropzone.addEventListener('dragover', handleLLMTrashDragOver);
+
+                trashDropzone.addEventListener('dragleave', handleLLMTrashDragLeave);
+
+                trashDropzone.addEventListener('drop', handleLLMTrashDrop);
+
+                trashDropzone.dataset.listenersAttached = 'true';
+
+            }
+
+        }
+
+
+
+        function createLLMListItem(questionKey, index, listType) {
+
+            const entry = getLLMEntry(questionKey);
+
+            if (!entry) {
+
+                return null;
+
+            }
+
+
+
+            const item = document.createElement('li');
+
+            item.className = listType === 'ranking' ? 'llm-ranking-item' : 'llm-trash-item';
+
+            item.dataset.questionKey = questionKey;
+
+            item.dataset.list = listType;
+
+            item.draggable = true;
+
+            item.addEventListener('dragstart', handleLLMDragStart);
+
+            item.addEventListener('dragend', handleLLMDragEnd);
+
+
+
+            if (listType === 'ranking') {
+
+                const badge = document.createElement('span');
+
+                badge.className = 'llm-rank-badge';
+
+                badge.textContent = String(index + 1);
+
+                item.appendChild(badge);
+
+            }
+
+
+
+            const textWrapper = document.createElement('div');
+
+            textWrapper.className = 'llm-item-text';
+
+
+
+            const typeEl = document.createElement('div');
+
+            typeEl.className = 'llm-item-type';
+
+            typeEl.textContent = entry.type;
+
+            textWrapper.appendChild(typeEl);
+
+
+
+            const questionEl = document.createElement('div');
+
+            questionEl.className = 'llm-item-question';
+
+            questionEl.textContent = entry.question || '(empty question)';
+
+            textWrapper.appendChild(questionEl);
+
+
+
+            item.appendChild(textWrapper);
+
+
+
+            if (listType === 'trash') {
+
+                const restoreButton = document.createElement('button');
+
+                restoreButton.type = 'button';
+
+                restoreButton.className = 'btn btn-secondary btn-sm';
+
+                restoreButton.textContent = 'Restore';
+
+                restoreButton.addEventListener('click', () => moveLLMQuestionToRanking(questionKey));
+
+                item.appendChild(restoreButton);
+
+            }
+
+
+
+            return item;
+
+        }
+
+
+
+        function handleLLMDragStart(event) {
+
+            const key = event.currentTarget && event.currentTarget.dataset ? event.currentTarget.dataset.questionKey : null;
+
+            if (!key) {
+
+                return;
+
+            }
+
+
+
+            llmModalState.draggingKey = key;
+
+            const parentList = event.currentTarget.closest('.llm-trash-list');
+
+            llmModalState.dragSource = parentList ? 'trash' : 'ranking';
+
+            if (event.dataTransfer) {
+
+                event.dataTransfer.effectAllowed = 'move';
+
+                event.dataTransfer.setData('text/plain', key);
+
+            }
+
+
+
+            event.currentTarget.classList.add('dragging');
+
+        }
+
+
+
+        function handleLLMDragEnd(event) {
+
+            if (event.currentTarget) {
+
+                event.currentTarget.classList.remove('dragging');
+
+            }
+
+            llmModalState.draggingKey = null;
+
+            llmModalState.dragSource = null;
+
+        }
+
+
+
+        function handleLLMRankingDragOver(event) {
+
+            event.preventDefault();
+
+        }
+
+
+
+        function handleLLMRankingDrop(event) {
+
+            event.preventDefault();
+
+            const draggedKey = llmModalState.draggingKey || (event.dataTransfer && event.dataTransfer.getData('text/plain'));
+
+            if (!draggedKey) {
+
+                return;
+
+            }
+
+
+
+            const list = document.getElementById('llm-ranking-list');
+
+            const index = getLLMDropIndex(list, event.clientY);
+
+            moveLLMQuestionToRanking(draggedKey, index);
+
+            llmModalState.draggingKey = null;
+
+            llmModalState.dragSource = null;
+
+        }
+
+
+
+        function handleLLMTrashDragOver(event) {
+
+            event.preventDefault();
+
+            const dropzone = document.getElementById('llm-trash-dropzone');
+
+            if (dropzone) {
+
+                dropzone.classList.add('drag-over');
+
+            }
+
+        }
+
+
+
+        function handleLLMTrashDragLeave() {
+
+            const dropzone = document.getElementById('llm-trash-dropzone');
+
+            if (dropzone) {
+
+                dropzone.classList.remove('drag-over');
+
+            }
+
+        }
+
+
+
+        function handleLLMTrashDrop(event) {
+
+            event.preventDefault();
+
+            const draggedKey = llmModalState.draggingKey || (event.dataTransfer && event.dataTransfer.getData('text/plain'));
+
+            if (!draggedKey) {
+
+                return;
+
+            }
+
+
+
+            moveLLMQuestionToTrash(draggedKey);
+
+            llmModalState.draggingKey = null;
+
+            llmModalState.dragSource = null;
+
+            const dropzone = document.getElementById('llm-trash-dropzone');
+
+            if (dropzone) {
+
+                dropzone.classList.remove('drag-over');
+
+            }
+
+        }
+
+
+
+        function getLLMDropIndex(list, clientY) {
+
+            if (!list) {
+
+                return 0;
+
+            }
+
+
+
+            const items = Array.from(list.querySelectorAll('li')).filter(item => !item.classList.contains('dragging'));
+
+            for (let index = 0; index < items.length; index++) {
+
+                const rect = items[index].getBoundingClientRect();
+
+                if (clientY < rect.top + rect.height / 2) {
+
+                    return index;
+
+                }
+
+            }
+
+            return items.length;
+
+        }
+
+
+
+        function moveLLMQuestionToRanking(questionKey, position) {
+
+            if (!questionKey) {
+
+                return;
+
+            }
+
+
+
+            const validKeys = llmModalState.questions.map(entry => entry.questionKey);
+
+            if (!validKeys.includes(questionKey)) {
+
+                return;
+
+            }
+
+
+
+            llmModalState.trashOrder = (llmModalState.trashOrder || []).filter(key => key !== questionKey);
+
+            let order = (llmModalState.rankingOrder || []).filter(key => key !== questionKey);
+
+
+
+            if (typeof position === 'number' && position >= 0 && position <= order.length) {
+
+                order.splice(position, 0, questionKey);
+
+            } else {
+
+                order.push(questionKey);
+
+            }
+
+
+
+            llmModalState.rankingOrder = order;
+
+
+
+            const entry = getLLMEntry(questionKey);
+
+            if (entry) {
+
+                entry.trashed = false;
+
+            }
+
+
+
+            persistLLMModalTrashState(questionKey, false);
+
+            renderLLMStepOne();
+
+
+
+            if (llmModalState.step === 2) {
+
+                renderLLMAccordion();
+
+            }
+
+        }
+
+
+
+        function moveLLMQuestionToTrash(questionKey) {
+
+            if (!questionKey) {
+
+                return;
+
+            }
+
+
+
+            const validKeys = llmModalState.questions.map(entry => entry.questionKey);
+
+            if (!validKeys.includes(questionKey)) {
+
+                return;
+
+            }
+
+
+
+            llmModalState.rankingOrder = (llmModalState.rankingOrder || []).filter(key => key !== questionKey);
+
+            if (!llmModalState.trashOrder.includes(questionKey)) {
+
+                llmModalState.trashOrder.push(questionKey);
+
+            }
+
+
+
+            const entry = getLLMEntry(questionKey);
+
+            if (entry) {
+
+                entry.trashed = true;
+
+            }
+
+
+
+            if (llmModalState.editingKey === questionKey) {
+
+                llmModalState.editingKey = null;
+
+            }
+
+
+
+            if (llmModalState.openQuestionKey === questionKey) {
+
+                llmModalState.openQuestionKey = llmModalState.rankingOrder[0] || llmModalState.trashOrder[0] || null;
+
+            }
+
+
+
+            persistLLMModalTrashState(questionKey, true);
+
+            renderLLMStepOne();
+
+
+
+            if (llmModalState.step === 2) {
+
+                renderLLMAccordion();
+
+            }
+
+        }
+
+
+
+        function renderLLMStepTwo() {
+
+            renderLLMAccordion();
+
+        }
+
+
+
+        function renderLLMAccordion() {
+
+            const accordion = document.getElementById('llm-accordion-list');
+
+            if (!accordion) {
+
+                return;
+
+            }
+
+
+
+            accordion.innerHTML = '';
+
+
+
+            const combinedOrder = getCombinedLLMOrder();
+
+            if (!combinedOrder.length) {
+
+                const empty = document.createElement('div');
+
+                empty.className = 'llm-empty-state';
+
+                empty.textContent = 'No AI-generated questions are available for this segment.';
+
+                accordion.appendChild(empty);
+
+                return;
+
+            }
+
+
+
+            if (!combinedOrder.includes(llmModalState.openQuestionKey)) {
+
+                llmModalState.openQuestionKey = combinedOrder[0];
+
+            }
+
+
+
+            combinedOrder.forEach(questionKey => {
+
+                const entry = getLLMEntry(questionKey);
+
+                if (!entry) {
+
+                    return;
+
+                }
+
+
+
+                const item = document.createElement('div');
+
+                item.className = 'llm-accordion-item';
+
+                if (llmModalState.openQuestionKey === questionKey) {
+
+                    item.classList.add('open');
+
+                }
+
+                if (entry.trashed) {
+
+                    item.classList.add('trashed');
+
+                }
+
+
+
+                const header = document.createElement('button');
+
+                header.type = 'button';
+
+                header.className = 'llm-accordion-header';
+
+                header.addEventListener('click', () => toggleLLMAccordion(questionKey));
+
+                header.innerHTML = `
+
+            <div class="llm-accordion-title">
+
+                <span class="llm-item-type">${entry.type}</span>
+
+                <span class="llm-item-question">${entry.question || '(empty question)'}</span>
+
+            </div>
+
+            <div class="llm-accordion-status">
+
+                ${entry.trashed ? '<span class="llm-badge trashed">Trashed</span>' : ''}
+
+            </div>
+
+                `;
+
+                item.appendChild(header);
+
+
+
+                const panel = document.createElement('div');
+
+                panel.className = 'llm-accordion-panel';
+
+
+
+                const answerDisplay = document.createElement('div');
+
+                answerDisplay.className = 'llm-answer-display';
+
+                answerDisplay.innerHTML = `
+
+            <strong>Answer</strong>
+
+            <div class="llm-answer-text">${entry.answer ? entry.answer : '<span class="llm-answer-empty">(empty answer)</span>'}</div>
+
+                `;
+
+                panel.appendChild(answerDisplay);
+
+
+
+                const actions = document.createElement('div');
+
+                actions.className = 'llm-accordion-actions';
+
+
+
+                const editButton = document.createElement('button');
+
+                editButton.type = 'button';
+
+                editButton.className = 'btn btn-secondary btn-icon';
+
+                editButton.innerHTML = '<span aria-hidden="true">&#9998;</span>';
+
+                editButton.title = 'Edit question and answer';
+
+                editButton.disabled = entry.trashed;
+
+                editButton.addEventListener('click', () => startLLMModalEdit(questionKey));
+
+                actions.appendChild(editButton);
+
+
+
+                const trashButton = document.createElement('button');
+
+                trashButton.type = 'button';
+
+                trashButton.className = 'btn btn-secondary btn-sm';
+
+                trashButton.textContent = entry.trashed ? 'Restore' : 'Trash';
+
+                trashButton.addEventListener('click', () => toggleLLMModalTrash(questionKey));
+
+                actions.appendChild(trashButton);
+
+
+
+                panel.appendChild(actions);
+
+
+
+                if (llmModalState.editingKey === questionKey && !entry.trashed) {
+
+                    const editWrapper = document.createElement('div');
+
+                    editWrapper.className = 'llm-edit-form';
+
+
+
+                    const questionField = document.createElement('div');
+
+                    questionField.className = 'llm-modal-field';
+
+                    const qLabel = document.createElement('label');
+
+                    qLabel.textContent = 'Question';
+
+                    const qInput = document.createElement('textarea');
+
+                    qInput.value = entry.question || '';
+
+                    qInput.dataset.role = 'question';
+
+                    questionField.appendChild(qLabel);
+
+                    questionField.appendChild(qInput);
+
+
+
+                    const answerField = document.createElement('div');
+
+                    answerField.className = 'llm-modal-field';
+
+                    const aLabel = document.createElement('label');
+
+                    aLabel.textContent = 'Answer';
+
+                    const aInput = document.createElement('textarea');
+
+                    aInput.value = entry.answer || '';
+
+                    aInput.dataset.role = 'answer';
+
+                    answerField.appendChild(aLabel);
+
+                    answerField.appendChild(aInput);
+
+
+
+                    const editActions = document.createElement('div');
+
+                    editActions.className = 'llm-edit-actions';
+
+                    const saveButton = document.createElement('button');
+
+                    saveButton.type = 'button';
+
+                    saveButton.className = 'btn btn-success btn-sm';
+
+                    saveButton.textContent = 'Save';
+
+                    saveButton.addEventListener('click', () => saveLLMModalQuestion(questionKey, editWrapper));
+
+                    const cancelButton = document.createElement('button');
+
+                    cancelButton.type = 'button';
+
+                    cancelButton.className = 'btn btn-secondary btn-sm';
+
+                    cancelButton.textContent = 'Cancel';
+
+                    cancelButton.addEventListener('click', cancelLLMModalEdit);
+
+
+
+                    editActions.appendChild(saveButton);
+
+                    editActions.appendChild(cancelButton);
+
+
+
+                    editWrapper.appendChild(questionField);
+
+                    editWrapper.appendChild(answerField);
+
+                    editWrapper.appendChild(editActions);
+
+
+
+                    panel.appendChild(editWrapper);
+
+                }
+
+
+
+                item.appendChild(panel);
+
+                accordion.appendChild(item);
+
+            });
+
+        }
+
+
+
+        function toggleLLMAccordion(questionKey) {
+
+            if (llmModalState.openQuestionKey === questionKey) {
+
+                llmModalState.openQuestionKey = null;
+
+            } else {
+
+                llmModalState.openQuestionKey = questionKey;
+
+            }
+
+            renderLLMAccordion();
+
+        }
+
+
+
+        function getLLMEntry(questionKey) {
+
+            return llmModalState.questions.find(entry => entry.questionKey === questionKey) || null;
+
+        }
+
+
+
+        function startLLMModalEdit(questionKey) {
+
+            const entry = getLLMEntry(questionKey);
+
+            if (!entry || entry.trashed) {
+
+                return;
+
+            }
+
+
+
+            llmModalState.openQuestionKey = questionKey;
+
+            llmModalState.editingKey = questionKey;
+
+            renderLLMAccordion();
+
+        }
+
+
+
+        function cancelLLMModalEdit() {
+
+            llmModalState.editingKey = null;
+
+            renderLLMAccordion();
+
+        }
+
+
+
+        function persistLLMModalQuestionEdit(questionKey, updates) {
+
+            if (!currentVideoId || !questionKey) {
+
+                return;
+
+            }
+
+
+
+            if (!llmQuestionEdits[currentVideoId]) {
+
+                llmQuestionEdits[currentVideoId] = {};
+
+            }
+
+
+
+            if (!llmQuestionEdits[currentVideoId][questionKey]) {
+
+                llmQuestionEdits[currentVideoId][questionKey] = {};
+
+            }
+
+
+
+            const target = llmQuestionEdits[currentVideoId][questionKey];
+
+            if (updates.question !== undefined) {
+
+                target.question = updates.question;
+
+            }
+
+            if (updates.answer !== undefined) {
+
+                target.answer = updates.answer;
+
+            }
+
+            if (updates.trashed !== undefined) {
+
+                target.trashed = updates.trashed;
+
+            }
+
+            target.modified = true;
+
+            target.timestamp = new Date().toISOString();
+
+        }
+
+
+
+        function persistLLMModalTrashState(questionKey, trashed) {
+
+            persistLLMModalQuestionEdit(questionKey, { trashed });
+
+        }
+
+
+
+        function saveLLMModalQuestion(questionKey, editWrapper) {
+
+            const entry = getLLMEntry(questionKey);
+
+            if (!entry) {
+
+                return;
+
+            }
+
+
+
+            const questionField = editWrapper.querySelector('textarea[data-role="question"]');
+
+            const answerField = editWrapper.querySelector('textarea[data-role="answer"]');
+
+
+
+            const updatedQuestion = questionField ? questionField.value.trim() : '';
+
+            const updatedAnswer = answerField ? answerField.value.trim() : '';
+
+
+
+            entry.question = updatedQuestion;
+
+            entry.answer = updatedAnswer;
+
+            entry.modified = true;
+
+            entry.timestamp = new Date().toISOString();
+
+
+
+            persistLLMModalQuestionEdit(questionKey, {
+
+                question: updatedQuestion,
+
+                answer: updatedAnswer
+
+            });
+
+
+
+            llmModalState.editingKey = null;
+
+
+
+            const feedback = document.getElementById('llm-modal-feedback');
+
+            if (feedback) {
+
+                feedback.textContent = 'Saved edits.';
+
+                setTimeout(() => {
+
+                    if (feedback.textContent === 'Saved edits.') {
+
+                        feedback.textContent = '';
+
+                    }
+
+                }, 1500);
+
+            }
+
+
+
+            renderLLMAccordion();
+
+            renderLLMStepOne();
+
+        }
+
+
+
+        function toggleLLMModalTrash(questionKey) {
+
+            const entry = getLLMEntry(questionKey);
+
+            if (!entry) {
+
+                return;
+
+            }
+
+
+
+            if (entry.trashed) {
+
+                moveLLMQuestionToRanking(questionKey);
+
+            } else {
+
+                moveLLMQuestionToTrash(questionKey);
+
+            }
+
+        }
+
+
+
+        function getCombinedLLMOrder() {
+
+            const seen = new Set();
+
+            const combined = [];
+
+
+
+            (llmModalState.rankingOrder || []).forEach(key => {
+
+                if (!seen.has(key)) {
+
+                    combined.push(key);
+
+                    seen.add(key);
+
+                }
+
+            });
+
+
+
+            (llmModalState.trashOrder || []).forEach(key => {
+
+                if (!seen.has(key)) {
+
+                    combined.push(key);
+
+                    seen.add(key);
+
+                }
+
+            });
+
+
+
+            llmModalState.questions.forEach(entry => {
+
+                if (!seen.has(entry.questionKey)) {
+
+                    combined.push(entry.questionKey);
+
+                    seen.add(entry.questionKey);
+
+                }
+
+            });
+
+
+
+            return combined;
+
+        }
+
+
+
+        function handleLLMStepNext() {
+
+            if (!llmModalState.open) {
+
+                return;
+
+            }
+
+
+
+            const commentInput = document.getElementById('llm-ranking-comment');
+
+            const feedback = document.getElementById('llm-modal-feedback');
+
+            const comment = commentInput ? commentInput.value.trim() : '';
+
+
+
+            if (!comment) {
+
+                if (feedback) {
+
+                    feedback.textContent = 'Please add a comment before continuing.';
+
+                }
+
+                if (commentInput) {
+
+                    commentInput.focus();
+
+                }
+
+                return;
+
+            }
+
+
+
+            llmModalState.comment = comment;
+
+            if (feedback) {
+
+                feedback.textContent = '';
+
+            }
+
+
+
+            setLLMStep(2);
+
+        }
+
+
+
+        function handleLLMStepBack() {
+
+            if (!llmModalState.open) {
+
+                return;
+
+            }
+
+
+
+            const feedback = document.getElementById('llm-modal-feedback');
+
+            if (feedback) {
+
+                feedback.textContent = '';
+
+            }
+
+
+
+            setLLMStep(1);
+
+        }
+
+
+
+        function handleLLMModalSubmit() {
+
+            if (!llmModalState.open || !currentVideoId || !llmModalState.segmentKey) {
+
+                closeLLMReviewModal();
+
+                releaseModalPlaybackLock({ resume: false });
+
+                approveAndContinue();
+
+                if (typeof llmModalResolve === 'function') {
+
+                    llmModalResolve();
+
+                    llmModalResolve = null;
+
+                }
+
+                return;
+
+            }
+
+
+
+            if (llmModalState.step !== 2) {
+
+                setLLMStep(2);
+
+                return;
+
+            }
+
+
+
+            const commentInput = document.getElementById('llm-ranking-comment');
+
+            const feedback = document.getElementById('llm-modal-feedback');
+
+            const comment = commentInput ? commentInput.value.trim() : '';
+
+
+
+            if (!comment) {
+
+                if (feedback) {
+
+                    feedback.textContent = 'Please add a comment before submitting.';
+
+                }
+
+                setLLMStep(1);
+
+                if (commentInput) {
+
+                    commentInput.focus();
+
+                }
+
+                return;
+
+            }
+
+
+
+            const validKeys = llmModalState.questions.map(entry => entry.questionKey);
+
+            const rankingOrder = (llmModalState.rankingOrder || []).filter(key => validKeys.includes(key));
+
+            const trashOrder = (llmModalState.trashOrder || []).filter(key => validKeys.includes(key));
+
+
+
+            if (!llmQuestionEdits[currentVideoId]) {
+
+                llmQuestionEdits[currentVideoId] = {};
+
+            }
+
+
+
+            llmQuestionEdits[currentVideoId][`${llmModalState.segmentKey}_ranking`] = {
+
+                order: rankingOrder,
+
+                trashed: trashOrder,
+
+                comment,
+
+                updatedAt: new Date().toISOString()
+
+            };
+
+
+
+            llmModalState.comment = comment;
+
+
+
+            closeLLMReviewModal();
+
+            releaseModalPlaybackLock({ resume: false });
+
+            renderReviewQuestions();
+
+            approveAndContinue();
+
+
+
+            if (typeof llmModalResolve === 'function') {
+
+                llmModalResolve();
+
+                llmModalResolve = null;
+
+            }
+
+        }
+
+
 
         function getSelectedVideoLabel() {
             if (currentVideoLabel) {
@@ -2131,7 +4257,7 @@
                 
                 const arrow = document.createElement('span');
                 arrow.className = 'accordion-arrow';
-                arrow.textContent = '▼';
+                arrow.innerHTML = '&#9662;';
                 
                 header.appendChild(title);
                 header.appendChild(arrow);
@@ -2261,15 +4387,7 @@
                                     <div class="answer-preview">${currentAnswer}</div>
                                 </div>
                                 <div class="question-actions">
-                                    ${isTrashed ? 
-                                        `<button class="btn-icon btn-restore" onclick="restoreLLMQuestion('${questionKey}')">Restore</button>` :
-                                        `<button class="btn-icon btn-edit" onclick="toggleEditMode('${questionKey}', true)">Edit</button>
-                                         ${!isExpertBestQuestion ? 
-                                            `<button class="btn-icon" style="background: #27ae60; color: white;" onclick="setExpertBestQuestion('${segmentKey}', '${questionKey}')">Set Best</button>` :
-                                            `<button class="btn-icon" style="background: #95a5a6; color: white;" onclick="setExpertBestQuestion('${segmentKey}', null)">Unset Best</button>`
-                                         }
-                                         <button class="btn-icon btn-trash" onclick="trashLLMQuestion('${questionKey}')">Trash</button>`
-                                    }
+                                     <!-- Read-only view - no actions available -->
                                 </div>
                             </div>
                             <div class="question-field">
@@ -2309,7 +4427,7 @@
                     <button class="btn-approve-segment" 
                             onclick="approveSegment('${segmentKey}', ${index})"
                             ${segmentApprovals[currentVideoId][segmentKey] ? 'disabled' : ''}>
-                        ${segmentApprovals[currentVideoId][segmentKey] ? 'Segment Approved ✓' : 'Approve Segment'}
+                        ${segmentApprovals[currentVideoId][segmentKey] ? 'Segment Approved âœ“' : 'Approve Segment'}
                     </button>
                 `;
                 
@@ -2515,7 +4633,6 @@
                     end: segment.end,
                     aiQuestions: [],
                     aiOriginalBest: null,
-                    expertSelectedBest: null,
                     approved: true
                 };
 
@@ -2525,13 +4642,29 @@
                         segmentData.aiOriginalBest = segment.result.best_question;
                     }
 
-                    const expertBestKey = llmQuestionEdits[currentVideoId] &&
-                                            llmQuestionEdits[currentVideoId][`${segmentKey}_expertBest`];
+                    // Get ranking info
+                    const rankingInfo = llmQuestionEdits[currentVideoId] && 
+                                    llmQuestionEdits[currentVideoId][`${segmentKey}_ranking`];
 
                     Object.entries(questions).forEach(([type, data]) => {
                         const questionKey = `${segmentKey}_${type}`;
                         const edits = (llmQuestionEdits[currentVideoId] &&
                                     llmQuestionEdits[currentVideoId][questionKey]) || {};
+
+                        // Determine ranking
+                        let ranking = 0;
+                        if (rankingInfo && rankingInfo.order) {
+                            const rankIndex = rankingInfo.order.indexOf(questionKey);
+                            if (rankIndex !== -1) {
+                                ranking = rankIndex + 1; // 1-based ranking
+                            }
+                        }
+                        
+                        // If trashed, ranking is 0
+                        if (edits.trashed || (rankingInfo && rankingInfo.trashed && 
+                            rankingInfo.trashed.includes(questionKey))) {
+                            ranking = 0;
+                        }
 
                         const questionData = {
                             type,
@@ -2540,7 +4673,8 @@
                             editedQuestion: edits.question !== undefined ? edits.question : (data.q || ''),
                             editedAnswer: edits.answer !== undefined ? edits.answer : (data.a || ''),
                             trashed: edits.trashed || false,
-                            modified: edits.modified || false
+                            modified: edits.modified || false,
+                            ranking: ranking // Add ranking here
                         };
 
                         if (edits.timestamp) {
@@ -2548,11 +4682,12 @@
                         }
 
                         segmentData.aiQuestions.push(questionData);
-
-                        if (expertBestKey === questionKey) {
-                            segmentData.expertSelectedBest = questionData.editedQuestion;
-                        }
                     });
+
+                    // Add ranking comment if exists
+                    if (rankingInfo && rankingInfo.comment) {
+                        segmentData.rankingComment = rankingInfo.comment;
+                    }
                 }
 
                 finalQuestions.segments.push(segmentData);
@@ -2596,16 +4731,6 @@
                 // Fallback to localStorage
                 localStorage.setItem(`final_questions_${currentVideoId}`, JSON.stringify(finalQuestions));
                 showStatus('Saved to browser storage. Error: ' + error.message, 'warning');
-                
-                const btn = document.querySelector('.btn-save-changes');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.textContent = 'Saved to Browser ✓';
-                    setTimeout(() => {
-                        btn.disabled = false;
-                        btn.textContent = 'Finalize questions and submit';
-                    }, 3000);
-                }
             }
         }
 
