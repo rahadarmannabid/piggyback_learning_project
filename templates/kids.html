@@ -1,66 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <title>Kids Videos | Piggyback</title>
-
-  <!-- ==================================================
-       GLOBAL STYLES
-       - Handles page layout, header, grid, player, sidebar, responsiveness
-       ================================================== -->
+  <meta charset="UTF-8" />
+  <title>Kids Quiz | Piggyback</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: Arial, sans-serif;
-      background: #f3f9ff;
       margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: "Comic Sans MS", "Poppins", sans-serif;
+      background: #f3f9ff;
+      color: #333;
     }
 
-    /* ==================================================
-       HEADER BAR
-       - Title + Back button
-       ================================================== */
     h1 {
-      position: relative;
-      background: #0077cc;
+      background: #ff6f61;
       color: white;
-      padding: 12px 56px;
+      padding: 12px;
       margin: 0;
-      width: 100%;
       text-align: center;
     }
 
-    #back-button {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: #005fa3;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 0.9em;
-      display: none;
-    }
-
-    #back-button:hover {
-      background: #004a85;
-    }
-
-    /* ==================================================
-       VIDEO LIBRARY GRID
-       - Cards with thumbnails + titles
-       ================================================== */
+    /* Library grid */
     #video-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -68,17 +28,16 @@
       padding: 16px;
       width: 90%;
       max-width: 1200px;
+      margin: auto;
     }
 
     .video-card {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
+      background: white;
+      border-radius: 16px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      text-align: center;
+      overflow: hidden;
       cursor: pointer;
-      transition: transform 0.2s ease-in-out;
+      transition: transform 0.2s;
     }
 
     .video-card:hover {
@@ -92,396 +51,257 @@
     }
 
     .video-info {
-      padding: 10px;
+      padding: 8px;
+      font-size: 14px;
     }
 
-    .video-title {
-      font-size: 0.95em;
-      font-weight: bold;
-      margin: 0 0 4px 0;
-    }
-
-    .video-duration {
-      font-size: 0.8em;
-      color: #666;
-    }
-
-    /* ==================================================
-       QUIZ PLAYER LAYOUT
-       - Main wrapper with video + character + sidebar
-       ================================================== */
-    #player-container {
+    /* Quiz Shell */
+    #quiz-shell {
       display: none;
-      margin-top: 20px;
-      width: 90%;
-      max-width: 1200px;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 9999;
       flex-direction: column;
-      gap: 16px;
     }
 
-    /* Row: video (left) + character (right) */
-    #video-wrapper {
+    /* FIXED: grid layout keeps title centered */
+    #quiz-header {
+      background: #ff6f61;
+      color: white;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      padding: 10px 16px;
+      font-size: 18px;
+    }
+
+    #quiz-header button {
+      background: white;
+      color: #ff6f61;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    #quiz-title {
+      text-align: center;
+    }
+
+    #quiz-player {
+      flex: 1;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      gap: 30px;
-      width: 100%;
-    }
-
-    /* ==================================================
-       CHARACTER PANEL
-       ================================================== */
-    #character {
-      flex: 0 0 220px;
-      text-align: center;
-      align-self: flex-start;
-      display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 10px;
-    }
-
-    #character img {
-      width: 100%;
-      max-width: 200px;
-      transition: transform 0.3s ease;
-    }
-
-    #character.talking img {
-      transform: scale(1.05);
-    }
-
-    /* Speech bubble styling */
-    .speech-bubble {
-      background: #fff;
-      padding: 10px 14px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 0.95em;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-      position: relative;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .speech-bubble::after {
-      content: "";
-      position: absolute;
-      bottom: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-width: 12px 12px 0;
-      border-style: solid;
-      border-color: #fff transparent transparent transparent;
-    }
-
-    /* Mic indicator pulse */
-    #mic-indicator {
-      font-size: 1.5rem;
-      color: #0077cc;
-      animation: pulse 1.2s infinite;
-      display: none;
-    }
-
-    @keyframes pulse {
-      0% {
-        opacity: 0.4;
-        transform: scale(0.9);
-      }
-
-      50% {
-        opacity: 1;
-        transform: scale(1.1);
-      }
-
-      100% {
-        opacity: 0.4;
-        transform: scale(0.9);
-      }
-    }
-
-    /* ==================================================
-       VIDEO PLAYER
-       ================================================== */
-    #video-container {
-      position: relative;
-      display: inline-block;
-      width: 960px;
-      max-width: 100%;
+      background: #000;
     }
 
     #player {
       width: 100%;
-      height: auto;
-      display: block;
-      margin: 0 auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      height: 100%;
+      object-fit: contain;
+      background: #000;
     }
 
-    /* Question overlay */
-    #question-box {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.95);
-      padding: 12px 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      font-size: 1.2em;
-      font-weight: bold;
-      text-align: center;
-      display: none;
-      z-index: 16;
-    }
-
-    #feedback {
-      margin-top: 8px;
-      font-weight: bold;
-      font-size: 1.1em;
-    }
-
-    #timestamp {
-      margin-top: 4px;
-      font-size: 0.9em;
-      color: #555;
-      font-style: italic;
-    }
-
-    /* Transparent blocker to disable video interaction */
-    #blocker {
-      position: absolute;
+    /* Backdrop + modal */
+    #backdrop {
+      position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0);
-      z-index: 15;
+      background: rgba(0, 0, 0, 0.6);
       display: none;
-      pointer-events: auto;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
     }
 
-    /* ==================================================
-       DEV MODE SIDEBAR
-       ================================================== */
-    #toggle-sidebar {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0, 119, 204, 0.9);
-      color: white;
+    .modal {
+      background: #fff;
+      border-radius: 24px;
+      padding: 24px;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      animation: popIn 0.25s ease;
+    }
+
+    .modal h2 {
+      font-size: 22px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .modal p {
+      margin: 8px 0;
+      font-size: 18px;
+    }
+
+    .modal button {
+      margin-top: 12px;
+      display: block;
+      width: 100%;
+      padding: 12px;
+      font-size: 18px;
+      border-radius: 12px;
       border: none;
-      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #ff6f61;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #f1f1f1;
+      color: #333;
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Mic pulse */
+    #mic-indicator {
+      margin: 12px auto;
       width: 40px;
       height: 40px;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-      z-index: 20;
+      border-radius: 50%;
+      background: #ff6f61;
+      display: none;
+      animation: pulse 1.2s infinite;
     }
 
-    #toggle-sidebar:hover {
-      background: rgba(0, 95, 163, 0.95);
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.3);
+        opacity: 0.6;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
-    #sidebar {
-      width: 30%;
-      border-left: 2px solid #ddd;
-      padding: 15px;
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 11000;
+    }
+
+    /* End-of-Quiz Summary Styles */
+    #summary-backdrop .modal {
+      border-radius: 24px;
+      padding: 24px;
+    }
+
+    #results-list li {
+      padding: 8px 12px;
+      margin: 6px 0;
+      border-radius: 12px;
       background: #f9f9f9;
-      overflow-y: auto;
-      max-height: 600px;
+      font-size: 16px;
     }
 
-    #sidebar h3 {
-      margin-top: 0;
+    #results-list li.correct {
+      background: #d4edda;
+      color: #155724;
     }
 
-    #sidebar ul {
-      list-style: none;
-      padding: 0;
+    #results-list li.wrong {
+      background: #f8d7da;
+      color: #721c24;
     }
 
-    #sidebar li {
-      margin-bottom: 12px;
-      font-size: 0.9em;
-    }
-
-    #sidebar a {
-      color: #0077cc;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    #sidebar a:hover {
-      text-decoration: underline;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    /* ==================================================
-       RESPONSIVE TWEAKS
-       ================================================== */
-    @media (max-width: 1024px) {
-      #character {
-        flex-basis: 180px;
-      }
-
-      #character img {
-        max-width: 160px;
-      }
-    }
-
-    @media (max-width: 900px) {
-      #character {
-        flex-basis: 160px;
-      }
-
-      #character img {
-        max-width: 140px;
-      }
-    }
-
-    @media (max-width: 700px) {
-      #video-wrapper {
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
-      }
-
-      #character {
-        flex: none;
-      }
-
-      #character img {
-        max-width: 120px;
-      }
-
-      #video-container {
-        width: 100%;
-      }
-
-      #question-box {
-        font-size: 1em;
-        padding: 10px 14px;
-      }
-
-      .speech-bubble::after {
-        bottom: auto;
-        top: -12px;
-        border-width: 0 12px 12px;
-        border-color: transparent transparent #fff transparent;
-      }
-
-      /* Progress bar inside video player */
-      #progress-wrapper {
-        margin-top: 12px;
-        text-align: center;
-      }
-
-      #progress-bar {
-        width: 100%;
-        height: 16px;
-        background: #ddd;
-        border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 6px;
-      }
-
-      #progress-fill {
-        height: 100%;
-        width: 0%;
-        background: #28a745;
-        /* green progress */
-        transition: width 0.3s ease;
-      }
-
-      #progress-text {
-        font-size: 0.9em;
-        font-weight: bold;
-        color: #333;
-      }
+    #results-list li.almost {
+      background: #fff3cd;
+      color: #856404;
     }
   </style>
 </head>
 
-
 <body>
-  <!-- ==================================================
-       HEADER BAR
-       ================================================== -->
-  <h1>
-    <button id="back-button">⬅️ Back to Library</button>
-    🐷 Piggyback
-  </h1>
-
-  <!-- ==================================================
-       VIDEO LIBRARY SECTION
-       ================================================== -->
+  <h1>Video Library</h1>
   <div id="video-grid"></div>
 
-  <!-- ==================================================
-       QUIZ PLAYER SECTION
-       ================================================== -->
-  <div id="player-container">
-    <div id="video-wrapper">
-
-      <!-- Video Player (Left Column) -->
-      <div id="video-container">
-        <!-- Progress bar -->
-        <div id="progress-wrapper">
-          <div id="progress-bar">
-            <div id="progress-fill"></div>
-          </div>
-          <p id="progress-text">Question 0 of 0</p>
-        </div>
-
-        <!-- HTML5 video element -->
-        <video id="player" controls></video>
-
-        <!-- Transparent blocker (disables interaction during questions) -->
-        <div id="blocker" aria-hidden="true"></div>
-
-        <!-- Overlay for question + feedback -->
-        <div id="question-box">
-          <h3 id="question"></h3>
-          <p id="timestamp"></p>
-          <p id="feedback"></p>
-        </div>
-
-        <!-- Sidebar toggle button -->
-        <button id="toggle-sidebar" title="Toggle question list">📑</button>
-      </div>
-
-      <!-- Character Panel (Right Column) -->
-      <div id="character">
-        <div class="speech-bubble" id="speech-bubble">Hi! Let's be friends!.</div>
-        <img id="character-img" src="/static/character/neutral.png" alt="Friendly Character">
-        <div id="mic-indicator">🎤</div>
-      </div>
+  <!-- Quiz Shell -->
+  <div id="quiz-shell">
+    <div id="quiz-header">
+      <button id="exit-quiz">Exit Quiz</button>
+      <span id="quiz-title"></span>
+      <button id="results-btn" style="display:none;">See Results</button>
     </div>
-
-    <!-- Developer / Testing Sidebar -->
-    <div id="sidebar" class="hidden">
-      <h3>📝 Questions</h3>
-      <ul id="question-list"></ul>
+    <div id="quiz-player">
+      <video id="player" controls></video>
     </div>
   </div>
 
-  <!-- ==================================================
-       JAVASCRIPT LOGIC
-       ================================================== -->
-  <script>
-    // ==================================================
-    // CONFIGURATION
-    // ==================================================
-    const DEV_MODE = true; // NOTE: set false in production to hide sidebar
+  <!-- Question Modal -->
+  <div id="backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h2 id="question-text">Question goes here</h2>
+      <div id="mic-indicator"></div>
+      <p id="feedback"></p>
+      <button id="answer-btn" class="btn-primary">Answer Now</button>
+      <button id="continue-btn" class="btn-secondary" style="display:none;">Continue</button>
+    </div>
+  </div>
 
-    // ==================================================
-    // GLOBAL STATE VARIABLES
-    // ==================================================
+  <!-- Exit Confirmation Modal -->
+  <div id="exit-backdrop"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10001; justify-content:center; align-items:center;">
+    <div class="modal">
+      <h2>Leave the quiz?</h2>
+      <button id="stay-btn" class="btn-secondary">Stay</button>
+      <button id="leave-btn" class="btn-primary">Leave</button>
+    </div>
+  </div>
+
+  <!-- End-of-Quiz Summary -->
+  <div id="summary-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+              z-index:10002; justify-content:center; align-items:center;">
+    <div class="modal" style="max-width:700px; width:95%; text-align:center;">
+      <h2>🎉 Quiz Complete!</h2>
+      <p id="score-line" style="font-size:20px; font-weight:bold;">You got 0/0 correct</p>
+      <ul id="results-list"
+        style="list-style:none; padding:0; text-align:left; margin:16px auto; max-height:300px; overflow:auto;">
+      </ul>
+      <button id="replay-btn" class="btn-primary">Play Again</button>
+      <button id="library-btn" class="btn-secondary">Back to Library</button>
+    </div>
+  </div>
+
+  <!-- Completion Toast -->
+  <div id="completion-toast" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+            background:#ff6f61; color:white; padding:12px 24px; border-radius:16px;
+            font-size:18px; z-index:12000; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+    🎉 Quiz Complete! You can see your results anytime.
+  </div>
+
+  <!-- Confetti canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
     let segments = {};
     let asked = new Set();
     let checkInterval = null;
@@ -489,16 +309,28 @@
     let previousTime = 0;
     let maxAllowedTime = 0;
     let skipLockBypass = false;
-    let totalQuestions = 0;
-    let correctAnswers = 0;
+
+    let SKIP_PREVENTION = true; // will be updated by backend
+    let THRESHOLDS = {};
+
+    let results = []; // stores {question, expected, user, status}
 
     const player = document.getElementById("player");
+    const videoGrid = document.getElementById("video-grid");
+    const quizShell = document.getElementById("quiz-shell");
+    const quizTitle = document.getElementById("quiz-title");
+    const backdrop = document.getElementById("backdrop");
+    const exitBackdrop = document.getElementById("exit-backdrop");
 
-    // ==================================================
-    // VIDEO SAFETY GUARDS
-    // ==================================================
+    // Confetti setup
+    const confettiCanvas = document.getElementById("confetti-canvas");
+    let shootConfetti = null;
+    if (window.confetti && confettiCanvas) {
+      // Tie confetti to our canvas; resize to window; use a worker for perf if available
+      shootConfetti = window.confetti.create(confettiCanvas, { resize: true, useWorker: true });
+    }
 
-    // Prevent play while question is active
+    // Prevent playback while a question is active
     player.addEventListener("play", (e) => {
       if (activeQuestion) {
         e.preventDefault?.();
@@ -506,147 +338,97 @@
       }
     });
 
-    // Prevent skipping questions via keyboard shortcuts
-    document.addEventListener("keydown", (e) => {
-      if (!activeQuestion) return;
-      const k = e.key.toLowerCase();
-      if (k === " " || k === "k" || k === "mediaplaypause") {
-        e.preventDefault();
-        e.stopPropagation();
+    async function loadConfig() {
+      try {
+        const res = await fetch("/api/config");
+        const cfg = await res.json();
+        SKIP_PREVENTION = cfg.skip_prevention;
+        THRESHOLDS = cfg.thresholds;
+        console.log("✅ Config loaded:", cfg);
+      } catch (err) {
+        console.error("⚠️ Failed to load config, using defaults.", err);
       }
-    }, { capture: true });
-
-    // ==================================================
-    // DEV MODE SIDEBAR TOGGLE
-    // ==================================================
-    const sidebar = document.getElementById("sidebar");
-    const toggleBtn = document.getElementById("toggle-sidebar");
-
-    if (!DEV_MODE) {
-      sidebar.classList.add("hidden");
-      toggleBtn.classList.add("hidden");
     }
 
-    toggleBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      sidebar.classList.toggle("hidden");
-    });
-
-    // ==================================================
-    // VIDEO LIBRARY LOADING
-    // ==================================================
     async function loadVideos() {
       try {
         const res = await fetch("/api/kids_videos?nocache=" + Date.now());
         const data = await res.json();
         if (!data.success) throw new Error("API error");
-
-        const grid = document.getElementById("video-grid");
-        grid.innerHTML = "";
-
+        videoGrid.innerHTML = "";
         data.videos.forEach(video => {
           const card = document.createElement("div");
           card.className = "video-card";
           card.innerHTML = `
-            <img class="video-thumb" src="${video.thumbnail}" alt="Thumbnail">
-            <div class="video-info">
-              <p class="video-title">${video.title}</p>
-            </div>`;
+          <img class="video-thumb" src="${video.thumbnail}" alt="Thumbnail">
+          <div class="video-info">
+            <p class="video-title">${video.title}</p>
+          </div>
+        `;
           card.onclick = () => startQuiz(video);
-          grid.appendChild(card);
+          videoGrid.appendChild(card);
         });
       } catch (err) {
         console.error("❌ Error loading kids_videos:", err);
-        document.getElementById("video-grid").innerHTML =
-          "<p>⚠️ Error loading videos.</p>";
+        videoGrid.innerHTML = "<p>⚠️ Error loading videos.</p>";
       }
     }
 
-    // ==================================================
-    // HELPER: Random Choice Utility
-    // ==================================================
-    function randomChoice(arr) {
-      return arr[Math.floor(Math.random() * arr.length)];
+    function resetSessionState() {
+      asked = new Set();
+      activeQuestion = false;
+      previousTime = 0;
+      maxAllowedTime = 0;
+      skipLockBypass = false;
     }
 
-    // Encouraging phrases for feedback
-    const PHRASES = {
-      correct: ["Great job!", "Awesome work!", "You nailed it!", "That’s right, well done!"],
-      almost: ["Hmm, close!", "Almost there!", "Not bad, let’s try again.", "You’re on the right track!"],
-      wrong: ["Not quite, but keep trying!", "That wasn’t it, let’s go again.", "Oops, not correct.", "Don’t give up, you can do it!"]
-    };
-
-    // ==================================================
-    // START QUIZ FOR SELECTED VIDEO
-    // ==================================================
     function startQuiz(video) {
-      // Switch from library to player
-      document.getElementById("video-grid").style.display = "none";
-      document.getElementById("player-container").style.display = "flex";
-      document.getElementById("back-button").style.display = "inline-block";
-
-      // Load video source
+      resetSessionState();
+      videoGrid.style.display = "none";
+      quizShell.style.display = "flex";
+      quizTitle.innerText = video.title;
       player.src = video.local_path;
       player.play();
 
-      // Load matching questions JSON
+      // Try fullscreen
+
       fetch(`/static/questions.json?nocache=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
           segments = data;
-          totalQuestions = 0;
-          correctAnswers = 0;
-
-          // Count all questions
-          for (let seg in segments) {
-            for (let key in segments[seg]) {
-              if (key.startsWith("question_")) totalQuestions++;
-            }
-          }
-          updateProgress();
-          populateSidebar();
           startMonitoring();
         })
         .catch(err => console.error("❌ Failed to load questions:", err));
     }
 
-    // ==================================================
-    // MONITOR VIDEO PLAYBACK
-    // - Checks timing to trigger questions
-    // ==================================================
     function startMonitoring() {
       clearInterval(checkInterval);
       checkInterval = setInterval(() => {
         let currentTime = Math.floor(player.currentTime);
 
-        // --- Skip-lock enforcement ---
-        if (!skipLockBypass && currentTime > maxAllowedTime + 2) {
-          console.warn("⏪ Skip attempt detected!");
-          player.currentTime = maxAllowedTime;
-          return;
+        // --- Skip prevention ---
+        if (SKIP_PREVENTION) {
+          if (!skipLockBypass && currentTime > maxAllowedTime + 2) {
+            console.warn("⏪ Skip attempt detected!");
+            player.currentTime = maxAllowedTime;
+            return;
+          }
+          skipLockBypass = false;
+          if (currentTime > maxAllowedTime) maxAllowedTime = currentTime;
         }
-        skipLockBypass = false;
-        if (currentTime > maxAllowedTime) maxAllowedTime = currentTime;
 
         if (activeQuestion) {
           previousTime = currentTime;
           return;
         }
-
-        // --- Question triggers ---
         for (let segKey in segments) {
           let segment = segments[segKey];
-          let segStart = toSeconds(segment.segment_range_start);
-          let segEnd = toSeconds(segment.segment_range_end);
-
           for (let key in segment) {
             if (!key.startsWith("question_")) continue;
             let q = segment[key];
             let quesTime = toSeconds(q.ques_time);
-
             if (previousTime < quesTime && currentTime >= quesTime && !asked.has(quesTime)) {
-              askQuestion(q, segStart, segEnd);
+              askQuestion(q, segment);
               previousTime = currentTime;
               return;
             }
@@ -656,215 +438,164 @@
       }, 700);
     }
 
-
-    // ==================================================
-    // ASKING + ANSWERING QUESTIONS
-    // ==================================================
-    function askQuestion(q, segStart, segEnd) {
+    function askQuestion(q, segment) {
       activeQuestion = true;
-      lockVideoControls();
       player.pause();
-
-      // Show overlay
-      document.getElementById("question-box").style.display = "block";
-      document.getElementById("question").innerText = q.question;
-      document.getElementById("timestamp").innerHTML =
-        `⏱ Appears at <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>`;
+      asked.add(toSeconds(q.ques_time));
+      document.getElementById("question-text").innerText = q.question;
       document.getElementById("feedback").innerText = "";
+      document.getElementById("answer-btn").onclick = () => startListening(q, segment);
+      document.getElementById("continue-btn").style.display = "none";
+      backdrop.style.display = "flex";
+    }
 
-      // Update character + bubble
-      setCharacter("asking");
-      document.getElementById("speech-bubble").innerText = q.question;
+    function startListening(q, segment) {
+      const micIndicator = document.getElementById("mic-indicator");
+      micIndicator.style.display = "block";
+      document.getElementById("feedback").innerText = "Listening...";
 
-      // Speak the question, then start listening
-      speakLine(q.question, () => {
-        startListening(q, segStart, segEnd);
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        const mediaRecorder = new MediaRecorder(stream);
+        let chunks = [];
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+        mediaRecorder.onstop = () => {
+          micIndicator.style.display = "none";
+          const blob = new Blob(chunks, { type: "audio/webm;codecs=opus" });
+          const formData = new FormData();
+          formData.append("file", blob, "speech.webm");
+          fetch("/api/transcribe", { method: "POST", body: formData })
+            .then(res => res.json())
+            .then(data => {
+              const spoken = (data.text || "").trim();
+              document.getElementById("feedback").innerText = spoken ? `You said: "${spoken}"` : "⚠️ Didn't catch that.";
+              checkAnswer(spoken, q, segment);
+            })
+            .catch(err => {
+              console.error("❌ Transcription failed:", err);
+              document.getElementById("feedback").innerText = "⚠️ Didn't catch that.";
+              // Optional: rewind on no transcript as well
+            });
+        };
+        mediaRecorder.start();
+        // Give kids more time to finish (10s). Adjust as needed.
+        setTimeout(() => mediaRecorder.stop(), 10000);
       });
     }
 
-    // ==================================================
-    // MICROPHONE RECORDING + WHISPER TRANSCRIPTION
-    // ==================================================
-    const listeningPhrases = ["I'm listening 👂", "Go ahead, tell me!", "I’m paying attention…"];
-
-    async function startListening(q, segStart, segEnd) {
-      const micIndicator = document.getElementById("mic-indicator");
-      const bubble = document.getElementById("speech-bubble");
-
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (err) {
-        bubble.innerText = "⚠️ Mic access denied.";
-        return resumeVideo();
-      }
-
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
-      let chunks = [];
-
-      recorder.onstart = () => {
-        micIndicator.style.display = "block";
-        bubble.innerText = randomChoice(listeningPhrases);
-      };
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        micIndicator.style.display = "none";
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        const formData = new FormData();
-        formData.append("file", blob, "speech.webm");
-
-        try {
-          const res = await fetch("/api/transcribe", { method: "POST", body: formData });
-          const data = await res.json();
-          if (data.success && data.text.trim()) {
-            bubble.innerText = `You said: "${data.text.trim()}"`;
-            processAnswer(data.text.trim().toLowerCase(), q, segStart, segEnd);
-          } else {
-            bubble.innerText = "I didn’t hear anything, try again!";
-            setTimeout(() => {
-              player.currentTime = segStart;
-              resumeVideo();
-            }, 1500);
-          }
-        } catch (err) {
-          console.error("❌ Whisper error:", err);
-          bubble.innerText = "Oops, I couldn’t process that.";
-          setTimeout(resumeVideo, 1000);
-        }
-      };
-
-      recorder.start();
-      setTimeout(() => recorder.stop(), 12000); // hard cutoff after 12s
-      console.log("🎤 Recorded chunks:", chunks);
-    }
-
-    // ==================================================
-    // PROCESSING ANSWERS
-    // ==================================================
-    function processAnswer(spoken, q, segStart, segEnd) {
-      const quesSec = toSeconds(q.ques_time);
-      const askedInSegment = Array.from(asked).filter(t => t >= segStart && t <= segEnd);
-
-      console.log("🎤 Heard (final):", spoken, " | Expected:", q.answer);
-
+    function checkAnswer(spoken, q, segment) {
       fetch("/api/check_answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q.question, expected: q.answer, user: spoken })
+        body: JSON.stringify({
+          expected: q.answer,
+          user: spoken,
+          question: q.question
+        })
       })
         .then(res => res.json())
         .then(data => {
-          console.log("✅ Local check response:", data);
-
           const feedbackEl = document.getElementById("feedback");
           const status = data.status || "wrong";
-          const reason = data.reason || "";
+          const sim = parseFloat(data.similarity || 0);
+          console.log(`📊 Similarity=${sim}, Thresholds=`, THRESHOLDS);
+          console.log("✅ Local check response:", data);
+
+          results.push({
+            question: q.question,
+            expected: q.answer,
+            user: spoken,
+            status: status
+          });
 
           if (status === "correct") {
-            feedbackEl.innerText = `✅ Correct!`;
+            feedbackEl.innerText = "✅ Correct!";
             feedbackEl.style.color = "green";
 
-            setCharacter("correct");
-            speakLine(randomChoice(PHRASES.correct));
-
-            asked.add(toSeconds(q.ques_time));
-            setTimeout(resumeVideo, 700);
-
-            correctAnswers++;
-            updateProgress();
-
-          } else if (status === "almost") {
-            feedbackEl.innerText = `🤔 Almost correct. ${reason}`;
-            feedbackEl.style.color = "orange";
-
-            setCharacter("almost", "Hmm, close! Let’s try again.");
-            speakLine(randomChoice(PHRASES.almost));
+            // Fireworks celebration (1.5s)
+            if (shootConfetti) {
+              const end = Date.now() + 1500;
+              (function frame() {
+                shootConfetti({
+                  particleCount: 7,
+                  angle: 60,
+                  spread: 65,
+                  startVelocity: 45,
+                  origin: { x: 0, y: 0.7 }
+                });
+                shootConfetti({
+                  particleCount: 7,
+                  angle: 120,
+                  spread: 65,
+                  startVelocity: 45,
+                  origin: { x: 1, y: 0.7 }
+                });
+                if (Date.now() < end) requestAnimationFrame(frame);
+              })();
+            }
 
             setTimeout(() => {
-              let rewindTo = askedInSegment.length > 0
-                ? Math.max(...askedInSegment) + 1
-                : segStart;
-              player.currentTime = rewindTo;
-              resumeVideo();
-            }, 1500);
+              closeQuestionModal();
+              player.play();
+            }, 800);
 
+          } else if (status === "almost" || status === "wrong") {
+            feedbackEl.innerText = status === "almost" ? "🤔 Almost, try again!" : "❌ Wrong, rewinding...";
+            feedbackEl.style.color = status === "almost" ? "orange" : "red";
+
+            setTimeout(() => {
+              // rewind to segment start
+              const segStart = toSeconds(segment.segment_range_start);
+              skipLockBypass = true; // bypass skip-prevention for programmatic seek
+              for (let time of [...asked]) {
+                if (time >= segStart && time <= toSeconds(segment.segment_range_end)) {
+                  asked.delete(time);
+                }
+              }
+              player.currentTime = segStart;
+              closeQuestionModal();
+              player.play();
+            }, 1500);
           } else {
-            feedbackEl.innerText = `❌ Wrong. ${reason} Rewinding...`;
-            feedbackEl.style.color = "red";
-
-            setCharacter("wrong", "Not quite, but you can do it!");
-            speakLine(randomChoice(PHRASES.wrong));
-
+            // Safe fallback
+            feedbackEl.innerText = "⚠️ Could not check answer.";
+            feedbackEl.style.color = "gray";
             setTimeout(() => {
-              let rewindTo = askedInSegment.length > 0
-                ? Math.max(...askedInSegment) + 1
-                : segStart;
-              player.currentTime = rewindTo;
-              resumeVideo();
-            }, 1500);
+              closeQuestionModal();
+              player.play();
+            }, 1000);
+          }
+
+          // Check if all questions answered
+          let totalQuestions = Object.values(segments)
+            .map(seg => Object.keys(seg).filter(k => k.startsWith("question_")).length)
+            .reduce((a, b) => a + b, 0);
+
+          if (results.length >= totalQuestions) {
+            // Show toast + enable results button
+            document.getElementById("results-btn").style.display = "inline-block";
+            const toast = document.getElementById("completion-toast");
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 3000);
+
+            // Also hook into video end for auto summary
+            player.onended = () => showSummary();
           }
         })
         .catch(err => {
           console.error("⚠️ Answer check failed:", err);
           document.getElementById("feedback").innerText = "⚠️ Could not check answer.";
-          setTimeout(resumeVideo, 1000);
+          setTimeout(() => {
+            closeQuestionModal();
+            player.play();
+          }, 1000);
         });
     }
 
-    // Resume playback after question
-    function resumeVideo() {
+    function closeQuestionModal() {
+      backdrop.style.display = "none";
       activeQuestion = false;
-      document.getElementById("question-box").style.display = "none";
-      document.getElementById("feedback").innerText = "";
-      unlockVideoControls();
-      player.play();
     }
 
-    // ==================================================
-    // SIDEBAR HELPERS
-    // ==================================================
-    function populateSidebar() {
-      const list = document.getElementById("question-list");
-      list.innerHTML = "";
-      for (let seg in segments) {
-        let segment = segments[seg];
-        for (let key in segment) {
-          if (key.startsWith("question_")) {
-            let q = segment[key];
-            let li = document.createElement("li");
-            li.innerHTML = `
-              <strong>${seg}</strong> —
-              <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>
-              <br>${q.question}`;
-            list.appendChild(li);
-          }
-        }
-      }
-    }
-
-    function seekWithBypass(seconds) {
-      skipLockBypass = true;
-      player.currentTime = seconds;
-    }
-
-    // ==================================================
-    // BACK BUTTON
-    // ==================================================
-    document.getElementById("back-button").onclick = () => {
-      player.pause();
-      clearInterval(checkInterval);
-      document.getElementById("player-container").style.display = "none";
-      document.getElementById("video-grid").style.display = "grid";
-      document.getElementById("back-button").style.display = "none";
-    };
-
-    // ==================================================
-    // GENERAL HELPERS
-    // ==================================================
     function toSeconds(timeStr) {
       if (!timeStr) return 0;
       const parts = timeStr.split(":").map(Number);
@@ -873,112 +604,68 @@
       return Number(timeStr) || 0;
     }
 
-    function updateProgress() {
-      const percent = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
-      document.getElementById("progress-fill").style.width = percent + "%";
-      document.getElementById("progress-text").innerText =
-        `Correct: ${correctAnswers} of ${totalQuestions}`;
+
+    function showSummary() {
+      const summary = document.getElementById("summary-backdrop");
+      const scoreLine = document.getElementById("score-line");
+      const resultsList = document.getElementById("results-list");
+
+      const correctCount = results.filter(r => r.status === "correct").length;
+      scoreLine.innerText = `You got ${correctCount}/${results.length} correct!`;
+
+      resultsList.innerHTML = "";
+      results.forEach(r => {
+        const li = document.createElement("li");
+        li.className = r.status;
+        li.innerHTML = `
+      <strong>Q:</strong> ${r.question}<br>
+      <strong>You said:</strong> ${r.user || "(no answer)"}<br>
+      <strong>Expected:</strong> ${r.expected}<br>
+      <em>Result: ${r.status}</em>
+    `;
+        resultsList.appendChild(li);
+      });
+
+      summary.style.display = "flex";
     }
 
-    // ==================================================
-    // CHARACTER STATE + SPEECH
-    // ==================================================
-    function setCharacter(state, line = null) {
-      const img = document.getElementById("character-img");
-      const bubble = document.getElementById("speech-bubble");
-
-      const phrases = {
-        asking: ["Hmm... let’s think!", "Can you tell me?", "What do you think?"],
-        correct: ["Great job! 🎉", "Yay! High five ✋", "You got it, smarty!"],
-        almost: ["Hmm, close! Let’s try again.", "Almost there!", "Not quite, but keep trying!"],
-        wrong: ["Not quite, but you can do it!", "Let’s give it another shot!", "Hmm, that’s okay. We’ll try again!"],
-        neutral: ["Ready?", "Let’s go!", "I’m excited to learn with you!"]
-      };
-
-      function pick(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
-      }
-
-      switch (state) {
-        case "asking":
-          img.src = "/static/character/asking.png";
-          bubble.innerText = line || pick(phrases.asking);
-          break;
-        case "correct":
-          img.src = "/static/character/happy.png";
-          bubble.innerText = line || pick(phrases.correct);
-          break;
-        case "almost":
-          img.src = "/static/character/thinking.png";
-          bubble.innerText = line || pick(phrases.almost);
-          break;
-        case "wrong":
-          img.src = "/static/character/sad.png";
-          bubble.innerText = line || pick(phrases.wrong);
-          break;
-        default:
-          img.src = "/static/character/neutral.png";
-          bubble.innerText = line || pick(phrases.neutral);
-      }
-
-      if (line) speakLine(line);
-    }
-
-    function speakLine(line, onDone = null) {
-      const utter = new SpeechSynthesisUtterance(line);
-      const voices = speechSynthesis.getVoices();
-      const friendly = voices.find(v =>
-        v.name.includes("Google US English Female") ||
-        v.name.includes("Google UK English Female") ||
-        v.lang === "en-US"
-      );
-      if (friendly) utter.voice = friendly;
-
-      utter.pitch = 3;
-      utter.rate = 0.95;
-      utter.volume = 1;
-
-      const character = document.getElementById("character");
-      utter.onstart = () => character.classList.add("talking");
-      utter.onend = () => {
-        character.classList.remove("talking");
-        if (onDone) onDone();
-      };
-
-      speechSynthesis.speak(utter);
-    }
-
-    // Lock/Unlock video during questions
-    function lockVideoControls() {
-      document.getElementById("blocker").style.display = "block";
-      player.controls = false;
+    // Exit quiz flow
+    document.getElementById("exit-quiz").onclick = () => {
+      exitBackdrop.style.display = "flex";
+    };
+    document.getElementById("stay-btn").onclick = () => {
+      exitBackdrop.style.display = "none";
+    };
+    document.getElementById("leave-btn").onclick = () => {
       player.pause();
-    }
-
-    function unlockVideoControls() {
-      document.getElementById("blocker").style.display = "none";
-      player.controls = true;
-    }
-
-    // ==================================================
-    // INITIALIZATION
-    // ==================================================
-    loadVideos();
-
-    // Idle chatter from character every 20s
-    const idlePhrases = [
-      "This is fun! 😄",
-      "I like learning with you!",
-      "You’re doing great 🌟",
-      "I’m happy we’re learning together!"
-    ];
-
-    setInterval(() => {
-      if (!activeQuestion) {
-        const bubble = document.getElementById("speech-bubble");
-        bubble.innerText = randomChoice(idlePhrases);
+      clearInterval(checkInterval);
+      quizShell.style.display = "none";
+      videoGrid.style.display = "grid";
+      exitBackdrop.style.display = "none";
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => { });
       }
-    }, 20000);
+    };
+    document.getElementById("replay-btn").onclick = () => {
+      location.reload(); // resets everything
+    };
+
+    document.getElementById("library-btn").onclick = () => {
+      player.pause();
+      clearInterval(checkInterval);
+      quizShell.style.display = "none";
+      videoGrid.style.display = "grid";
+      document.getElementById("summary-backdrop").style.display = "none";
+    };
+
+    document.getElementById("results-btn").onclick = () => {
+      player.pause();
+      showSummary();
+    };
+
+    // Init
+    loadConfig();
+    loadVideos();
   </script>
 </body>
 
