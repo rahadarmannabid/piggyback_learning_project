@@ -17,6 +17,8 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from dotenv import load_dotenv
+load_dotenv()
 
 # ----- Local paths (keep consistent with main.py) -----
 BASE_DIR = Path(__file__).parent.resolve()

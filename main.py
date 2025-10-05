@@ -117,13 +117,15 @@ def normalize_segment_value(value: Any) -> float:
 # -----------------------------
 def download_youtube(url: str) -> Dict[str, Any]:
     """
-    Download best-quality video and English subtitles (WebVTT) from a YouTube URL.
-    Returns a dict with success flag, message, video_id, and list of file paths (relative to downloads/).
+    Download a YouTube video and save metadata (title, thumbnail, duration).
+    Returns: dict with success, message, video_id, title, thumbnail, and local paths.
     """
     result = {
         "success": False,
         "message": "Download error",
         "video_id": None,
+        "title": None,
+        "thumbnail": None,
         "files": [],
     }
 
@@ -136,48 +138,80 @@ def download_youtube(url: str) -> Dict[str, Any]:
         return result
 
     try:
-        with yt_dlp.YoutubeDL({"quiet": True}) as ydl:
+        # Step 1: Get metadata only
+        with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True}) as ydl:
             info = ydl.extract_info(url, download=False)
             video_id = info.get("id", "unknown")
+            title = info.get("title", "Untitled Video")
+            thumbnail = info.get("thumbnail", "")
+            duration = info.get("duration", 0)
 
         result["video_id"] = video_id
+        result["title"] = title
+        result["thumbnail"] = thumbnail
+
         video_dir = DOWNLOADS_DIR / video_id
         video_dir.mkdir(parents=True, exist_ok=True)
 
-        # Use WebVTT for browser <track> captions
+        # Step 2: Download actual video (best quality <=720p)
         ydl_opts = {
+            # ✅ Force MP4 output (H.264 + AAC)
+            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
+            "merge_output_format": "mp4",
+            # ✅ Output path
             "outtmpl": str(video_dir / f"{video_id}.%(ext)s"),
-            "format": "bestvideo+bestaudio/best", # flexible format
+            # ✅ Optional: keep captions if available
             "writesubtitles": True,
             "writeautomaticsub": True,
             "subtitleslangs": ["en"],
             "subtitlesformat": "vtt",
-            "ignoreerrors": True,
+            # ✅ Quiet mode + warnings suppressed
+            "quiet": False,
             "no_warnings": True,
-            "quiet": True,
-            "merge_output_format": "mp4",  # ensure output is mp4 if merging streams
-            "prefer_free_formats": True,  # avoid proprietary formats (like .webm-only audio)
-            "extractor_args": {"youtube": {"player_client": ["android"]}},
+            # ✅ Prevent playlists
+            "noplaylist": True,
+            # ✅ Save thumbnail + metadata (for kids panel)
+            "writethumbnail": True,
+            "writeinfojson": True,
+            # ✅ Force ffmpeg to do proper muxing/conversion
+            "prefer_ffmpeg": True,
+            "postprocessors": [
+                {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}
+            ],
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # type: ignore
             ydl.download([url])
 
-        # Collect created files (relative to downloads/)
-        created: List[str] = []
-        if video_dir.exists():
-            for p in sorted(video_dir.iterdir()):
-                if p.is_file():
-                    rel = p.relative_to(DOWNLOADS_DIR).as_posix()
-                    created.append(rel)
+        # Step 3: Collect downloaded files
+        created = []
+        for p in sorted(video_dir.iterdir()):
+            if p.is_file():
+                rel = p.relative_to(DOWNLOADS_DIR).as_posix()
+                created.append(rel)
 
-        if created:
-            result["success"] = True
-            result["message"] = "Video downloaded"
-            result["files"] = created
-        else:
-            result["message"] = "Download finished but no files were found."
+        # Step 4: Save metadata file
+        meta = {
+            "video_id": video_id,
+            "title": title,
+            "thumbnail": thumbnail,
+            "duration": duration,
+            "local_path": f"/downloads/{video_id}/{video_id}.mp4",
+        }
 
+        meta_path = video_dir / "meta.json"
+        meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
+        # Step 5: Return result
+        result.update(
+            {
+                "success": True,
+                "message": "Video downloaded successfully.",
+                "files": created,
+                "duration": duration,
+                "local_path": meta["local_path"],
+            }
+        )
         return result
 
     except yt_dlp.utils.DownloadError as e:  # type: ignore
@@ -1256,7 +1290,7 @@ def build_expert_preview_link(video_id: Optional[str], file_path: Optional[str])
 
 @app.get("/api/videos-list")
 async def list_videos():
-    """List all downloaded videos available for expert question creation"""
+    """List all downloaded videos with title, thumbnail, duration, and question counts."""
     try:
         videos = []
         if not DOWNLOADS_DIR.exists():
@@ -1267,6 +1301,18 @@ async def list_videos():
                 continue
 
             video_id = video_dir.name
+            meta_path = video_dir / "meta.json"
+            meta_data = {}
+
+            if meta_path.exists():
+                try:
+                    meta_data = json.loads(meta_path.read_text(encoding="utf-8"))
+                except Exception:
+                    meta_data = {}
+
+            title = meta_data.get("title", video_id)
+            thumbnail = meta_data.get("thumbnail", "")
+            duration = meta_data.get("duration", 0)
 
             # Find video file
             video_file = None
@@ -1280,30 +1326,13 @@ async def list_videos():
                 continue
 
             questions_dir = video_dir / "questions"
-            if not questions_dir.exists() or not questions_dir.is_dir():
-                continue
-
-            question_files = [p for p in questions_dir.glob("*.json") if p.is_file()]
-            if not question_files:
-                continue
+            question_files = []
+            if questions_dir.exists():
+                question_files = [
+                    p for p in questions_dir.glob("*.json") if p.is_file()
+                ]
 
             question_count = len(question_files)
-
-            # Get video duration from frame data if available
-            duration = 0
-            frames_dir = video_dir / "extracted_frames"
-            json_path = frames_dir / "frame_data.json"
-            if json_path.exists():
-                try:
-                    info = json.loads(json_path.read_text(encoding="utf-8"))
-                    duration = int(
-                        float(info.get("video_info", {}).get("duration_seconds", 0))
-                    )
-                except Exception:
-                    duration = 0
-
-            # Count files
-            file_count = len([f for f in video_dir.iterdir() if f.is_file()])
 
             # Create video URL
             video_url = f"/downloads/{video_file.relative_to(DOWNLOADS_DIR).as_posix()}"
@@ -1311,11 +1340,11 @@ async def list_videos():
             videos.append(
                 {
                     "id": video_id,
-                    "title": video_id,  # Could be enhanced to get actual title
+                    "title": title,
+                    "thumbnail": thumbnail,
                     "duration": duration,
-                    "fileCount": file_count,
-                    "questionCount": question_count,
                     "videoUrl": video_url,
+                    "questionCount": question_count,
                 }
             )
 

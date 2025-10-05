@@ -55,6 +55,25 @@
             font-size: 14px;
         }
 
+        .video-info .video-duration {
+            font-size: 13px;
+            color: #777;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .video-duration {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: 700;
+            background: rgba(0, 0, 0, .75);
+            color: #fff;
+            border-radius: 6px;
+        }
+
         /* Quiz Shell */
         #quiz-shell {
             display: none;
@@ -322,15 +341,33 @@
         const backdrop = document.getElementById("backdrop");
         const exitBackdrop = document.getElementById("exit-backdrop");
 
+        let answersMap = {}; // key = question identifier
+        let totalQuestions = 0;
+
+        function toMMSS(seconds) {
+            const s = parseInt(seconds || 0);
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return `${m}:${sec.toString().padStart(2, "0")}`;
+        }
+
+        function getQuestionKey(q, segment) {
+            return `${toSeconds(segment.segment_range_start)}-${toSeconds(segment.segment_range_end)}-${q.question}`;
+        }
+
+        function countQuestions(allSegments) {
+            return Object.values(allSegments)
+                .map(seg => Object.keys(seg).filter(k => k.startsWith("question_")).length)
+                .reduce((a, b) => a + b, 0);
+        }
+
         // Confetti setup
         const confettiCanvas = document.getElementById("confetti-canvas");
         let shootConfetti = null;
         if (window.confetti && confettiCanvas) {
-            // Tie confetti to our canvas; resize to window; use a worker for perf if available
             shootConfetti = window.confetti.create(confettiCanvas, { resize: true, useWorker: true });
         }
 
-        // Prevent playback while a question is active
         player.addEventListener("play", (e) => {
             if (activeQuestion) {
                 e.preventDefault?.();
@@ -350,21 +387,36 @@
             }
         }
 
+        function formatDuration(seconds) {
+            if (!seconds || isNaN(seconds)) return "—:—";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, "0")}`;
+        }
+
         async function loadVideos() {
             try {
                 const res = await fetch("/api/kids_videos?nocache=" + Date.now());
                 const data = await res.json();
                 if (!data.success) throw new Error("API error");
+
                 videoGrid.innerHTML = "";
                 data.videos.forEach(video => {
                     const card = document.createElement("div");
                     card.className = "video-card";
+                    const duration = video.duration && video.duration !== "00:00"
+                        ? video.duration
+                        : "00:00";
+
                     card.innerHTML = `
-          <img class="video-thumb" src="${video.thumbnail}" alt="Thumbnail">
-          <div class="video-info">
-            <p class="video-title">${video.title}</p>
-          </div>
-        `;
+                <div style="position:relative">
+                    <img class="video-thumb" src="${video.thumbnail}" alt="Thumbnail">
+                    <span class="video-duration">${duration}</span>
+                </div>
+                <div class="video-info">
+                    <p class="video-title">${video.title}</p>
+                </div>
+            `;
                     card.onclick = () => startQuiz(video);
                     videoGrid.appendChild(card);
                 });
@@ -390,15 +442,40 @@
             player.src = video.local_path;
             player.play();
 
-            // Try fullscreen
 
-            fetch(`/static/questions.json?nocache=${Date.now()}`)
+            fetch(`/api/final-questions/${video.video_id}?nocache=${Date.now()}`)
                 .then(res => res.json())
                 .then(data => {
-                    segments = data;
+                    if (!data.success) throw new Error(data.error || "Bad response from backend");
+
+                    segments = {};
+                    const toMMSS = (s) => {
+                        const sec = Math.max(0, parseInt(s || 0, 10));
+                        const m = Math.floor(sec / 60);
+                        const rem = sec % 60;
+                        return `${m}:${rem.toString().padStart(2, "0")}`;
+                    };
+
+                    data.segments.forEach((seg, i) => {
+                        const startSec = Number(seg.segment_range_start) || 0;
+                        const endSec = Number(seg.segment_range_end) || startSec + 1;
+
+                        segments[`segment_${i}`] = {
+                            segment_range_start: toMMSS(startSec),
+                            segment_range_end: toMMSS(endSec),
+                            question_1: {
+                                ques_time: toMMSS(endSec),
+                                question: seg.question,
+                                answer: seg.answer
+                            }
+                        };
+                    });
+
+                    totalQuestions = countQuestions(segments);
+                    console.log("✅ Loaded final questions:", segments);
                     startMonitoring();
                 })
-                .catch(err => console.error("❌ Failed to load questions:", err));
+                .catch(err => console.error("❌ Failed to load final questions:", err));
         }
 
         function startMonitoring() {
@@ -406,7 +483,6 @@
             checkInterval = setInterval(() => {
                 let currentTime = Math.floor(player.currentTime);
 
-                // --- Skip prevention ---
                 if (SKIP_PREVENTION) {
                     if (!skipLockBypass && currentTime > maxAllowedTime + 2) {
                         console.warn("⏪ Skip attempt detected!");
@@ -473,11 +549,9 @@
                         .catch(err => {
                             console.error("❌ Transcription failed:", err);
                             document.getElementById("feedback").innerText = "⚠️ Didn't catch that.";
-                            // Optional: rewind on no transcript as well
                         });
                 };
                 mediaRecorder.start();
-                // Give kids more time to finish (10s). Adjust as needed.
                 setTimeout(() => mediaRecorder.stop(), 10000);
             });
         }
@@ -499,21 +573,6 @@
                     const sim = parseFloat(data.similarity || 0);
                     console.log(`📊 Similarity=${sim}, Thresholds=`, THRESHOLDS);
                     console.log("✅ Local check response:", data);
-
-                    // Overwrite instead of pushing duplicates
-                    const existingIndex = results.findIndex(r => r.question === q.question);
-                    const attempt = {
-                        question: q.question,
-                        expected: q.answer,
-                        user: spoken,
-                        status: status
-                    };
-
-                    if (existingIndex >= 0) {
-                        results[existingIndex] = attempt;  // update existing
-                    } else {
-                        results.push(attempt);  // first attempt
-                    }
 
                     if (status === "correct") {
                         feedbackEl.innerText = "✅ Correct!";
@@ -564,7 +623,6 @@
                             player.play();
                         }, 1500);
                     } else {
-                        // Safe fallback
                         feedbackEl.innerText = "⚠️ Could not check answer.";
                         feedbackEl.style.color = "gray";
                         setTimeout(() => {
@@ -573,17 +631,21 @@
                         }, 1000);
                     }
 
-                    // Check if all questions answered
-                    let totalQuestions = Object.values(segments)
-                        .map(seg => Object.keys(seg).filter(k => k.startsWith("question_")).length)
-                        .reduce((a, b) => a + b, 0);
+                   
+                    const qKey = getQuestionKey(q, segment);
+                    answersMap[qKey] = status;
 
-                    if (results.length >= totalQuestions) {
+                    const existingIndex = results.findIndex(r => r.question === q.question);
+                    const attempt = { question: q.question, expected: q.answer, user: spoken, status };
+                    if (existingIndex >= 0) results[existingIndex] = attempt;
+                    else results.push(attempt);
+
+                    const correctSoFar = Object.values(answersMap).filter(s => s === "correct").length;
+                    if (correctSoFar === totalQuestions && totalQuestions > 0) {
                         document.getElementById("results-btn").style.display = "inline-block";
                         const toast = document.getElementById("completion-toast");
                         toast.style.display = "block";
                         setTimeout(() => { toast.style.display = "none"; }, 3000);
-
                         player.onended = () => showSummary();
                     }
                 })
@@ -616,8 +678,8 @@
             const scoreLine = document.getElementById("score-line");
             const resultsList = document.getElementById("results-list");
 
-            const correctCount = results.filter(r => r.status === "correct").length;
-            scoreLine.innerText = `You got ${correctCount}/${results.length} correct!`;
+            const correctCount = Object.values(answersMap).filter(s => s === "correct").length;
+            scoreLine.innerText = `You got ${correctCount}/${totalQuestions} correct!`;
 
             resultsList.innerHTML = "";
             results.forEach(r => {

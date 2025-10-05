@@ -7,6 +7,8 @@ from config import GRADING_CONFIG
 from rapidfuzz import fuzz
 from openai import OpenAI
 from typing import cast, Any, Dict
+from dotenv import load_dotenv
+load_dotenv()
 
 # ---- Local paths (mirrors your main.py) ----
 BASE_DIR = Path(__file__).parent.resolve()
@@ -20,12 +22,60 @@ router_video_quiz = APIRouter()
 router_api = APIRouter()
 router_pages = APIRouter()
 
+
 # Kids-specific OpenAI client (Whisper + AI fallback for grading)
 def get_openai_client() -> OpenAI:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY missing. Add it to your .env or environment.")
+        raise RuntimeError(
+            "OPENAI_API_KEY missing. Add it to your .env or environment."
+        )
     return OpenAI(api_key=api_key)
+
+
+# Put these two helpers near the top of the file (once):
+def _parse_duration_to_seconds(val) -> int | None:
+    """Accept int/float seconds or 'HH:MM:SS'/'MM:SS' strings and return seconds."""
+    if val is None:
+        return None
+    # numeric
+    if isinstance(val, (int, float)):
+        try:
+            return max(0, int(float(val)))
+        except Exception:
+            return None
+    # string
+    if isinstance(val, str):
+        val = val.strip()
+        if not val:
+            return None
+        # try hh:mm:ss or mm:ss
+        parts = val.split(":")
+        try:
+            parts = [int(p) for p in parts]
+        except Exception:
+            # maybe it's a numeric string
+            try:
+                return max(0, int(float(val)))
+            except Exception:
+                return None
+        if len(parts) == 3:
+            h, m, s = parts
+            return max(0, h * 3600 + m * 60 + s)
+        if len(parts) == 2:
+            m, s = parts
+            return max(0, m * 60 + s)
+        if len(parts) == 1:
+            return max(0, int(parts[0]))
+    return None
+
+
+def _format_mmss(sec: int | None) -> str:
+    if not sec or sec < 0:
+        return "00:00"
+    m, s = divmod(int(sec), 60)
+    return f"{m:02d}:{s:02d}"
+
 
 # ============================================================
 # Kids library discovery (reimplementation matches your behavior)
@@ -33,9 +83,7 @@ def get_openai_client() -> OpenAI:
 def refresh_kids_videos_json():
     """
     Scan downloads/ and rebuild static/kids_videos.json.
-    - Extract title from .info.json if present
-    - Find thumbnail (jpg/png/webp) if present
-    - Read duration from frame_data.json if present
+    Reads title/thumbnail/duration from meta.json or fallback files.
     """
     results = []
     if not DOWNLOADS_DIR.exists():
@@ -46,66 +94,107 @@ def refresh_kids_videos_json():
             continue
         vid = item.name
 
-        # video file
+        # --- Find video file ---
         video_file = None
         for ext in (".mp4", ".webm", ".mkv", ".mov"):
-            cand = item / f"{vid}{ext}"
-            if cand.exists():
+            for cand in item.glob(f"*{ext}"):
                 video_file = cand
                 break
-        if not video_file:
-            for p in item.iterdir():
-                if p.suffix.lower() in {".mp4", ".webm", ".mkv", ".mov"}:
-                    video_file = p
-                    break
+            if video_file:
+                break
         if not video_file:
             continue
 
-        # title from info.json
+        # --- Metadata ---
         title = vid
-        info_json = item / f"{vid}.info.json"
-        if info_json.exists():
-            try:
-                data = json.loads(info_json.read_text(encoding="utf-8"))
-                title = data.get("title") or title
-            except Exception:
-                pass
-
-        # thumbnail
-        thumb_url = None
-        for ext in (".jpg", ".jpeg", ".png", ".webp"):
-            cand = item / f"{vid}{ext}"
-            if cand.exists():
-                thumb_url = f"/downloads/{vid}/{cand.name}"
-                break
-
-        # duration
         duration = None
-        duration_sec = None
-        frame_json = item / "frame_data.json"
-        if frame_json.exists():
+        thumb_url = None
+        meta_json = item / "meta.json"
+        info_json = item / f"{vid}.info.json"
+
+        meta_source = None
+        if meta_json.exists():
+            meta_source = meta_json
+        elif info_json.exists():
+            meta_source = info_json
+
+        if meta_source:
             try:
-                info = json.loads(frame_json.read_text(encoding="utf-8"))
-                duration_sec = int(float(info["video_info"]["duration_seconds"]))
-                m, s = divmod(duration_sec, 60)
-                duration = f"{m:02d}:{s:02d}"
+                meta = json.loads(meta_source.read_text(encoding="utf-8"))
+                title = meta.get("title") or title
+                duration = meta.get("duration") or meta.get("duration_string")
+                thumb_url = meta.get("thumbnail")
             except Exception:
                 pass
+
+        # --- Thumbnail fallback ---
+        if not thumb_url:
+            for ext in (".jpg", ".jpeg", ".png", ".webp"):
+                thumb_file = next(item.glob(f"*{ext}"), None)
+                if thumb_file:
+                    thumb_url = f"/downloads/{vid}/{thumb_file.name}"
+                    break
+
+        # --- Fallback to first extracted frame ---
+        if not thumb_url:
+            frames_dir = item / "extracted_frames"
+            first_frame = next(frames_dir.glob("frame_0001s.jpg"), None)
+            if first_frame:
+                thumb_url = f"/downloads/{vid}/extracted_frames/{first_frame.name}"
+
+        thumb_url = thumb_url or "/static/default-unlock.png"
+
+        # --- Duration (meta/info OR extracted_frames/frame_data.json) ---
+        dur_sec = None
+
+        # 1) meta.json or <id>.info.json
+        if meta_source:
+            try:
+                meta = json.loads(meta_source.read_text(encoding="utf-8"))
+            except Exception:
+                meta = {}
+            title = meta.get("title") or title
+            # these keys commonly exist in yt-dlp info
+            for k in ("duration", "duration_string", "approx_duration_ms"):
+                if k in meta:
+                    cand = meta[k]
+                    if k == "approx_duration_ms":
+                        try:
+                            cand = float(cand) / 1000.0
+                        except Exception:
+                            cand = None
+                    dur_sec = _parse_duration_to_seconds(cand)
+                    if dur_sec:
+                        break
+
+        # 2) fallback to extracted_frames/frame_data.json (correct path)
+        if dur_sec is None:
+            frame_json = item / "extracted_frames" / "frame_data.json"
+            if frame_json.exists():
+                try:
+                    fd = json.loads(frame_json.read_text(encoding="utf-8"))
+                    raw = fd.get("video_info", {}).get("duration_seconds", 0)
+                    dur_sec = _parse_duration_to_seconds(raw) or 0
+                except Exception:
+                    dur_sec = 0
+
+        duration = _format_mmss(dur_sec)
 
         results.append(
             {
                 "video_id": vid,
                 "title": title,
                 "duration": duration,
-                "duration_seconds": duration_sec,
                 "local_path": f"/downloads/{vid}/{video_file.name}",
-                "thumbnail": thumb_url or "/static/default-unlock.png",
+                "thumbnail": thumb_url,
             }
         )
 
+    # Write the JSON file for caching
     out_path = BASE_DIR / "static" / "kids_videos.json"
     os.makedirs(out_path.parent, exist_ok=True)
     out_path.write_text(json.dumps({"videos": results}, indent=2), encoding="utf-8")
+
     return results
 
 
@@ -124,6 +213,43 @@ def kids_page(request: Request):
     """Kids panel page (front-end HTML that loads kids_videos.json)"""
     return templates.TemplateResponse("video_quiz.html", {"request": request})
 
+
+@router_api.get("/final-questions/{video_id}")
+def get_final_questions(video_id: str):
+    """
+    Loads final_questions.json for the given video_id.
+    Returns the best LLM-ranked question per segment (lowest llm_ranking)
+    that is not trashed. If trashed=True, skip to the next question.
+    """
+    path = DOWNLOADS_DIR / video_id / "final_questions" / "final_questions.json"
+    if not path.exists():
+        return {"success": False, "error": "final_questions.json not found"}
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    segments = data.get("segments", [])
+    selected_segments = []
+
+    for seg in segments:
+        ai_qs = seg.get("aiQuestions", [])
+        if not ai_qs:
+            continue
+
+        # Sort by llm_ranking (lowest = best)
+        sorted_qs = sorted(ai_qs, key=lambda q: q.get("llm_ranking", 999))
+
+        # Find first non-trashed question
+        chosen_q = next((q for q in sorted_qs if not q.get("trashed", False)), None)
+        if chosen_q:
+            selected_segments.append({
+                "segment_range_start": seg.get("start"),
+                "segment_range_end": seg.get("end"),
+                "question": chosen_q.get("editedQuestion"),
+                "answer": chosen_q.get("editedAnswer"),
+                "llm_ranking": chosen_q.get("llm_ranking"),
+                "expert_ranking": chosen_q.get("expert_ranking"),
+            })
+
+    return {"success": True, "segments": selected_segments}
 
 # ============================================================
 # Answer-checker helpers (moved verbatim from your main.py)
@@ -447,7 +573,7 @@ async def check_answer(payload: dict = Body(...)):
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a teacher grading a child’s answer. Respond with only one word: correct, almost, or wrong.",
+                        "content": "You are a friendly teacher grading a child's comprehension. Be lenient if the child expresses the same idea using different words or more specific examples. Respond with only one word: correct, almost, or wrong.",
                     },
                     {
                         "role": "user",
