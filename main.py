@@ -155,25 +155,32 @@ def download_youtube(url: str) -> Dict[str, Any]:
 
         # Step 2: Download actual video (best quality <=720p)
         ydl_opts = {
-            # ✅ Force MP4 output (H.264 + AAC)
-            "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4",
+            # Force MP4 output and prefer H.264 (avc1) to avoid AV1-only downloads.
+            "format": (
+                "bv*[ext=mp4][vcodec^=avc1][height<=720]+ba[ext=m4a]"
+                "/b[ext=mp4][vcodec^=avc1][height<=720]"
+                "/bestvideo[ext=mp4][height<=720]+bestaudio[ext=m4a]"
+                "/mp4"
+            ),
+            "format_sort": ["codec:avc", "res:720", "fps"],
+            "format_sort_force": True,
             "merge_output_format": "mp4",
-            # ✅ Output path
+            # Output path
             "outtmpl": str(video_dir / f"{video_id}.%(ext)s"),
-            # ✅ Optional: keep captions if available
+            # Optional: keep captions if available
             "writesubtitles": True,
             "writeautomaticsub": True,
             "subtitleslangs": ["en"],
             "subtitlesformat": "vtt",
-            # ✅ Quiet mode + warnings suppressed
+            # Quiet mode + warnings suppressed
             "quiet": False,
             "no_warnings": True,
-            # ✅ Prevent playlists
+            # Prevent playlists
             "noplaylist": True,
-            # ✅ Save thumbnail + metadata (for kids panel)
+            # Save thumbnail + metadata (for kids panel)
             "writethumbnail": True,
             "writeinfojson": True,
-            # ✅ Force ffmpeg to do proper muxing/conversion
+            # Force ffmpeg to do proper muxing/conversion
             "prefer_ffmpeg": True,
             "postprocessors": [
                 {"key": "FFmpegVideoConvertor", "preferedformat": "mp4"}
