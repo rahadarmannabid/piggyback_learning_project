@@ -229,13 +229,20 @@ def get_final_questions(video_id: str):
     segments = data.get("segments", [])
     selected_segments = []
 
+    def _llm_sort_key(question: Dict[str, Any]) -> int:
+        rank = question.get("llm_ranking")
+        try:
+            return int(rank)
+        except (TypeError, ValueError):
+            return 999
+
     for seg in segments:
         ai_qs = seg.get("aiQuestions", [])
         if not ai_qs:
             continue
 
         # Sort by llm_ranking (lowest = best)
-        sorted_qs = sorted(ai_qs, key=lambda q: q.get("llm_ranking", 999))
+        sorted_qs = sorted(ai_qs, key=_llm_sort_key)
 
         # Find first non-trashed question
         chosen_q = next((q for q in sorted_qs if not q.get("trashed", False)), None)

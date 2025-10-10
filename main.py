@@ -112,6 +112,72 @@ def normalize_segment_value(value: Any) -> float:
         return 0.0
 
 
+def _parse_rank_value(value: Any) -> Optional[int]:
+    """
+    Normalize ranking values to integers when possible.
+    Returns None if the value cannot be interpreted as an integer.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (int, float)):
+        try:
+            return int(value)
+        except Exception:
+            return None
+    try:
+        text = str(value).strip()
+    except Exception:
+        return None
+    if not text:
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        try:
+            return int(float(text))
+        except Exception:
+            return None
+
+
+def _build_llm_rank_lookup(video_dir: Path, video_id: str):
+    """
+    Load LLM-provided rankings for a video, keyed by segment index and (start, end).
+    """
+    by_index = {}
+    by_range = {}
+    json_path = video_dir / "questions" / f"{video_id}.json"
+    if not json_path.exists():
+        return by_index, by_range
+
+    try:
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+    except Exception:
+        return by_index, by_range
+
+    segments = data.get("segments")
+    if not isinstance(segments, list):
+        return by_index, by_range
+
+    for idx, seg in enumerate(segments):
+        if not isinstance(seg, dict):
+            continue
+        result = seg.get("result") or {}
+        questions = result.get("questions") or {}
+        q_map = {}
+        for qtype, info in questions.items():
+            if isinstance(info, dict):
+                q_map[qtype] = _parse_rank_value(info.get("rank"))
+        by_index[idx] = q_map
+        start = seg.get("start")
+        end = seg.get("end")
+        if start is not None and end is not None:
+            by_range[(start, end)] = q_map
+
+    return by_index, by_range
+
+
 # -----------------------------
 # Download helpers
 # -----------------------------
@@ -1539,6 +1605,58 @@ async def save_final_questions(payload: Dict[str, Any] = Body(...)):
         # Add metadata
         final_data["saved_at"] = datetime.utcnow().isoformat()
         final_data["video_id"] = video_id
+
+        segments = final_data.get("segments")
+        if not isinstance(segments, list):
+            segments = []
+        final_data["segments"] = segments
+
+        llm_by_index, llm_by_range = _build_llm_rank_lookup(video_dir, video_id)
+
+        for idx, seg in enumerate(segments):
+            if not isinstance(seg, dict):
+                continue
+
+            raw_index = seg.get("segmentIndex", idx)
+            try:
+                seg_index = int(raw_index)
+            except (TypeError, ValueError):
+                seg_index = idx
+
+            llm_rankings = llm_by_index.get(seg_index)
+            if llm_rankings is None:
+                start = seg.get("start")
+                end = seg.get("end")
+                llm_rankings = llm_by_range.get((start, end))
+            if llm_rankings is None:
+                llm_rankings = {}
+
+            ai_questions = seg.get("aiQuestions")
+            if not isinstance(ai_questions, list):
+                seg["aiQuestions"] = []
+                continue
+
+            for question in ai_questions:
+                if not isinstance(question, dict):
+                    continue
+
+                raw_expert = question.get("expert_ranking")
+                if raw_expert is None:
+                    raw_expert = question.get("ranking")
+                expert_rank = _parse_rank_value(raw_expert)
+                if expert_rank is None and question.get("trashed"):
+                    expert_rank = 0
+                question["expert_ranking"] = expert_rank
+                if "ranking" in question:
+                    del question["ranking"]
+
+                llm_rank = None
+                q_type = question.get("type")
+                if q_type and isinstance(llm_rankings, dict):
+                    llm_rank = llm_rankings.get(q_type)
+                if llm_rank is None:
+                    llm_rank = _parse_rank_value(question.get("llm_ranking"))
+                question["llm_ranking"] = llm_rank
 
         # Write the file
         final_file_path.write_text(json.dumps(final_data, indent=2), encoding="utf-8")
