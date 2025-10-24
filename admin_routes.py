@@ -292,7 +292,7 @@ async def ws_questions(websocket: WebSocket, video_id: str):
 
         # Lazy imports to avoid circulars
         from main import (
-            generate_questions_for_segment,
+            generate_questions_for_segment_with_retry,
             build_segments_from_duration,
             _maybe_parse_json,
         )
@@ -337,7 +337,7 @@ async def ws_questions(websocket: WebSocket, video_id: str):
                 }
             )
             result_text = await asyncio_to_thread(
-                generate_questions_for_segment, video_id, start, end
+                generate_questions_for_segment_with_retry, video_id, start, end
             )
             result_obj = _maybe_parse_json(result_text)
 
@@ -387,7 +387,10 @@ async def ws_questions(websocket: WebSocket, video_id: str):
                 }
             )
             result_text = await asyncio_to_thread(
-                generate_questions_for_segment, video_id, seg_start, seg_end
+                generate_questions_for_segment_with_retry,
+                video_id,
+                seg_start,
+                seg_end,
             )
             result_obj = _maybe_parse_json(result_text)
             aggregated["segments"].append(

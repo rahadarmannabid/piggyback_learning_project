@@ -46,7 +46,7 @@ from openai import OpenAI  # uses OPENAI_API_KEY env var by default
 load_dotenv()
 load_dotenv(".env.txt")
 
-from video_quiz_routes import router_video_quiz, router_api, router_pages
+from video_quiz_routes import router_video_quiz, router_api
 from admin_routes import router_admin_pages, router_admin_api, router_admin_ws
 
 
@@ -54,6 +54,7 @@ from admin_routes import router_admin_pages, router_admin_api, router_admin_ws
 BASE_DIR = Path(__file__).parent.resolve()
 DOWNLOADS_DIR = BASE_DIR / "downloads"
 TEMPLATES_DIR = BASE_DIR / "templates"
+PUBLIC_ASSETS_DIR = BASE_DIR / "public" / "assets"
 DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -78,7 +79,6 @@ OPENAI_CLIENT = get_openai_client()
 app = FastAPI(title="Piggyback Learning")
 app.include_router(router_video_quiz, prefix="/api")  # kids_videos etc
 app.include_router(router_api, prefix="/api")  # transcribe, check_answer, config
-app.include_router(router_pages)  # /kids page
 
 # Mount admin routers
 app.include_router(router_admin_pages, prefix="/admin")
@@ -87,6 +87,12 @@ app.include_router(router_admin_ws)
 
 # Serve the downloads directory so the user can click the files
 app.mount("/downloads", StaticFiles(directory=str(DOWNLOADS_DIR)), name="downloads")
+if PUBLIC_ASSETS_DIR.exists():
+    app.mount(
+        "/assets",
+        StaticFiles(directory=str(PUBLIC_ASSETS_DIR)),
+        name="public-assets",
+    )
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
@@ -565,11 +571,12 @@ def read_frame_data_from_csv(folder_name, start_time, end_time):
 
 
 def generate_questions_for_segment(
-    video_id: str, start_time: int, end_time: int
+    video_id: str, start_time: int, end_time: int, polite_first: bool = False
 ) -> Optional[str]:
     """
     Analyze frames + transcript for a time window and return JSON text with the questions.
     Uses env-provided OPENAI_API_KEY only. Optimized for rate limits with retry logic.
+    When polite_first is True, the polite prompt is attempted before the standard prompt.
     """
     folder_name = str(DOWNLOADS_DIR / video_id)
     try:
@@ -694,10 +701,18 @@ Return JSON only (no extra text) in this structure:
     if successful_frames == 0:
         return None
 
-    # Try both prompts with retry logic
-    prompts_to_try = [base_prompt, polite_prompt]
+    # Try both prompts with retry logic. Reorder to emphasize polite tone after early failures.
+    prompt_sequence = [
+        ("standard", base_prompt),
+        ("polite", polite_prompt),
+    ]
+    if polite_first:
+        prompt_sequence = [
+            ("polite", polite_prompt),
+            ("standard", base_prompt),
+        ]
 
-    for attempt_round, prompt in enumerate(prompts_to_try):
+    for attempt_round, (prompt_label, prompt) in enumerate(prompt_sequence):
         content_with_prompt = [{"type": "text", "text": prompt}] + content
 
         # Retry logic with exponential backoff for rate limits
@@ -726,9 +741,10 @@ Return JSON only (no extra text) in this structure:
                     return result_content
 
                 # If first prompt failed, try second prompt
-                if attempt_round == 0:
+                if attempt_round == 0 and len(prompt_sequence) > 1:
+                    next_label = prompt_sequence[1][0]
                     print(
-                        f"First prompt attempt failed for segment {start_time}-{end_time}s, trying polite prompt"
+                        f"{prompt_label.capitalize()} prompt attempt failed for segment {start_time}-{end_time}s, trying {next_label} prompt next"
                     )
                     break
 
@@ -750,6 +766,43 @@ Return JSON only (no extra text) in this structure:
 
     print(f"Both prompt attempts failed for segment {start_time}-{end_time}s")
     return None
+
+
+def generate_questions_for_segment_with_retry(
+    video_id: str, start_time: int, end_time: int, max_attempts: int = 10
+) -> Optional[str]:
+    """
+    Attempt to generate questions for a segment, retrying up to max_attempts times.
+    Starts prioritizing the polite prompt from the third attempt onward and waits
+    a random 1-3 seconds between consecutive attempts.
+    """
+    last_result: Optional[str] = None
+
+    for attempt in range(1, max_attempts + 1):
+        polite_first = attempt > 2
+        if attempt > 1:
+            print(
+                f"Retrying segment {start_time}-{end_time}s (attempt {attempt}/{max_attempts})"
+            )
+
+        result_text = generate_questions_for_segment(
+            video_id, start_time, end_time, polite_first=polite_first
+        )
+        if result_text:
+            return result_text
+
+        last_result = result_text
+        if attempt < max_attempts:
+            wait_time = random.uniform(1, 3)
+            print(
+                f"Attempt {attempt} failed for segment {start_time}-{end_time}s; waiting {wait_time:.1f}s before retrying"
+            )
+            time.sleep(wait_time)
+
+    print(
+        f"All {max_attempts} attempts exhausted for segment {start_time}-{end_time}s without a successful generation"
+    )
+    return last_result
 
 
 def build_segments_from_duration(
@@ -786,7 +839,7 @@ def home_redirect(request: Request):
 @app.get("/children", response_class=HTMLResponse)
 def children_page(request: Request):
     """Children's learning interface - no password required"""
-    return templates.TemplateResponse("video_quiz.html", {"request": request})
+    return templates.TemplateResponse("children.html", {"request": request})
 
 
 @app.post("/api/verify-password")

@@ -1,8 +1,6 @@
 import os, re, io, json
 from pathlib import Path
-from fastapi import APIRouter, Body, UploadFile, File, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Body, UploadFile, File
 from config import GRADING_CONFIG
 from rapidfuzz import fuzz
 from openai import OpenAI
@@ -13,14 +11,11 @@ load_dotenv()
 # ---- Local paths (mirrors your main.py) ----
 BASE_DIR = Path(__file__).parent.resolve()
 DOWNLOADS_DIR = BASE_DIR / "downloads"
-TEMPLATES_DIR = BASE_DIR / "templates"
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 router_video_quiz = APIRouter()
 
-# Two routers so we can mount API under /api and keep /kids at root
+# Separate router for API endpoints shared with main app
 router_api = APIRouter()
-router_pages = APIRouter()
 
 
 # Kids-specific OpenAI client (Whisper + AI fallback for grading)
@@ -208,12 +203,6 @@ def list_kids_videos():
     return {"success": True, "count": len(videos), "videos": videos}
 
 
-@router_pages.get("/kids", response_class=HTMLResponse)
-def kids_page(request: Request):
-    """Kids panel page (front-end HTML that loads kids_videos.json)"""
-    return templates.TemplateResponse("video_quiz.html", {"request": request})
-
-
 @router_api.get("/final-questions/{video_id}")
 def get_final_questions(video_id: str):
     """
@@ -255,6 +244,10 @@ def get_final_questions(video_id: str):
                 "llm_ranking": chosen_q.get("llm_ranking"),
                 "expert_ranking": chosen_q.get("expert_ranking"),
             })
+
+    # Exclude the final segment so it never propagates to questions.json
+    if selected_segments:
+        selected_segments = selected_segments[:-1]
 
     return {"success": True, "segments": selected_segments}
 

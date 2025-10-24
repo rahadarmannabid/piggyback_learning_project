@@ -16,3 +16,5 @@ backend.txt
 frontend.txt
 __pycache__/
 git bash commands.txt
+.static/
+.static

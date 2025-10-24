@@ -10,188 +10,289 @@
     }
 
     body {
-      font-family: Arial, sans-serif;
-      background: #f3f9ff;
+      font-family: "Nunito", "Baloo 2", "Comic Sans MS", Arial, sans-serif;
+      background: linear-gradient(180deg, #fef6ff 0%, #f2f9ff 45%, #ffffff 100%);
       margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      min-height: 100vh;
+      color: #1f2a3d;
+      position: relative;
     }
 
-    /* Header with left-aligned back button + centered title */
-    h1 {
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      width: 200px;
+      height: 200px;
+      border-radius: 48% 52% 46% 54%;
+      z-index: -2;
+      filter: blur(0);
+      opacity: 0.25;
+    }
+
+    body::before {
+      top: -60px;
+      left: -40px;
+      background: #ffd870;
+    }
+
+    body::after {
+      bottom: -80px;
+      right: -40px;
+      background: #7bd3ff;
+    }
+
+    .kids-page {
+      width: min(1280px, 94%);
+      margin: 0 auto 64px;
+      padding-top: 28px;
       position: relative;
-      background: #0077cc;
-      color: white;
-      padding: 12px 56px;
-      margin: 0;
-      width: 100%;
-      text-align: center;
+      z-index: 1;
+    }
+
+    .kids-top-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 18px 28px;
+      background: #ffffff;
+      border-radius: 36px;
+      box-shadow: 0 22px 45px rgba(33, 91, 182, 0.2);
+      position: sticky;
+      top: 20px;
+      flex-wrap: wrap;
+      row-gap: 14px;
+      margin-bottom: 36px;
+    }
+
+    body.watching-video .kids-top-bar {
+      position: static;
+      top: auto;
+      margin-bottom: 28px;
+    }
+
+    .kids-top-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .kids-top-bar>* {
+      flex-shrink: 0;
+    }
+
+    .kids-avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #69d6ff, #5aa9ff);
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      font-size: 1.8rem;
+      box-shadow: inset 0 5px 0 rgba(255, 255, 255, 0.55);
     }
 
     #back-button {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: #005fa3;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 0.9em;
       display: none;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #ff6d85, #ff378f);
+      color: #ffffff;
+      font-weight: 600;
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 16px 32px rgba(255, 61, 124, 0.38);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #back-button span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
     #back-button:hover {
-      background: #004a85;
+      transform: translateY(-1px);
+      box-shadow: 0 20px 36px rgba(255, 61, 124, 0.45);
+    }
+
+    .kids-search {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #f0f5ff;
+      border-radius: 999px;
+      padding: 10px 16px;
+      box-shadow: inset 0 0 0 2px rgba(112, 163, 255, 0.12);
+    }
+
+    .kids-search input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 1rem;
+      letter-spacing: 0.01em;
+      color: #214375;
+      outline: none;
+    }
+
+    .kids-search input::placeholder {
+      color: rgba(33, 67, 117, 0.55);
+      font-weight: 600;
+    }
+
+    .kids-search button {
+      border: none;
+      background: linear-gradient(135deg, #5e7bff, #3a4dfd);
+      color: #ffffff;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(56, 95, 255, 0.32);
+      transition: transform 0.2s ease;
+    }
+
+    .kids-search button:hover {
+      transform: translateY(-1px);
     }
 
     /* Grid for video cards */
     #video-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 16px;
-      padding: 16px;
-      width: 90%;
-      max-width: 1200px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 32px;
+      width: 100%;
+      transition: grid-template-columns 0.2s ease;
     }
 
     .video-card {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-      text-align: center;
+      background: #ffffff;
+      border-radius: 32px;
+      padding: 18px 18px 24px;
+      box-shadow: 0 28px 46px rgba(60, 113, 255, 0.18);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: visible;
       cursor: pointer;
-      transition: transform 0.2s ease-in-out;
+    }
+
+    .video-card::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: 34px;
+      background: linear-gradient(160deg, rgba(255, 197, 197, 0.6), rgba(192, 229, 255, 0.6));
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: -1;
     }
 
     .video-card:hover {
-      transform: scale(1.03);
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 32px 50px rgba(56, 95, 255, 0.22);
+    }
+
+    .video-card:hover::after {
+      opacity: 1;
+    }
+
+    .thumb-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 62%;
+      border-radius: 24px;
+      overflow: hidden;
+      background: #dfe9ff;
+      margin-bottom: 18px;
     }
 
     .video-thumb {
+      position: absolute;
+      inset: 0;
       width: 100%;
-      height: 140px;
+      height: 100%;
       object-fit: cover;
     }
 
+    .video-duration {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.72);
+      color: #ffffff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+    }
+
     .video-info {
-      padding: 10px;
+      padding: 0 10px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .video-title {
-      font-size: 0.95em;
-      font-weight: bold;
-      margin: 0 0 4px 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin: 0;
+      color: #2a3767;
+      line-height: 1.3;
     }
 
-    .video-duration {
-      font-size: 0.8em;
-      color: #666;
+    .video-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      background: rgba(255, 255, 255, 0.65);
+      border-radius: 32px;
+      box-shadow: 0 20px 36px rgba(87, 128, 255, 0.15);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #6271a4;
     }
 
     /* Quiz player wrapper */
     #player-container {
       display: none;
-      margin-top: 20px;
-      width: 90%;
-      max-width: 1200px;
+      margin-top: 36px;
+      width: 100%;
       flex-direction: column;
-      gap: 16px;
+      gap: 24px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 36px;
+      padding: 32px;
+      box-shadow: 0 32px 60px rgba(41, 86, 160, 0.18);
     }
 
-    /* Row with video (left) + character (right) */
+    /* Video layout */
     #video-wrapper {
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      gap: 30px;
+      align-items: center;
+      gap: 0;
       width: 100%;
     }
-
-    /* Character column */
-    #character {
-      flex: 0 0 220px;
-      text-align: center;
-      align-self: flex-start;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-
-    #character img {
-      width: 100%;
-      max-width: 200px;
-      transition: transform 0.3s ease;
-    }
-
-    #character.talking img {
-      transform: scale(1.05);
-    }
-
-    /* Speech bubble styling */
-    .speech-bubble {
-      background: #fff;
-      padding: 10px 14px;
-      border-radius: 12px;
-      text-align: center;
-      font-size: 0.95em;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-      position: relative;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .speech-bubble::after {
-      content: "";
-      position: absolute;
-      bottom: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-width: 12px 12px 0;
-      border-style: solid;
-      border-color: #fff transparent transparent transparent;
-    }
-
-    /* Mic indicator pulse */
-    #mic-indicator {
-      font-size: 1.5rem;
-      color: #0077cc;
-      animation: pulse 1.2s infinite;
-      display: none;
-    }
-
-    @keyframes pulse {
-      0% {
-        opacity: 0.4;
-        transform: scale(0.9);
-      }
-
-      50% {
-        opacity: 1;
-        transform: scale(1.1);
-      }
-
-      100% {
-        opacity: 0.4;
-        transform: scale(0.9);
-      }
-    }
-
     /* Video container */
     #video-container {
       position: relative;
       display: inline-block;
       width: 960px;
       max-width: 100%;
+      border-radius: 24px;
+      overflow: hidden;
+      background: #000;
+      transition: border-radius 0.2s ease;
     }
 
     #player {
@@ -199,38 +300,94 @@
       height: auto;
       display: block;
       margin: 0 auto;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      border-radius: 24px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      transition: border-radius 0.2s ease;
+    }
+
+    #player::-webkit-media-controls-fullscreen-button {
+      display: none !important;
+    }
+
+    #player::-moz-fullscreen-button {
+      display: none !important;
     }
 
     /* Question box overlay */
     #question-box {
       position: absolute;
-      top: 20px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.95);
-      padding: 12px 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      font-size: 1.2em;
-      font-weight: bold;
-      text-align: center;
+      transform: translate(-50%, -50%);
       display: none;
       z-index: 16;
+      width: clamp(280px, 68%, 680px);
+      max-width: calc(100% - 32px);
+      background: none;
+      align-items: flex-end;
+      gap: 18px;
+      pointer-events: none;
+    }
+
+    #question-box .question-character {
+      width: clamp(120px, 24%, 190px);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 18px 38px rgba(14, 55, 120, 0.22);
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    #question-box .question-character video {
+      width: 100%;
+      display: block;
+    }
+
+    #question-box .question-bubble {
+      position: relative;
+      flex: 1;
+      padding: 28px 32px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 32px 60px rgba(41, 86, 160, 0.18);
+      pointer-events: auto;
+    }
+
+    #question-box .question-bubble::after {
+      content: "";
+      position: absolute;
+      bottom: 22px;
+      left: -22px;
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.96);
+      transform: rotate(45deg);
+      border-radius: 10px;
+      box-shadow: -10px 12px 24px rgba(41, 86, 160, 0.16);
+    }
+
+    #question-box h3 {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #1f2a3d;
+      text-align: left;
     }
 
     #feedback {
-      margin-top: 8px;
-      font-weight: bold;
-      font-size: 1.1em;
+      margin-top: 14px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #356ae6;
+      text-align: left;
     }
 
     #timestamp {
-      margin-top: 4px;
-      font-size: 0.9em;
-      color: #555;
+      margin-top: 10px;
+      font-size: 1rem;
+      color: #52607b;
       font-style: italic;
+      text-align: left;
     }
 
     /* Transparent blocker */
@@ -243,11 +400,17 @@
       pointer-events: auto;
     }
 
-    /* Floating toggle button */
-    #toggle-sidebar {
+    /* Floating controls */
+    .video-floating-controls {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .video-floating-controls button {
       background: rgba(0, 119, 204, 0.9);
       color: white;
       border: none;
@@ -257,11 +420,90 @@
       font-size: 18px;
       cursor: pointer;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-      z-index: 20;
+      transition: background 0.2s ease;
     }
 
-    #toggle-sidebar:hover {
+    .video-floating-controls button:hover,
+    .video-floating-controls button:focus-visible {
       background: rgba(0, 95, 163, 0.95);
+      outline: none;
+    }
+
+    #fullscreen-toggle[aria-pressed="true"] {
+      background: rgba(0, 95, 163, 0.95);
+    }
+
+    #video-container:fullscreen,
+    #video-container:-webkit-full-screen {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+    }
+
+    #video-container:fullscreen #player,
+    #video-container:-webkit-full-screen #player {
+      border-radius: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    #video-container:fullscreen #question-box,
+    #video-container:-webkit-full-screen #question-box {
+      width: clamp(280px, 60vw, 720px);
+      max-width: 80vw;
+    }
+
+    #video-container:fullscreen .video-floating-controls,
+    #video-container:-webkit-full-screen .video-floating-controls {
+      top: 20px;
+      right: 20px;
+    }
+
+    .video-fullscreen-hitbox {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      width: 48px;
+      height: 48px;
+      z-index: 25;
+      pointer-events: none;
+    }
+
+    .video-fullscreen-hitbox button {
+      pointer-events: auto;
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-size: 20px;
+      display: grid;
+      place-items: center;
+      transition: background 0.2s ease;
+    }
+
+    .video-fullscreen-hitbox button:hover,
+    .video-fullscreen-hitbox button:focus-visible {
+      background: rgba(0, 0, 0, 0.6);
+      outline: none;
+    }
+
+    .video-fullscreen-hitbox button .icon-exit {
+      display: none;
+    }
+
+    body.fullscreen-active .video-fullscreen-hitbox button {
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    body.fullscreen-active .video-fullscreen-hitbox button .icon-enter {
+      display: none;
+    }
+
+    body.fullscreen-active .video-fullscreen-hitbox button .icon-exit {
+      display: inline;
     }
 
     /* Sidebar (dev/testing) */
@@ -304,133 +546,207 @@
 
     /* Responsive tweaks */
     @media (max-width: 1024px) {
-      #character {
-        flex-basis: 180px;
+      .kids-top-bar {
+        gap: 16px;
+        padding: 16px 22px;
+        margin-bottom: 26px;
       }
 
-      #character img {
-        max-width: 160px;
+      #question-box {
+        width: clamp(280px, 82%, 560px);
+      }
+
+      #question-box .question-character {
+        width: clamp(110px, 28%, 170px);
+      }
+
+      #question-box h3 {
+        font-size: 1.45rem;
       }
     }
 
     @media (max-width: 900px) {
-      #character {
-        flex-basis: 160px;
+      .kids-top-bar {
+        flex-direction: column;
+        align-items: stretch;
+        position: static;
+        gap: 12px;
+        margin-bottom: 28px;
       }
 
-      #character img {
-        max-width: 140px;
+      .kids-top-left {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .kids-search {
+        width: 100%;
+        order: 2;
+      }
+
+      #video-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 26px;
+      }
+
+      .video-card {
+        padding: 16px 16px 22px;
+        border-radius: 28px;
+      }
+
+      .thumb-wrapper {
+        border-radius: 22px;
+        margin-bottom: 16px;
+      }
+
+      #question-box {
+        gap: 14px;
+      }
+
+      #question-box .question-bubble {
+        padding: 24px 26px;
+      }
+
+      #question-box .question-bubble::after {
+        bottom: 18px;
+        left: -18px;
+        width: 26px;
+        height: 26px;
       }
     }
 
     @media (max-width: 700px) {
+      .kids-page {
+        width: 94%;
+      }
+
       #video-wrapper {
         flex-direction: column;
         align-items: center;
         gap: 16px;
       }
 
-      #character {
-        flex: none;
-      }
-
-      #character img {
-        max-width: 120px;
-      }
-
       #video-container {
         width: 100%;
       }
 
+      #video-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 22px;
+      }
+
+      .video-card {
+        padding: 14px 14px 20px;
+        border-radius: 26px;
+      }
+
+      .thumb-wrapper {
+        padding-top: 58%;
+      }
+
+      .kids-top-bar {
+        padding: 14px 18px;
+        border-radius: 28px;
+        margin-bottom: 24px;
+      }
+
+      .kids-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 1.4rem;
+      }
+
       #question-box {
-        font-size: 1em;
-        padding: 10px 14px;
+        flex-direction: column-reverse;
+        align-items: center;
+        gap: 12px;
+        width: clamp(260px, 92%, 360px);
       }
 
-      .speech-bubble::after {
-        bottom: auto;
-        top: -12px;
-        border-width: 0 12px 12px;
-        border-color: transparent transparent #fff transparent;
+      #question-box .question-character {
+        width: clamp(120px, 42%, 160px);
       }
 
-      /* progress bar*/
-
-      #progress-wrapper {
-        margin-top: 12px;
+      #question-box .question-bubble {
+        padding: 22px 20px;
         text-align: center;
       }
 
-      #progress-bar {
-        width: 100%;
-        height: 16px;
-        background: #ddd;
-        border-radius: 8px;
-        overflow: hidden;
-        margin-bottom: 6px;
+      #question-box .question-bubble::after {
+        bottom: -16px;
+        left: 50%;
+        transform: translateX(-50%) rotate(45deg);
+        width: 28px;
+        height: 28px;
+        box-shadow: 0 14px 24px rgba(41, 86, 160, 0.16);
       }
 
-      #progress-fill {
-        height: 100%;
-        width: 0%;
-        background: #28a745;
-        /* green progress */
-        transition: width 0.3s ease;
-      }
-
-      #progress-text {
-        font-size: 0.9em;
-        font-weight: bold;
-        color: #333;
+      #question-box h3,
+      #timestamp,
+      #feedback {
+        text-align: center;
       }
     }
   </style>
 </head>
 
 <body>
-  <h1>
-    <button id="back-button">⬅️ Back to Library</button>
-    🐷 Piggyback
-  </h1>
+  <main class="kids-page">
+    <header class="kids-top-bar">
+      <div class="kids-top-left">
+        <button id="back-button" type="button">
+          <span aria-hidden="true">&#8592;</span>
+          <span>Back to Library</span>
+        </button>
+        <div class="kids-avatar" aria-hidden="true">&#128100;</div>
+      </div>
+      <div class="kids-search" role="search">
+        <input id="kids-search" type="search" placeholder="Search Piggyback Kids" aria-label="Search for a video">
+        <button id="kids-search-btn" type="button" aria-label="Search">
+          <span aria-hidden="true">&#128269;</span>
+        </button>
+      </div>
+    </header>
 
-  <!-- Video library -->
-  <div id="video-grid"></div>
+    <!-- Video library -->
+    <div id="video-grid"></div>
 
-  <!-- Quiz Player -->
-  <div id="player-container">
-    <div id="video-wrapper">
-      <!-- Video on the left -->
-      <div id="video-container">
-        <div id="progress-wrapper">
-          <div id="progress-bar">
-            <div id="progress-fill"></div>
-          </div>
-          <p id="progress-text">Question 0 of 0</p>
-        </div>
-        <video id="player" controls></video>
+    <!-- Quiz Player -->
+    <div id="player-container">
+      <div id="video-wrapper">
+        <!-- Video on the left -->
+        <div id="video-container">
+        <video id="player" controls playsinline controlslist="nodownload noremoteplayback"></video>
         <div id="blocker" aria-hidden="true"></div>
-        <div id="question-box">
-          <h3 id="question"></h3>
-          <p id="timestamp"></p>
-          <p id="feedback"></p>
+        <div id="question-box" role="dialog" aria-live="assertive" aria-labelledby="question" aria-describedby="timestamp feedback">
+          <div class="question-character">
+            <video src="/assets/asking_question.webm" autoplay loop muted playsinline></video>
+          </div>
+          <div class="question-bubble">
+            <h3 id="question"></h3>
+            <p id="timestamp"></p>
+            <p id="feedback"></p>
+          </div>
         </div>
-        <button id="toggle-sidebar" title="Toggle question list">📑</button>
-      </div>
-
-      <!-- Character on the right -->
-      <div id="character">
-        <div class="speech-bubble" id="speech-bubble">Hi! Let's be friends!.</div>
-        <img id="character-img" src="/static/character/neutral.png" alt="Friendly Character">
-        <div id="mic-indicator">🎤</div>
+        <div class="video-floating-controls">
+          <button id="toggle-sidebar" type="button" title="Toggle question list" aria-label="Toggle question list">&#128472;</button>
+        </div>
+        <div class="video-fullscreen-hitbox">
+          <button id="custom-fullscreen-btn" type="button" aria-label="Toggle fullscreen">
+            <span class="icon-enter">&#x26F6;</span>
+            <span class="icon-exit">&#x2715;</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Sidebar -->
-    <div id="sidebar" class="hidden">
-      <h3>📝 Questions</h3>
-      <ul id="question-list"></ul>
+      <!-- Sidebar -->
+      <div id="sidebar" class="hidden">
+        <h3>&#128220; Questions</h3>
+        <ul id="question-list"></ul>
+      </div>
     </div>
-  </div>
+  </main>
 
   <script>
     // ===============================
@@ -446,7 +762,7 @@
     // ===============================
     // Global State
     // ===============================
-    let segments = {};
+    let segments = [];
     let asked = new Set();
     let checkInterval = null;
     let activeQuestion = false;
@@ -455,9 +771,111 @@
     let skipLockBypass = false;
     let totalQuestions = 0;
     let correctAnswers = 0;
+    let libraryVideos = [];
+    let questionUtterance = null;
+    let questionSpeechCancelled = false;
 
 
     const player = document.getElementById("player");
+    const videoContainer = document.getElementById("video-container");
+    const fullscreenBtn = document.getElementById("custom-fullscreen-btn");
+    const fullscreenAPI = {
+      element() {
+        return document.fullscreenElement
+          || document.webkitFullscreenElement
+          || document.mozFullScreenElement
+          || document.msFullscreenElement
+          || null;
+      },
+      request(el) {
+        if (!el) return Promise.reject(new Error("No element for fullscreen"));
+        if (el.requestFullscreen) return el.requestFullscreen();
+        if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+          return Promise.resolve();
+        }
+        if (el.mozRequestFullScreen) {
+          el.mozRequestFullScreen();
+          return Promise.resolve();
+        }
+        if (el.msRequestFullscreen) {
+          el.msRequestFullscreen();
+          return Promise.resolve();
+        }
+        return Promise.reject(new Error("Fullscreen API not supported"));
+      },
+      exit() {
+        if (document.exitFullscreen) return document.exitFullscreen();
+        if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+          return Promise.resolve();
+        }
+        if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+          return Promise.resolve();
+        }
+        if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+          return Promise.resolve();
+        }
+        return Promise.resolve();
+      }
+    };
+
+    function updateFullscreenToggleState() {
+      if (!fullscreenBtn) return;
+      const active = fullscreenAPI.element() === videoContainer;
+      fullscreenBtn.setAttribute("aria-pressed", active ? "true" : "false");
+    }
+
+    function toggleFullscreen() {
+      const current = fullscreenAPI.element();
+      if (current === videoContainer) {
+        const exitResult = fullscreenAPI.exit();
+        if (exitResult && typeof exitResult.then === "function") {
+          exitResult.then(updateFullscreenToggleState).catch(err => console.warn("Exit fullscreen failed:", err));
+        } else {
+          setTimeout(updateFullscreenToggleState, 0);
+        }
+        return;
+      }
+
+      const requestResult = fullscreenAPI.request(videoContainer);
+      if (requestResult && typeof requestResult.then === "function") {
+        requestResult.then(updateFullscreenToggleState).catch(err => console.warn("Fullscreen request failed:", err));
+      } else {
+        setTimeout(updateFullscreenToggleState, 0);
+      }
+    }
+
+    function handleFullscreenChange() {
+      const current = fullscreenAPI.element();
+      const isContainerFullscreen = current === videoContainer;
+      document.body.classList.toggle("fullscreen-active", isContainerFullscreen);
+      updateFullscreenToggleState();
+    }
+
+    ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"]
+      .forEach(evt => document.addEventListener(evt, handleFullscreenChange));
+
+    fullscreenBtn?.addEventListener("click", (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      toggleFullscreen();
+    });
+
+    player.addEventListener("dblclick", (evt) => {
+      evt.preventDefault();
+      toggleFullscreen();
+    });
+
+    player.addEventListener("keydown", (evt) => {
+      const key = typeof evt.key === "string" ? evt.key.toLowerCase() : "";
+      if (key === "f") {
+        evt.preventDefault();
+        toggleFullscreen();
+      }
+    });
     // If anything triggers play while a question is active, immediately pause again
     player.addEventListener("play", (e) => {
       if (activeQuestion) {
@@ -478,6 +896,10 @@
 
     const sidebar = document.getElementById("sidebar");
     const toggleBtn = document.getElementById("toggle-sidebar");
+    const videoGrid = document.getElementById("video-grid");
+    const backButton = document.getElementById("back-button");
+    const searchInput = document.getElementById("kids-search");
+    const searchButton = document.getElementById("kids-search-btn");
 
     // DEV mode visibility
     if (!DEV_MODE) {
@@ -492,6 +914,63 @@
       sidebar.classList.toggle("hidden");
     });
 
+    function renderVideoGrid(videos) {
+      videoGrid.innerHTML = "";
+      if (!videos || !videos.length) {
+        videoGrid.innerHTML = `<div class="video-empty">No videos found. Try a different search!</div>`;
+        return;
+      }
+
+      videos.forEach(video => {
+        const card = document.createElement("div");
+        card.className = "video-card";
+        const safeTitle = video.title || "Untitled Video";
+        const durationLabel = video.duration && video.duration !== "00:00" ? video.duration : "";
+        card.innerHTML = `
+          <div class="thumb-wrapper">
+            <img class="video-thumb" src="${video.thumbnail}" alt="${safeTitle}">
+            ${durationLabel ? `<span class="video-duration">${durationLabel}</span>` : ""}
+          </div>
+          <div class="video-info">
+            <p class="video-title">${safeTitle}</p>
+          </div>
+        `;
+        card.onclick = () => startQuiz(video);
+        card.setAttribute("tabindex", "0");
+        card.addEventListener("keydown", (evt) => {
+          if (evt.key === "Enter" || evt.key === " ") {
+            evt.preventDefault();
+            startQuiz(video);
+          }
+        });
+        videoGrid.appendChild(card);
+      });
+    }
+
+    function applyFilters() {
+      if (!Array.isArray(libraryVideos)) return;
+      const searchTerm = (searchInput?.value || "").trim().toLowerCase();
+      let filtered = [...libraryVideos];
+      if (searchTerm) {
+        filtered = filtered.filter(video => (video.title || "").toLowerCase().includes(searchTerm));
+      }
+      renderVideoGrid(filtered);
+    }
+
+    searchInput?.addEventListener("input", () => applyFilters());
+
+    searchInput?.addEventListener("keydown", (evt) => {
+      if (evt.key === "Enter") {
+        evt.preventDefault();
+        applyFilters();
+      }
+    });
+
+    searchButton?.addEventListener("click", () => {
+      searchInput?.focus();
+      applyFilters();
+    });
+
     // ===============================
     // Load Videos for Library
     // ===============================
@@ -501,24 +980,11 @@
         const data = await res.json();
         if (!data.success) throw new Error("API error");
 
-        const grid = document.getElementById("video-grid");
-        grid.innerHTML = "";
-
-        data.videos.forEach(video => {
-          const card = document.createElement("div");
-          card.className = "video-card";
-          card.innerHTML = `
-          <img class="video-thumb" src="${video.thumbnail}" alt="Thumbnail">
-          <div class="video-info">
-            <p class="video-title">${video.title}</p>
-          </div>
-        `;
-          card.onclick = () => startQuiz(video);
-          grid.appendChild(card);
-        });
+        libraryVideos = Array.isArray(data.videos) ? data.videos : [];
+        applyFilters();
       } catch (err) {
-        console.error("❌ Error loading kids_videos:", err);
-        document.getElementById("video-grid").innerHTML = "<p>⚠️ Error loading videos.</p>";
+        console.error("[Error] loading kids_videos:", err);
+        videoGrid.innerHTML = '<div class="video-empty">Oops! We couldn\'t load the videos right now.</div>';
       }
     }
 
@@ -527,35 +993,70 @@
     // ===============================
     function startQuiz(video) {
       // Hide library, show quiz player
-      document.getElementById("video-grid").style.display = "none";
+      videoGrid.style.display = "none";
       document.getElementById("player-container").style.display = "flex";
-      document.getElementById("back-button").style.display = "inline-block";
+      backButton.style.display = "inline-flex";
+      document.body.classList.add("watching-video");
 
 
       // Load video file
       player.src = video.local_path;
       player.play();
 
+      asked.clear();
+      previousTime = 0;
+      maxAllowedTime = 0;
+      skipLockBypass = false;
+
       // Load matching questions
-      fetch(`/static/questions.json?nocache=${Date.now()}`)
+      fetch(`/api/final-questions/${encodeURIComponent(video.video_id)}?nocache=${Date.now()}`)
         .then(res => res.json())
         .then(data => {
-          segments = data;
+          if (!data.success) throw new Error(data.error || "Missing final questions");
 
-          // Count all questions
-          totalQuestions = 0;
+          const entries = Array.isArray(data.segments) ? data.segments : [];
+          segments = entries
+            .map((seg, idx) => {
+              const startSec = normalizeToSeconds(seg.segment_range_start);
+              const endSec = normalizeToSeconds(seg.segment_range_end);
+              const questionText = (seg.question || "").trim();
+              const answerText = (seg.answer || "").trim();
+              if (!questionText || !answerText) return null;
+              const rawTrigger = endSec > 0 ? endSec : startSec;
+              const triggerSec = Math.max(0, Math.round(rawTrigger));
+              return {
+                id: `segment_${idx + 1}`,
+                index: idx,
+                segment_start: startSec,
+                segment_end: endSec,
+                trigger_sec: triggerSec,
+                ques_time: secondsToTimestamp(triggerSec),
+                question: questionText,
+                answer: answerText
+              };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.trigger_sec - b.trigger_sec);
+
+          totalQuestions = segments.length;
           correctAnswers = 0;
-          for (let seg in segments) {
-            for (let key in segments[seg]) {
-              if (key.startsWith("question_")) totalQuestions++;
-            }
-          }
           updateProgress();
+
+          if (!segments.length) {
+            throw new Error("No eligible questions found in final_questions.json");
+          }
 
           populateSidebar();
           startMonitoring();
         })
-        .catch(err => console.error("❌ Failed to load questions:", err));
+        .catch(err => {
+          console.error("[Error] Failed to load questions:", err);
+          alert("Oops! We couldn't find any questions for this video yet.");
+          document.body.classList.remove("watching-video");
+          document.getElementById("player-container").style.display = "none";
+          videoGrid.style.display = "grid";
+          backButton.style.display = "none";
+        });
     }
 
     // ===============================
@@ -568,7 +1069,7 @@
 
         // --- Skip-lock ---
         if (!skipLockBypass && currentTime > maxAllowedTime + 2) {
-          console.warn("⏪ Skip attempt detected!");
+          console.warn("Skip attempt detected!");
           player.currentTime = maxAllowedTime;
           return;
         }
@@ -581,26 +1082,82 @@
         }
 
         // --- Question Triggers ---
-        for (let segKey in segments) {
-          let segment = segments[segKey];
-          let segStart = toSeconds(segment.segment_range_start);
-          let segEnd = toSeconds(segment.segment_range_end);
+        for (const segment of segments) {
+          const segStart = segment.segment_start || 0;
+          const segEnd = segment.segment_end && segment.segment_end > segStart
+            ? segment.segment_end
+            : segStart + 0.1;
+          const trigger = segment.trigger_sec;
 
-          for (let key in segment) {
-            if (!key.startsWith("question_")) continue;
-            let q = segment[key];
-            let quesTime = toSeconds(q.ques_time);
-
-            if (previousTime < quesTime && currentTime >= quesTime && !asked.has(quesTime)) {
-              askQuestion(q, segStart, segEnd);
-              previousTime = currentTime;
-              return;
-            }
+          if (previousTime < trigger && currentTime >= trigger && !asked.has(trigger)) {
+            askQuestion(segment, segStart, segEnd);
+            previousTime = currentTime;
+            return;
           }
         }
 
         previousTime = currentTime;
       }, 700);
+    }
+
+    // ===============================
+    // Speech Helpers
+    // ===============================
+    function cancelQuestionSpeech() {
+      if (!("speechSynthesis" in window)) {
+        questionUtterance = null;
+        return;
+      }
+      if (questionUtterance) {
+        questionSpeechCancelled = true;
+        window.speechSynthesis.cancel();
+      }
+      questionUtterance = null;
+    }
+
+    function speakQuestionText(text, onComplete) {
+      if (!text || !text.trim()) {
+        onComplete?.();
+        return;
+      }
+      if (!("speechSynthesis" in window)) {
+        onComplete?.();
+        return;
+      }
+
+      cancelQuestionSpeech();
+      questionSpeechCancelled = false;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.rate = 0.95;
+      utterance.pitch = 1.08;
+      utterance.volume = 1;
+
+      utterance.onend = () => {
+        const wasCancelled = questionSpeechCancelled;
+        questionUtterance = null;
+        questionSpeechCancelled = false;
+        if (!wasCancelled) {
+          onComplete?.();
+        }
+      };
+
+      utterance.onerror = () => {
+        questionUtterance = null;
+        questionSpeechCancelled = false;
+        onComplete?.();
+      };
+
+      try {
+        questionUtterance = utterance;
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.warn("Speech synthesis failed:", err);
+        questionUtterance = null;
+        questionSpeechCancelled = false;
+        onComplete?.();
+      }
     }
 
     // ===============================
@@ -611,18 +1168,16 @@
       lockVideoControls();
       player.pause();
 
-      document.getElementById("question-box").style.display = "block";
+      document.getElementById("question-box").style.display = "flex";
       document.getElementById("question").innerText = q.question;
       document.getElementById("timestamp").innerHTML =
-        `⏱ Appears at <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>`;
-      document.getElementById("feedback").innerText = "";
-
-      setCharacter("asking");
-      const bubble = document.getElementById("speech-bubble");
-      bubble.innerText = q.question;
-
-      speakLine(q.question, () => {
-        // Start Whisper-based recording instead of SpeechRecognition
+        `Appears at <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>`;
+      const feedbackEl = document.getElementById("feedback");
+      feedbackEl.innerText = "Let me read the question for you...";
+      feedbackEl.style.color = "#384b87";
+      speakQuestionText(q.question, () => {
+        feedbackEl.innerText = "Listening...";
+        feedbackEl.style.color = "#384b87";
         startListening(q, segStart, segEnd);
       });
     }
@@ -630,21 +1185,15 @@
     // ===============================
     // Whisper Recording + Transcription
     // ===============================
-    const listeningPhrases = [
-      "I'm listening 👂",
-      "Go ahead, tell me!",
-      "I’m paying attention…"
-    ];
-
     async function startListening(q, segStart, segEnd) {
-      const micIndicator = document.getElementById("mic-indicator");
-      const bubble = document.getElementById("speech-bubble");
+      const feedbackEl = document.getElementById("feedback");
 
       let stream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (err) {
-        bubble.innerText = "⚠️ Mic access denied.";
+        feedbackEl.innerText = "Mic access denied.";
+        feedbackEl.style.color = "red";
         return resumeVideo();
       }
 
@@ -652,8 +1201,8 @@
       let chunks = [];
 
       recorder.onstart = () => {
-        micIndicator.style.display = "block";
-        bubble.innerText = listeningPhrases[Math.floor(Math.random() * listeningPhrases.length)];
+        feedbackEl.innerText = "Listening...";
+        feedbackEl.style.color = "#384b87";
       };
 
       recorder.ondataavailable = (e) => {
@@ -661,7 +1210,6 @@
       };
 
       recorder.onstop = async () => {
-        micIndicator.style.display = "none";
         const blob = new Blob(chunks, { type: "audio/webm" });
         const formData = new FormData();
         formData.append("file", blob, "speech.webm");
@@ -673,25 +1221,28 @@
           });
           const data = await res.json();
           if (data.success && data.text.trim()) {
-            bubble.innerText = `You said: "${data.text.trim()}"`;
+            feedbackEl.innerText = `You said: "${data.text.trim()}"`;
+            feedbackEl.style.color = "#384b87";
             processAnswer(data.text.trim().toLowerCase(), q, segStart, segEnd);
           } else {
-            bubble.innerText = "I didn’t hear anything, try again!";
+            feedbackEl.innerText = "I didn't hear anything, try again!";
+            feedbackEl.style.color = "#d97706";
             setTimeout(() => {
               player.currentTime = segStart;
               resumeVideo();
             }, 1500);
           }
         } catch (err) {
-          console.error("❌ Whisper error:", err);
-          bubble.innerText = "Oops, I couldn’t process that.";
+          console.error("[Error] Whisper error:", err);
+          feedbackEl.innerText = "Oops, I couldn't process that.";
+          feedbackEl.style.color = "red";
           setTimeout(resumeVideo, 1000);
         }
       };
 
       recorder.start();
       setTimeout(() => recorder.stop(), 12000);
-      console.log("🎤 Recorded chunks:", chunks);
+      console.log("Recorded chunks:", chunks);
 
     }
 
@@ -699,7 +1250,7 @@
       const quesSec = toSeconds(q.ques_time);
       const askedInSegment = Array.from(asked).filter(t => t >= segStart && t <= segEnd);
 
-      console.log("🎤 Heard (final):", spoken, " | Expected:", q.answer);
+      console.log("Heard (final):", spoken, " | Expected:", q.answer);
 
       fetch("/api/check_answer", {
         method: "POST",
@@ -708,19 +1259,16 @@
       })
         .then(res => res.json())
         .then(data => {
-          console.log("✅ Local check response:", data);
+          console.log("Local check response:", data);
 
           const feedbackEl = document.getElementById("feedback");
           const sim = parseFloat(data.similarity);
           const t = data.is_numeric ? THRESHOLDS.number : THRESHOLDS.phrase;
 
           if (sim >= t.correct) {
-            feedbackEl.innerText = `✅ Correct! (similarity: ${sim})`;
+            feedbackEl.innerText = `\u2705 Correct! (similarity: ${sim.toFixed(2)})`;
             feedbackEl.style.color = "green";
             asked.add(quesSec);
-
-            setCharacter("correct");
-            speakLine("Great job! You got it right!");
 
             correctAnswers++;
             updateProgress();
@@ -728,10 +1276,8 @@
             setTimeout(resumeVideo, 700);
 
           } else if (sim >= t.borderline) {
-            feedbackEl.innerText = `🤔 Almost correct (similarity: ${sim}). Rewinding...`;
-            feedbackEl.style.color = "orange";
-
-            setCharacter("almost", "Hmm, close! Let’s try again.");
+            feedbackEl.innerText = `\u{1F914} Almost correct (similarity: ${sim.toFixed(2)}). Rewinding...`;
+            feedbackEl.style.color = "#d97706";
 
             setTimeout(() => {
               let rewindTo = askedInSegment.length > 0
@@ -742,10 +1288,8 @@
             }, 1500);
 
           } else {
-            feedbackEl.innerText = `❌ Wrong. (similarity: ${sim}) Rewinding...`;
+            feedbackEl.innerText = `\u274C Wrong. (similarity: ${sim.toFixed(2)}) Rewinding...`;
             feedbackEl.style.color = "red";
-
-            setCharacter("wrong", "Not quite, but you can do it!");
 
             setTimeout(() => {
               let rewindTo = askedInSegment.length > 0
@@ -757,14 +1301,15 @@
           }
         })
         .catch(err => {
-          console.error("⚠️ Answer check failed:", err);
-          document.getElementById("feedback").innerText = "⚠️ Could not check answer.";
+          console.error("[Warning] Answer check failed:", err);
+          document.getElementById("feedback").innerText = "[Warning] Could not check answer.";
           setTimeout(resumeVideo, 1000);
         });
     }
 
     function resumeVideo() {
       activeQuestion = false;
+      cancelQuestionSpeech();
       const box = document.getElementById("question-box");
       box.style.display = "none"; // hide overlay
       document.getElementById("feedback").innerText = ""; // clear feedback
@@ -778,21 +1323,16 @@
     function populateSidebar() {
       const list = document.getElementById("question-list");
       list.innerHTML = "";
-      for (let seg in segments) {
-        let segment = segments[seg];
-        for (let key in segment) {
-          if (key.startsWith("question_")) {
-            let q = segment[key];
-            let li = document.createElement("li");
-            li.innerHTML = `
-            <strong>${seg}</strong> —
-            <a onclick="seekWithBypass(${toSeconds(q.ques_time)})">${q.ques_time}</a>
-            <br>${q.question}
-          `;
-            list.appendChild(li);
-          }
-        }
-      }
+      segments.forEach((segment, idx) => {
+        const label = segment.id || `segment_${idx + 1}`;
+        const li = document.createElement("li");
+        li.innerHTML = `
+        <strong>${label}</strong> -
+        <a onclick="seekWithBypass(${segment.trigger_sec})">${segment.ques_time}</a>
+        <br>${segment.question}
+      `;
+        list.appendChild(li);
+      });
     }
     function seekWithBypass(seconds) {
       skipLockBypass = true;
@@ -802,18 +1342,46 @@
     // ===============================
     // Back Button
     // ===============================
-    document.getElementById("back-button").onclick = () => {
+    backButton.onclick = () => {
       player.pause();
       clearInterval(checkInterval);
       document.getElementById("player-container").style.display = "none";
-      document.getElementById("video-grid").style.display = "grid";
-      document.getElementById("back-button").style.display = "none";
+      videoGrid.style.display = "grid";
+      backButton.style.display = "none";
+      document.body.classList.remove("watching-video");
     };
 
     // ===============================
     // Helpers
     // ===============================
+    function normalizeToSeconds(value) {
+      if (value === null || value === undefined) return 0;
+      if (typeof value === "number" && !Number.isNaN(value)) return Math.max(0, value);
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return 0;
+        if (trimmed.includes(":")) {
+          const parts = trimmed.split(":").map(Number).filter(n => !Number.isNaN(n));
+          if (parts.length === 3) return Math.max(0, parts[0] * 3600 + parts[1] * 60 + parts[2]);
+          if (parts.length === 2) return Math.max(0, parts[0] * 60 + parts[1]);
+          if (parts.length === 1) return Math.max(0, parts[0]);
+        }
+        const numeric = parseFloat(trimmed);
+        if (!Number.isNaN(numeric)) return Math.max(0, numeric);
+      }
+      return 0;
+    }
+
+    function secondsToTimestamp(sec) {
+      if (!sec || !Number.isFinite(sec)) return "00:00";
+      const total = Math.max(0, Math.round(sec));
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    }
+
     function toSeconds(timeStr) {
+      if (typeof timeStr === "number") return normalizeToSeconds(timeStr);
       if (!timeStr) return 0;
       const parts = timeStr.split(":").map(Number);
       if (parts.length === 2) return parts[0] * 60 + parts[1];
@@ -822,104 +1390,7 @@
     }
 
     function updateProgress() {
-      const percent = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
-      document.getElementById("progress-fill").style.width = percent + "%";
-      document.getElementById("progress-text").innerText =
-        `Correct: ${correctAnswers} of ${totalQuestions}`;
-    }
-
-
-
-
-    // ===============================
-    // character
-    // ===============================
-    function setCharacter(state, line = null) {
-      const img = document.getElementById("character-img");
-      const bubble = document.getElementById("speech-bubble");
-      const character = document.getElementById("character");
-
-      const phrases = {
-        asking: [
-          "Hmm... let’s think!",
-          "Can you tell me?",
-          "What do you think?"
-        ],
-        correct: [
-          "Great job! 🎉",
-          "Yay! High five ✋",
-          "You got it, smarty!"
-        ],
-        almost: [
-          "Hmm, close! Let’s try again.",
-          "Almost there!",
-          "Not quite, but keep trying!"
-        ],
-        wrong: [
-          "Not quite, but you can do it!",
-          "Let’s give it another shot!",
-          "Hmm, that’s okay. We’ll try again!"
-        ],
-        neutral: [
-          "Ready?",
-          "Let’s go!",
-          "I’m excited to learn with you!"
-        ]
-      };
-
-      function pick(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
-      }
-
-      switch (state) {
-        case "asking":
-          img.src = "/static/character/asking.png";
-          bubble.innerText = line || pick(phrases.asking);
-          break;
-        case "correct":
-          img.src = "/static/character/happy.png";
-          bubble.innerText = line || pick(phrases.correct);
-          break;
-        case "almost":
-          img.src = "/static/character/thinking.png";
-          bubble.innerText = line || pick(phrases.almost);
-          break;
-        case "wrong":
-          img.src = "/static/character/sad.png";
-          bubble.innerText = line || pick(phrases.wrong);
-          break;
-        default:
-          img.src = "/static/character/neutral.png";
-          bubble.innerText = line || pick(phrases.neutral);
-      }
-
-      if (line) speakLine(line);
-
-    }
-
-    function speakLine(line, onDone = null) {
-      const utter = new SpeechSynthesisUtterance(line);
-
-      const voices = speechSynthesis.getVoices();
-      const friendly = voices.find(v =>
-        v.name.includes("Google US English Female") ||
-        v.name.includes("Google UK English Female") ||
-        v.lang === "en-US"
-      );
-      if (friendly) utter.voice = friendly;
-
-      utter.pitch = 3;
-      utter.rate = 0.95;
-      utter.volume = 1;
-
-      const character = document.getElementById("character");
-      utter.onstart = () => character.classList.add("talking");
-      utter.onend = () => {
-        character.classList.remove("talking");
-        if (onDone) onDone();
-      };
-
-      speechSynthesis.speak(utter);
+      // Progress display removed; keep counts for potential analytics.
     }
 
     function lockVideoControls() {
@@ -940,22 +1411,14 @@
     // Init
     loadVideos();
 
-    const idlePhrases = [
-      "This is fun! 😄",
-      "I like learning with you!",
-      "You’re doing great 🌟",
-      "I’m happy we’re learning together!"
-    ];
-
-    setInterval(() => {
-      if (!activeQuestion) {
-        const bubble = document.getElementById("speech-bubble");
-        bubble.innerText = idlePhrases[Math.floor(Math.random() * idlePhrases.length)];
-      }
-    }, 20000); // every 20 seconds
-
 
   </script>
 </body>
 
 </html>
+
+
+
+
+
+
