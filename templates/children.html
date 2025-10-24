@@ -513,6 +513,18 @@
       pointer-events: none;
     }
 
+    #question-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(20, 32, 61, 0.55);
+      backdrop-filter: blur(10px);
+      display: none;
+      opacity: 0;
+      z-index: 12;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
     .video-fullscreen-hitbox button {
       pointer-events: auto;
       width: 100%;
@@ -760,6 +772,7 @@
         <!-- Video on the left -->
         <div id="video-container">
         <video id="player" controls playsinline controlslist="nodownload noremoteplayback"></video>
+        <div id="question-overlay" aria-hidden="true"></div>
         <div id="blocker" aria-hidden="true"></div>
         <div id="question-box" role="dialog" aria-live="assertive" aria-labelledby="question" aria-describedby="timestamp feedback">
           <div class="question-character">
@@ -809,7 +822,7 @@
 
     const TTS_DEFAULTS = {
       voice: "sage",
-      speed: 0.75,
+      speed: 0.9,
       format: "mp3"
     };
 
@@ -885,6 +898,23 @@
     let currentListenAttempt = 0;
     let currentQuestionContext = null;
     let preferredSpeechVoice = null;
+
+    function setQuestionOverlay(active) {
+      if (!questionOverlay) return;
+      if (active) {
+        questionOverlay.style.display = "block";
+        requestAnimationFrame(() => {
+          questionOverlay.style.opacity = "1";
+        });
+      } else {
+        questionOverlay.style.opacity = "0";
+        setTimeout(() => {
+          if (questionOverlay.style.opacity === "0") {
+            questionOverlay.style.display = "none";
+          }
+        }, 200);
+      }
+    }
 
     function getStoredVoiceName() {
       if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
@@ -1051,6 +1081,7 @@
     const questionActionsEl = document.getElementById("question-actions");
     const retryAnswerBtn = document.getElementById("retry-answer-btn");
     const skipAnswerBtn = document.getElementById("skip-answer-btn");
+    const questionOverlay = document.getElementById("question-overlay");
     hideQuestionActions();
     const fullscreenAPI = {
       element() {
@@ -1095,7 +1126,8 @@
       }
     };
 
-    function hideQuestionActions() {
+    function hideQuestionActions(options = {}) {
+      const { keepOverlay = false } = options;
       if (questionActionsEl) {
         questionActionsEl.style.display = "none";
       }
@@ -1106,6 +1138,9 @@
       if (skipAnswerBtn) {
         skipAnswerBtn.style.display = "none";
         skipAnswerBtn.disabled = false;
+      }
+      if (!keepOverlay) {
+        setQuestionOverlay(false);
       }
     }
 
@@ -1120,6 +1155,7 @@
         skipAnswerBtn.style.display = showSkip ? "" : "none";
         skipAnswerBtn.disabled = false;
       }
+      setQuestionOverlay(true);
     }
 
     function prepareManualRetry({ q, segStart, segEnd, message, color, showSkip = true }) {
@@ -1785,6 +1821,7 @@
       const feedbackEl = document.getElementById("feedback");
       feedbackEl.innerText = "Let me read the question for you...";
       feedbackEl.style.color = "#384b87";
+      setQuestionOverlay(true);
       speakQuestionText(q.question)
         .then(shouldContinue => {
           if (!shouldContinue) {
@@ -1809,7 +1846,7 @@
       const feedbackEl = document.getElementById("feedback");
       currentListenAttempt = attempt;
       currentQuestionContext = { q, segStart, segEnd };
-      hideQuestionActions();
+      hideQuestionActions({ keepOverlay: true });
 
       let stream;
       try {
