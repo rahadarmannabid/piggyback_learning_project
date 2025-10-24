@@ -374,6 +374,49 @@
       text-align: left;
     }
 
+    .question-actions {
+      display: none;
+      margin-top: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .question-actions button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .question-actions button.retry-btn {
+      background: linear-gradient(135deg, #5aa9ff, #69d6ff);
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(90, 169, 255, 0.35);
+    }
+
+    .question-actions button.skip-btn {
+      background: #ffffff;
+      color: #1f2a3d;
+      box-shadow: 0 6px 14px rgba(31, 42, 61, 0.15);
+    }
+
+    .question-actions button:focus-visible {
+      outline: 3px solid rgba(90, 169, 255, 0.45);
+      outline-offset: 2px;
+    }
+
+    .question-actions button:hover {
+      transform: translateY(-1px);
+    }
+
+    .question-actions button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
     #feedback {
       margin-top: 14px;
       font-weight: 600;
@@ -726,6 +769,10 @@
             <h3 id="question"></h3>
             <p id="timestamp"></p>
             <p id="feedback"></p>
+            <div id="question-actions" class="question-actions">
+              <button id="retry-answer-btn" class="retry-btn" type="button">Try again</button>
+              <button id="skip-answer-btn" class="skip-btn" type="button">Skip for now</button>
+            </div>
           </div>
         </div>
         <div class="video-floating-controls">
@@ -748,6 +795,7 @@
     </div>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script>
     // ===============================
     // CONFIGURATION
@@ -758,6 +806,65 @@
       phrase: { correct: 0.6, borderline: 0.5 },
       number: { correct: 0.7, borderline: 0.6 }
     };
+
+    const TTS_DEFAULTS = {
+      voice: "sage",
+      speed: 0.75,
+      format: "mp3"
+    };
+
+    const MIN_FEEDBACK_DISPLAY_MS = 1100;
+    const LISTEN_RETRY_DELAY_MS = 1400;
+    const MAX_LISTEN_RETRIES = 2;
+    const SILENCE_THRESHOLD = 0.015;
+    const SILENCE_DURATION_MS = 2000;
+    const SPEECH_FRAMES_REQUIRED = 6;
+    const VOICE_PRIORITY_PATTERNS = [
+      /child/i,
+      /kid/i,
+      /young/i,
+      /girl/i,
+      /boy/i,
+      /teen/i
+    ];
+    const ENGLISH_US_VOICE_PATTERN = /en\s*-?us/i;
+    const VOICE_NAME_PREFERENCES = [
+      /Jenny.*Neural/i,
+      /Aria.*Neural/i,
+      /Ana.*Neural/i,
+      /Ava.*Neural/i,
+      /Alyssa.*Neural/i,
+      /Emma.*Neural/i,
+      /Lia.*Neural/i,
+      /Amber.*Neural/i,
+      /Mia.*Neural/i,
+      /Sara.*Neural/i,
+      /Alloy/i,
+      /Pippa/i,
+      /Neural.*Child/i,
+      /Natural.*Child/i,
+      /Kid/i,
+      /Children/i,
+      /Young/i,
+      /Girl/i,
+      /Boy/i,
+      /Google US English/i,
+      /Google UK English Female/i,
+      /Samantha/i
+    ];
+    const STORED_VOICE_KEY = "piggybackPreferredVoiceName";
+
+    const SUCCESS_FEEDBACK = [
+      "Good job!",
+      "Amazing!",
+      "Fantastic!",
+      "Awesome work!",
+      "You nailed it!"
+    ];
+    const BORDERLINE_FEEDBACK = [
+      "Almost! Let's watch it again."
+    ];
+    const RETRY_FEEDBACK = "I think we missed it. Let's watch it again.";
 
     // ===============================
     // Global State
@@ -774,11 +881,177 @@
     let libraryVideos = [];
     let questionUtterance = null;
     let questionSpeechCancelled = false;
+    let feedbackUtterance = null;
+    let currentListenAttempt = 0;
+    let currentQuestionContext = null;
+    let preferredSpeechVoice = null;
+
+    function getStoredVoiceName() {
+      if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+        return null;
+      }
+      try {
+        const stored = window.localStorage.getItem(STORED_VOICE_KEY);
+        return stored && stored.trim() ? stored.trim() : null;
+      } catch (err) {
+        console.warn("Unable to access stored voice:", err);
+        return null;
+      }
+    }
+
+    function storePreferredVoiceName(name) {
+      if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+        return;
+      }
+      try {
+        if (name && name.trim()) {
+          window.localStorage.setItem(STORED_VOICE_KEY, name.trim());
+        } else {
+          window.localStorage.removeItem(STORED_VOICE_KEY);
+        }
+      } catch (err) {
+        console.warn("Unable to persist preferred voice:", err);
+      }
+    }
+
+    function selectPreferredVoiceFrom(voices) {
+      if (!Array.isArray(voices) || voices.length === 0) {
+        return null;
+      }
+
+      const storedName = getStoredVoiceName();
+      if (storedName) {
+        const storedMatch = voices.find(
+          (voice) => voice?.name === storedName || voice?.voiceURI === storedName
+        );
+        if (storedMatch) {
+          return storedMatch;
+        }
+      }
+
+      for (const pattern of VOICE_NAME_PREFERENCES) {
+        const match = voices.find(voice => pattern.test(`${voice?.name || ""} ${voice?.voiceURI || ""}`));
+        if (match) {
+          storePreferredVoiceName(match.name || match.voiceURI || "");
+          return match;
+        }
+      }
+
+      let bestVoice = null;
+      let bestScore = -Infinity;
+      voices.forEach((voice, index) => {
+        const name = voice?.name || "";
+        const lang = voice?.lang || "";
+        const descriptor = `${name} ${lang}`;
+        let score = 0;
+
+        if (VOICE_PRIORITY_PATTERNS.some(pattern => pattern.test(descriptor))) {
+          score += 100;
+        }
+        if (VOICE_NAME_PREFERENCES.some(pattern => pattern.test(descriptor))) {
+          score += 80;
+        }
+        if (ENGLISH_US_VOICE_PATTERN.test(lang)) {
+          score += 25;
+        } else if (/en/i.test(lang)) {
+          score += 10;
+        }
+        if (/(neural|natural|wavenet|premium|studio)/i.test(descriptor)) {
+          score += 8;
+        }
+        if (voice.default) {
+          score += 4;
+        }
+        if (/kid|child|young/i.test(descriptor)) {
+          score += 6;
+        }
+        if (/female|girl|boy|soprano|alto/i.test(descriptor)) {
+          score += 5;
+        }
+        score -= index * 0.05;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestVoice = voice;
+        }
+      });
+      if (bestVoice) {
+        storePreferredVoiceName(bestVoice.name || bestVoice.voiceURI || "");
+      }
+      return bestVoice || voices[0];
+    }
+
+    function refreshPreferredVoice() {
+      if (!("speechSynthesis" in window)) {
+        return null;
+      }
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) {
+        return preferredSpeechVoice;
+      }
+      preferredSpeechVoice = selectPreferredVoiceFrom(voices);
+      return preferredSpeechVoice;
+    }
+
+    function ensurePreferredVoice() {
+      if (!("speechSynthesis" in window)) {
+        return null;
+      }
+      if (preferredSpeechVoice) {
+        return preferredSpeechVoice;
+      }
+      const voice = refreshPreferredVoice();
+      if (voice) {
+        return voice;
+      }
+      // Trigger async loading if voices are not ready yet.
+      try {
+        window.speechSynthesis.getVoices();
+      } catch (err) {
+        console.warn("Unable to prime speech voices:", err);
+      }
+      return preferredSpeechVoice;
+    }
+
+    if ("speechSynthesis" in window) {
+      const synth = window.speechSynthesis;
+      try {
+        const handler = () => refreshPreferredVoice();
+        if (typeof synth.addEventListener === "function") {
+          synth.addEventListener("voiceschanged", handler);
+        } else {
+          synth.onvoiceschanged = handler;
+        }
+      } catch (err) {
+        console.warn("Failed to attach voiceschanged listener:", err);
+      }
+      refreshPreferredVoice();
+    }
+
+    if (typeof window !== "undefined") {
+      window.piggybackListVoices = () => {
+        if (!("speechSynthesis" in window)) return [];
+        return window.speechSynthesis.getVoices().map(v => ({
+          name: v.name,
+          lang: v.lang,
+          default: v.default,
+          voiceURI: v.voiceURI
+        }));
+      };
+      window.piggybackSetPreferredVoice = (name) => {
+        storePreferredVoiceName(name);
+        refreshPreferredVoice();
+      };
+    }
 
 
     const player = document.getElementById("player");
     const videoContainer = document.getElementById("video-container");
     const fullscreenBtn = document.getElementById("custom-fullscreen-btn");
+    const questionActionsEl = document.getElementById("question-actions");
+    const retryAnswerBtn = document.getElementById("retry-answer-btn");
+    const skipAnswerBtn = document.getElementById("skip-answer-btn");
+    hideQuestionActions();
     const fullscreenAPI = {
       element() {
         return document.fullscreenElement
@@ -822,6 +1095,45 @@
       }
     };
 
+    function hideQuestionActions() {
+      if (questionActionsEl) {
+        questionActionsEl.style.display = "none";
+      }
+      if (retryAnswerBtn) {
+        retryAnswerBtn.style.display = "none";
+        retryAnswerBtn.disabled = false;
+      }
+      if (skipAnswerBtn) {
+        skipAnswerBtn.style.display = "none";
+        skipAnswerBtn.disabled = false;
+      }
+    }
+
+    function showQuestionActions({ showRetry = true, showSkip = true } = {}) {
+      if (!questionActionsEl) return;
+      questionActionsEl.style.display = "flex";
+      if (retryAnswerBtn) {
+        retryAnswerBtn.style.display = showRetry ? "" : "none";
+        retryAnswerBtn.disabled = false;
+      }
+      if (skipAnswerBtn) {
+        skipAnswerBtn.style.display = showSkip ? "" : "none";
+        skipAnswerBtn.disabled = false;
+      }
+    }
+
+    function prepareManualRetry({ q, segStart, segEnd, message, color, showSkip = true }) {
+      const feedbackEl = document.getElementById("feedback");
+      if (message) {
+        feedbackEl.innerText = message;
+      }
+      if (color) {
+        feedbackEl.style.color = color;
+      }
+      currentQuestionContext = { q, segStart, segEnd };
+      showQuestionActions({ showRetry: true, showSkip });
+    }
+
     function updateFullscreenToggleState() {
       if (!fullscreenBtn) return;
       const active = fullscreenAPI.element() === videoContainer;
@@ -857,6 +1169,33 @@
 
     ["fullscreenchange", "webkitfullscreenchange", "mozfullscreenchange", "MSFullscreenChange"]
       .forEach(evt => document.addEventListener(evt, handleFullscreenChange));
+
+    if (retryAnswerBtn) {
+      retryAnswerBtn.addEventListener("click", () => {
+        if (!currentQuestionContext) return;
+        hideQuestionActions();
+        const feedbackEl = document.getElementById("feedback");
+        feedbackEl.innerText = "Listening...";
+        feedbackEl.style.color = "#384b87";
+        currentListenAttempt = 0;
+        startListening(
+          currentQuestionContext.q,
+          currentQuestionContext.segStart,
+          currentQuestionContext.segEnd,
+          0
+        );
+      });
+    }
+
+    if (skipAnswerBtn) {
+      skipAnswerBtn.addEventListener("click", () => {
+        hideQuestionActions();
+        if (currentQuestionContext) {
+          player.currentTime = currentQuestionContext.segStart;
+        }
+        resumeVideo();
+      });
+    }
 
     fullscreenBtn?.addEventListener("click", (evt) => {
       evt.preventDefault();
@@ -1103,61 +1442,328 @@
     // ===============================
     // Speech Helpers
     // ===============================
-    function cancelQuestionSpeech() {
-      if (!("speechSynthesis" in window)) {
-        questionUtterance = null;
-        return;
+    const ttsPlayback = {
+      question: { audio: null, resolve: null, reject: null },
+      feedback: { audio: null, resolve: null, reject: null }
+    };
+
+    function cleanupAudioChannel(channel) {
+      const entry = ttsPlayback[channel];
+      if (!entry) return;
+      const audio = entry.audio;
+      if (audio) {
+        audio.onended = null;
+        audio.onerror = null;
       }
-      if (questionUtterance) {
-        questionSpeechCancelled = true;
-        window.speechSynthesis.cancel();
-      }
-      questionUtterance = null;
+      entry.audio = null;
+      entry.resolve = null;
+      entry.reject = null;
     }
 
-    function speakQuestionText(text, onComplete) {
-      if (!text || !text.trim()) {
-        onComplete?.();
+    function stopAudioChannel(channel, options = {}) {
+      const { markCancelled = false, markQuestionCancelledFlag = false } = options;
+      const entry = ttsPlayback[channel];
+      if (!entry || !entry.audio) {
+        if (markQuestionCancelledFlag && channel === "question") {
+          questionSpeechCancelled = true;
+        }
         return;
       }
-      if (!("speechSynthesis" in window)) {
-        onComplete?.();
-        return;
+      const { audio, resolve } = entry;
+      audio.onended = null;
+      audio.onerror = null;
+      try {
+        audio.pause();
+      } catch (err) {
+        console.warn("Failed to pause audio:", err);
+      }
+      try {
+        audio.src = "";
+      } catch (err) {
+        console.warn("Failed to reset audio source:", err);
+      }
+      cleanupAudioChannel(channel);
+      if (markCancelled && typeof resolve === "function") {
+        resolve({ cancelled: true });
+      }
+      if (markQuestionCancelledFlag && channel === "question") {
+        questionSpeechCancelled = true;
+      }
+    }
+
+    function stopSpeechSynthesisUtterances({ markQuestionCancelled = false } = {}) {
+      if (markQuestionCancelled) {
+        questionSpeechCancelled = true;
+      }
+      if ("speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (err) {
+          console.warn("Failed to cancel speech synthesis:", err);
+        }
+      }
+      questionUtterance = null;
+      feedbackUtterance = null;
+    }
+
+    async function requestTTS(text) {
+      const trimmed = text?.trim();
+      if (!trimmed) {
+        throw new Error("No text provided for TTS.");
+      }
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: trimmed,
+          voice: TTS_DEFAULTS.voice,
+          speed: TTS_DEFAULTS.speed,
+          format: TTS_DEFAULTS.format
+        })
+      });
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (err) {
+        if (!res.ok) {
+          throw new Error(`TTS request failed with status ${res.status}`);
+        }
+        throw new Error("TTS response was not valid JSON.");
+      }
+      if (!res.ok) {
+        const message = data?.message || data?.detail || `status ${res.status}`;
+        throw new Error(`TTS request failed: ${message}`);
+      }
+      if (!data?.success || !data?.audio) {
+        throw new Error(data?.message || "TTS response missing audio.");
+      }
+      return {
+        format: data.format || "mp3",
+        audio: data.audio
+      };
+    }
+
+    async function playTTSChannel(channel, text) {
+      const { format, audio } = await requestTTS(text);
+      const audioElement = new Audio(`data:audio/${format};base64,${audio}`);
+      audioElement.preload = "auto";
+      audioElement.crossOrigin = "anonymous";
+
+      cleanupAudioChannel(channel);
+      return new Promise((resolve, reject) => {
+        ttsPlayback[channel].audio = audioElement;
+        ttsPlayback[channel].resolve = resolve;
+        ttsPlayback[channel].reject = reject;
+
+        audioElement.onended = () => {
+          cleanupAudioChannel(channel);
+          resolve({ cancelled: false });
+        };
+        audioElement.onerror = (event) => {
+          console.warn("Audio playback error:", event);
+          cleanupAudioChannel(channel);
+          reject(new Error("Audio playback failed."));
+        };
+
+        try {
+          const playPromise = audioElement.play();
+          if (playPromise && typeof playPromise.then === "function") {
+            playPromise.catch(err => {
+              cleanupAudioChannel(channel);
+              reject(err);
+            });
+          }
+        } catch (err) {
+          cleanupAudioChannel(channel);
+          reject(err);
+        }
+      });
+    }
+
+    function speakViaSpeechSynthesis(text, channel) {
+      return new Promise((resolve) => {
+        if (!("speechSynthesis" in window)) {
+          resolve({ cancelled: false, error: true });
+          return;
+        }
+
+        try {
+          window.speechSynthesis.cancel();
+        } catch (err) {
+          console.warn("Failed to reset speech synthesis:", err);
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voice = ensurePreferredVoice();
+        if (voice) {
+          utterance.voice = voice;
+          if (voice.lang) {
+            utterance.lang = voice.lang;
+          }
+        } else {
+          utterance.lang = "en-US";
+        }
+
+        const descriptor = voice ? `${voice.name || ""} ${voice.voiceURI || ""}` : "";
+        const isLikelyMale = /male|man|boy/i.test(descriptor);
+        const isLikelyKid = /kid|child|young/i.test(descriptor);
+        const targetRate = channel === "question"
+          ? (isLikelyKid ? 1.02 : 1.05)
+          : (isLikelyKid ? 1.0 : 1.03);
+        const targetPitch = channel === "question"
+          ? (isLikelyMale ? 1.32 : 1.22)
+          : (isLikelyMale ? 1.28 : 1.18);
+
+        utterance.rate = targetRate;
+        utterance.pitch = targetPitch;
+        utterance.volume = 0.95;
+
+        utterance.onend = () => {
+          if (channel === "question") {
+            const wasCancelled = questionSpeechCancelled;
+            questionUtterance = null;
+            questionSpeechCancelled = false;
+            resolve({ cancelled: wasCancelled });
+          } else {
+            feedbackUtterance = null;
+            resolve({ cancelled: false });
+          }
+        };
+
+        utterance.onerror = (event) => {
+          console.warn("Speech synthesis error:", event);
+          if (channel === "question") {
+            questionUtterance = null;
+            resolve({ cancelled: questionSpeechCancelled, error: true });
+          } else {
+            feedbackUtterance = null;
+            resolve({ cancelled: false, error: true });
+          }
+        };
+
+        if (channel === "question") {
+          questionUtterance = utterance;
+        } else {
+          feedbackUtterance = utterance;
+        }
+
+        try {
+          window.speechSynthesis.speak(utterance);
+        } catch (err) {
+          console.warn("Unable to speak via speech synthesis:", err);
+          if (channel === "question") {
+            questionUtterance = null;
+            resolve({ cancelled: questionSpeechCancelled, error: true });
+          } else {
+            feedbackUtterance = null;
+            resolve({ cancelled: false, error: true });
+          }
+        }
+      });
+    }
+
+    function cancelQuestionSpeech() {
+      stopAudioChannel("question", { markCancelled: true, markQuestionCancelledFlag: true });
+      stopAudioChannel("feedback", { markCancelled: true });
+      stopSpeechSynthesisUtterances({ markQuestionCancelled: true });
+    }
+
+    async function speakQuestionText(text) {
+      const trimmed = text?.trim();
+      if (!trimmed) {
+        return true;
       }
 
-      cancelQuestionSpeech();
+      stopAudioChannel("question", { markCancelled: true });
+      stopSpeechSynthesisUtterances();
       questionSpeechCancelled = false;
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.rate = 0.95;
-      utterance.pitch = 1.08;
-      utterance.volume = 1;
-
-      utterance.onend = () => {
-        const wasCancelled = questionSpeechCancelled;
-        questionUtterance = null;
-        questionSpeechCancelled = false;
-        if (!wasCancelled) {
-          onComplete?.();
-        }
-      };
-
-      utterance.onerror = () => {
-        questionUtterance = null;
-        questionSpeechCancelled = false;
-        onComplete?.();
-      };
-
       try {
-        questionUtterance = utterance;
-        window.speechSynthesis.speak(utterance);
+        const result = await playTTSChannel("question", trimmed);
+        return !result?.cancelled && !questionSpeechCancelled;
       } catch (err) {
-        console.warn("Speech synthesis failed:", err);
-        questionUtterance = null;
-        questionSpeechCancelled = false;
-        onComplete?.();
+        console.warn("OpenAI TTS failed for question speech:", err);
+        const fallbackResult = await speakViaSpeechSynthesis(trimmed, "question");
+        if (fallbackResult?.error) {
+          return !questionSpeechCancelled;
+        }
+        return !fallbackResult?.cancelled;
       }
+    }
+
+    // ===============================
+    // Feedback Helpers
+    // ===============================
+    function pickRandomCelebration() {
+      if (!Array.isArray(SUCCESS_FEEDBACK) || SUCCESS_FEEDBACK.length === 0) {
+        return "Great job!";
+      }
+      const index = Math.floor(Math.random() * SUCCESS_FEEDBACK.length);
+      return SUCCESS_FEEDBACK[index];
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, Math.max(0, ms || 0)));
+    }
+
+    async function speakFeedbackText(text) {
+      const trimmed = text?.trim();
+      if (!trimmed) {
+        return;
+      }
+      stopAudioChannel("feedback", { markCancelled: true });
+      stopSpeechSynthesisUtterances();
+      try {
+        await playTTSChannel("feedback", trimmed);
+      } catch (err) {
+        console.warn("OpenAI TTS failed for feedback speech:", err);
+        await speakViaSpeechSynthesis(trimmed, "feedback");
+      }
+    }
+
+    async function deliverFeedback({ message, color, confetti: launchConfetti = false, minVisibleMs = MIN_FEEDBACK_DISPLAY_MS }) {
+      const feedbackEl = document.getElementById("feedback");
+      feedbackEl.innerText = message;
+      feedbackEl.style.color = color;
+
+      if (launchConfetti) {
+        fireConfettiBurst();
+      }
+
+      const start = Date.now();
+      await speakFeedbackText(message);
+
+      const elapsed = Date.now() - start;
+      if (elapsed < minVisibleMs) {
+        await wait(minVisibleMs - elapsed);
+      }
+    }
+
+    function fireConfettiBurst() {
+      if (typeof confetti !== "function") {
+        return;
+      }
+
+      const duration = 1500;
+      const animationEnd = Date.now() + duration;
+      const colors = ["#5aa9ff", "#ffd870", "#9cf077", "#ff6d85"];
+
+      (function frame() {
+        confetti({
+          particleCount: 7,
+          startVelocity: 35,
+          spread: 60,
+          ticks: 90,
+          gravity: 0.9,
+          scalar: 1.1,
+          origin: { x: Math.random() * 0.6 + 0.2, y: Math.random() * 0.2 + 0.6 },
+          colors
+        });
+
+        if (Date.now() < animationEnd) {
+          requestAnimationFrame(frame);
+        }
+      })();
     }
 
     // ===============================
@@ -1168,6 +1774,10 @@
       lockVideoControls();
       player.pause();
 
+      currentQuestionContext = { q, segStart, segEnd };
+      currentListenAttempt = 0;
+      hideQuestionActions();
+
       document.getElementById("question-box").style.display = "flex";
       document.getElementById("question").innerText = q.question;
       document.getElementById("timestamp").innerHTML =
@@ -1175,34 +1785,186 @@
       const feedbackEl = document.getElementById("feedback");
       feedbackEl.innerText = "Let me read the question for you...";
       feedbackEl.style.color = "#384b87";
-      speakQuestionText(q.question, () => {
-        feedbackEl.innerText = "Listening...";
-        feedbackEl.style.color = "#384b87";
-        startListening(q, segStart, segEnd);
-      });
+      speakQuestionText(q.question)
+        .then(shouldContinue => {
+          if (!shouldContinue) {
+            return;
+          }
+          feedbackEl.innerText = "Listening...";
+          feedbackEl.style.color = "#384b87";
+          startListening(q, segStart, segEnd, 0);
+        })
+        .catch(err => {
+          console.warn("Unable to speak question via TTS:", err);
+          feedbackEl.innerText = "Listening...";
+          feedbackEl.style.color = "#384b87";
+          startListening(q, segStart, segEnd, 0);
+        });
     }
 
     // ===============================
     // Whisper Recording + Transcription
     // ===============================
-    async function startListening(q, segStart, segEnd) {
+    async function startListening(q, segStart, segEnd, attempt = 0) {
       const feedbackEl = document.getElementById("feedback");
+      currentListenAttempt = attempt;
+      currentQuestionContext = { q, segStart, segEnd };
+      hideQuestionActions();
 
       let stream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (err) {
-        feedbackEl.innerText = "Mic access denied.";
-        feedbackEl.style.color = "red";
-        return resumeVideo();
+        console.error("Mic access denied or unavailable:", err);
+        return handleListeningFailure(q, segStart, segEnd, attempt, {
+          message: "I can't hear you. Please allow the microphone so we can answer together.",
+          color: "#ef4444",
+          autoRetry: false,
+          showSkip: true
+        });
       }
 
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      let recorder;
+      try {
+        recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      } catch (err) {
+        console.error("MediaRecorder setup failed:", err);
+        stream.getTracks().forEach(track => track.stop());
+        return handleListeningFailure(q, segStart, segEnd, attempt, {
+          message: "Hmm, I couldn't start listening. Let's try again when you're ready.",
+          color: "#ef4444",
+          autoRetry: attempt < 1,
+          showSkip: true
+        });
+      }
+
       let chunks = [];
+      let audioContext = null;
+      let analyser = null;
+      let analyserData = null;
+      let silenceMonitorId = null;
+      let silenceStart = null;
+      let recognizedSpeech = false;
+      let speechFrameCount = 0;
+      let stopRequested = false;
+      let autoStopTimeout = null;
+
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextCtor) {
+        try {
+          audioContext = new AudioContextCtor();
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 2048;
+          analyser.smoothingTimeConstant = 0.8;
+          analyserData = new Float32Array(analyser.fftSize);
+          const sourceNode = audioContext.createMediaStreamSource(stream);
+          sourceNode.connect(analyser);
+        } catch (err) {
+          console.warn("Silence detection unavailable:", err);
+          audioContext = null;
+          analyser = null;
+          analyserData = null;
+        }
+      }
+
+      const cancelSilenceMonitor = () => {
+        if (silenceMonitorId) {
+          cancelAnimationFrame(silenceMonitorId);
+          silenceMonitorId = null;
+        }
+      };
+
+      const cleanupAudioResources = async () => {
+        cancelSilenceMonitor();
+        if (audioContext && audioContext.state !== "closed") {
+          try {
+            await audioContext.close();
+          } catch (err) {
+            console.warn("Failed to close audio context:", err);
+          }
+        }
+        audioContext = null;
+        analyser = null;
+        analyserData = null;
+      };
+
+      const requestStop = (reason) => {
+        if (stopRequested) return;
+        stopRequested = true;
+        if (autoStopTimeout) {
+          clearTimeout(autoStopTimeout);
+          autoStopTimeout = null;
+        }
+        cancelSilenceMonitor();
+        if (recorder && recorder.state === "recording") {
+          console.log("Stopping recorder:", reason);
+          try {
+            recorder.stop();
+          } catch (err) {
+            console.warn("Recorder stop failed:", err);
+          }
+        }
+      };
+
+      // Monitor microphone volume to detect when the child stops speaking.
+      const monitorSilence = () => {
+        if (!analyser || stopRequested) return;
+
+        analyser.getFloatTimeDomainData(analyserData);
+        let sumSquares = 0;
+        for (let i = 0; i < analyserData.length; i++) {
+          const value = analyserData[i];
+          sumSquares += value * value;
+        }
+        const rms = Math.sqrt(sumSquares / analyserData.length);
+
+        if (rms > SILENCE_THRESHOLD) {
+          if (speechFrameCount < SPEECH_FRAMES_REQUIRED) {
+            speechFrameCount++;
+            if (speechFrameCount >= SPEECH_FRAMES_REQUIRED) {
+              recognizedSpeech = true;
+            }
+          }
+          silenceStart = null;
+        } else {
+          if (speechFrameCount > 0) {
+            speechFrameCount = Math.max(0, speechFrameCount - 1);
+          }
+          if (recognizedSpeech) {
+            if (silenceStart === null) {
+              silenceStart = performance.now();
+            } else if (performance.now() - silenceStart >= SILENCE_DURATION_MS) {
+              console.log("Auto-stopping recorder after silence gap");
+              requestStop("silence");
+              return;
+            }
+          }
+        }
+
+        silenceMonitorId = requestAnimationFrame(monitorSilence);
+      };
+
+      const startSilenceMonitor = () => {
+        if (!analyser) return;
+        silenceStart = null;
+        speechFrameCount = 0;
+        recognizedSpeech = false;
+        cancelSilenceMonitor();
+        silenceMonitorId = requestAnimationFrame(monitorSilence);
+      };
 
       recorder.onstart = () => {
         feedbackEl.innerText = "Listening...";
         feedbackEl.style.color = "#384b87";
+        stopRequested = false;
+        if (audioContext && audioContext.state === "suspended") {
+          audioContext.resume().catch(err => console.warn("Audio context resume failed:", err));
+        }
+        startSilenceMonitor();
+        autoStopTimeout = setTimeout(() => {
+          console.log("Auto-stopping recorder after max duration");
+          requestStop("timeout");
+        }, 12000);
       };
 
       recorder.ondataavailable = (e) => {
@@ -1210,6 +1972,23 @@
       };
 
       recorder.onstop = async () => {
+        stopRequested = true;
+        if (autoStopTimeout) {
+          clearTimeout(autoStopTimeout);
+          autoStopTimeout = null;
+        }
+        await cleanupAudioResources();
+        stream.getTracks().forEach(track => track.stop());
+
+        if (!chunks.length) {
+          return handleListeningFailure(q, segStart, segEnd, attempt, {
+            message: "I didn't hear anything, let's try again!",
+            color: "#d97706",
+            autoRetry: true,
+            showSkip: true
+          });
+        }
+
         const blob = new Blob(chunks, { type: "audio/webm" });
         const formData = new FormData();
         formData.append("file", blob, "speech.webm");
@@ -1223,88 +2002,147 @@
           if (data.success && data.text.trim()) {
             feedbackEl.innerText = `You said: "${data.text.trim()}"`;
             feedbackEl.style.color = "#384b87";
-            processAnswer(data.text.trim().toLowerCase(), q, segStart, segEnd);
+            await processAnswer(data.text.trim().toLowerCase(), q, segStart, segEnd);
+            return;
           } else {
-            feedbackEl.innerText = "I didn't hear anything, try again!";
-            feedbackEl.style.color = "#d97706";
-            setTimeout(() => {
-              player.currentTime = segStart;
-              resumeVideo();
-            }, 1500);
+            return handleListeningFailure(q, segStart, segEnd, attempt, {
+              message: "I didn't hear anything, let's try again!",
+              color: "#d97706",
+              autoRetry: true,
+              showSkip: true
+            });
           }
         } catch (err) {
           console.error("[Error] Whisper error:", err);
-          feedbackEl.innerText = "Oops, I couldn't process that.";
-          feedbackEl.style.color = "red";
-          setTimeout(resumeVideo, 1000);
+          return handleListeningFailure(q, segStart, segEnd, attempt, {
+            message: "Oops, I couldn't process that. Let's give it another try.",
+            color: "#ef4444",
+            autoRetry: attempt < 1,
+            showSkip: true
+          });
         }
       };
 
-      recorder.start();
-      setTimeout(() => recorder.stop(), 12000);
-      console.log("Recorded chunks:", chunks);
-
+      try {
+        recorder.start();
+      } catch (err) {
+        console.error("Failed to start recorder:", err);
+        await cleanupAudioResources();
+        stream.getTracks().forEach(track => track.stop());
+        return handleListeningFailure(q, segStart, segEnd, attempt, {
+          message: "Hmm, I couldn't start listening. Let's try again when you're ready.",
+          color: "#ef4444",
+          autoRetry: attempt < 1,
+          showSkip: true
+        });
+      }
     }
 
-    function processAnswer(spoken, q, segStart, segEnd) {
+    async function handleListeningFailure(q, segStart, segEnd, attempt, options = {}) {
+      const {
+        message,
+        color = "#d97706",
+        autoRetry = true,
+        showSkip = true,
+        delayMs = LISTEN_RETRY_DELAY_MS,
+        fallbackMessage
+      } = options;
+
+      const feedbackEl = document.getElementById("feedback");
+      if (message) {
+        feedbackEl.innerText = message;
+      }
+      feedbackEl.style.color = color;
+
+      currentQuestionContext = { q, segStart, segEnd };
+      hideQuestionActions();
+      const nextAttempt = attempt + 1;
+
+      if (autoRetry && nextAttempt <= MAX_LISTEN_RETRIES) {
+        await wait(delayMs);
+        return startListening(q, segStart, segEnd, nextAttempt);
+      }
+
+      prepareManualRetry({
+        q,
+        segStart,
+        segEnd,
+        message: fallbackMessage || "",
+        color,
+        showSkip
+      });
+    }
+
+    async function processAnswer(spoken, q, segStart, segEnd) {
       const quesSec = toSeconds(q.ques_time);
       const askedInSegment = Array.from(asked).filter(t => t >= segStart && t <= segEnd);
 
       console.log("Heard (final):", spoken, " | Expected:", q.answer);
 
-      fetch("/api/check_answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ expected: q.answer, user: spoken })
-      })
-        .then(res => res.json())
-        .then(data => {
-          console.log("Local check response:", data);
-
-          const feedbackEl = document.getElementById("feedback");
-          const sim = parseFloat(data.similarity);
-          const t = data.is_numeric ? THRESHOLDS.number : THRESHOLDS.phrase;
-
-          if (sim >= t.correct) {
-            feedbackEl.innerText = `\u2705 Correct! (similarity: ${sim.toFixed(2)})`;
-            feedbackEl.style.color = "green";
-            asked.add(quesSec);
-
-            correctAnswers++;
-            updateProgress();
-
-            setTimeout(resumeVideo, 700);
-
-          } else if (sim >= t.borderline) {
-            feedbackEl.innerText = `\u{1F914} Almost correct (similarity: ${sim.toFixed(2)}). Rewinding...`;
-            feedbackEl.style.color = "#d97706";
-
-            setTimeout(() => {
-              let rewindTo = askedInSegment.length > 0
-                ? Math.max(...askedInSegment) + 1
-                : segStart;
-              player.currentTime = rewindTo;
-              resumeVideo();
-            }, 1500);
-
-          } else {
-            feedbackEl.innerText = `\u274C Wrong. (similarity: ${sim.toFixed(2)}) Rewinding...`;
-            feedbackEl.style.color = "red";
-
-            setTimeout(() => {
-              let rewindTo = askedInSegment.length > 0
-                ? Math.max(...askedInSegment) + 1
-                : segStart;
-              player.currentTime = rewindTo;
-              resumeVideo();
-            }, 1500);
-          }
-        })
-        .catch(err => {
-          console.error("[Warning] Answer check failed:", err);
-          document.getElementById("feedback").innerText = "[Warning] Could not check answer.";
-          setTimeout(resumeVideo, 1000);
+      try {
+        const response = await fetch("/api/check_answer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ expected: q.answer, user: spoken })
         });
+        const data = await response.json();
+        console.log("Local check response:", data);
+
+        const sim = parseFloat(data.similarity);
+        const t = data.is_numeric ? THRESHOLDS.number : THRESHOLDS.phrase;
+
+        if (sim >= t.correct) {
+          const celebrationMessage = pickRandomCelebration();
+          asked.add(quesSec);
+
+          correctAnswers++;
+          updateProgress();
+
+          await deliverFeedback({
+            message: celebrationMessage,
+            color: "#22c55e",
+            confetti: true,
+            minVisibleMs: MIN_FEEDBACK_DISPLAY_MS + 200
+          });
+
+          await wait(200);
+          resumeVideo();
+          return;
+        }
+
+        const rewindTo = askedInSegment.length > 0
+          ? Math.max(...askedInSegment) + 1
+          : segStart;
+
+        if (sim >= t.borderline) {
+          const almostMessage = BORDERLINE_FEEDBACK[0] || "Almost! Let's watch it again.";
+
+          await deliverFeedback({
+            message: almostMessage,
+            color: "#d97706",
+            minVisibleMs: MIN_FEEDBACK_DISPLAY_MS
+          });
+
+          player.currentTime = rewindTo;
+          await wait(200);
+          resumeVideo();
+          return;
+        }
+
+        await deliverFeedback({
+          message: RETRY_FEEDBACK,
+          color: "#ef4444",
+          minVisibleMs: MIN_FEEDBACK_DISPLAY_MS
+        });
+
+        player.currentTime = rewindTo;
+        await wait(200);
+        resumeVideo();
+      } catch (err) {
+        console.error("[Warning] Answer check failed:", err);
+        document.getElementById("feedback").innerText = "[Warning] Could not check answer.";
+        setTimeout(resumeVideo, 1000);
+      }
     }
 
     function resumeVideo() {
@@ -1313,6 +2151,9 @@
       const box = document.getElementById("question-box");
       box.style.display = "none"; // hide overlay
       document.getElementById("feedback").innerText = ""; // clear feedback
+      hideQuestionActions();
+      currentQuestionContext = null;
+      currentListenAttempt = 0;
       unlockVideoControls();          // unlock here
       player.play();
     }

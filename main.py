@@ -1730,4 +1730,71 @@ async def save_final_questions(payload: Dict[str, Any] = Body(...)):
         )
 
 
+@app.post("/api/tts")
+async def synthesize_tts(payload: Dict[str, Any] = Body(...)):
+    """Generate speech audio via OpenAI TTS."""
+    text = str(payload.get("text") or "").strip()
+    if not text:
+        return JSONResponse(
+            {"success": False, "message": "text is required"}, status_code=400
+        )
+
+    voice = str(payload.get("voice") or "sage").strip() or "sage"
+    raw_speed = payload.get("speed", 0.75)
+    try:
+        speed = float(raw_speed)
+    except (TypeError, ValueError):
+        speed = 0.75
+    speed = max(0.25, min(speed, 4.0))
+    response_format = str(payload.get("format") or "mp3").strip() or "mp3"
+
+    def _synthesize(voice_name: str) -> bytes:
+        with OPENAI_CLIENT.audio.speech.with_streaming_response.create(
+            model="gpt-4o-mini-tts",
+            voice=voice_name,
+            input=text,
+            speed=speed,
+        ) as response:
+            return response.read()
+
+    try:
+        audio_bytes = await asyncio.to_thread(_synthesize, voice)
+    except Exception as exc:
+        # Attempt a graceful fallback if the requested voice is unavailable.
+        fallback_voice = "alloy"
+        error_message = str(exc)
+        should_retry_with_fallback = (
+            voice.lower() != fallback_voice
+            and any(
+                keyword in error_message.lower()
+                for keyword in ("voice", "unknown", "not found", "unsupported")
+            )
+        )
+        if should_retry_with_fallback:
+            try:
+                audio_bytes = await asyncio.to_thread(_synthesize, fallback_voice)
+                voice = fallback_voice
+            except Exception as retry_exc:
+                error_message = f"{error_message} | fallback_failed={retry_exc}"
+                return JSONResponse(
+                    {
+                        "success": False,
+                        "message": f"TTS generation failed: {error_message}",
+                    },
+                    status_code=502,
+                )
+        else:
+            return JSONResponse(
+                {
+                    "success": False,
+                    "message": f"TTS generation failed: {error_message}",
+                },
+                status_code=502,
+            )
+    audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+    return JSONResponse(
+        {"success": True, "audio": audio_b64, "format": response_format, "voice": voice}
+    )
+
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
