@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -169,6 +169,23 @@
         
         .btn-secondary:hover {
             background: #4a5568;
+        }
+        
+        .btn-danger {
+            background: #e53e3e;
+        }
+        
+        .btn-danger:hover {
+            background: #c53030;
+        }
+        
+        .btn-light {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+        
+        .btn-light:hover {
+            background: #e2e8f0;
         }
         
         .btn-add-question {
@@ -982,7 +999,7 @@
         }
         
         .accordion-header.approved .segment-index::after {
-            content: " âœ“";
+            content: " ✓";
             color: #28a745;
             font-weight: bold;
         }
@@ -1134,6 +1151,32 @@
             border-radius: 8px;
             font-size: 0.95rem;
             margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .llm-instruction-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2b6cb0;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: none;
+        }
+        
+        .llm-instruction-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-style: italic;
+            font-weight: 700;
+            color: inherit;
         }
 
         .llm-step-content {
@@ -1149,6 +1192,38 @@
             gap: 16px;
             flex-wrap: wrap;
         }
+        
+        .llm-step-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        
+        .llm-section-box {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 16px;
+        }
+        
+        .llm-trashed-section {
+            background: #fff5f5;
+            border-color: #feb2b2;
+        }
+        
+        .llm-inline-trash {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 10px;
+            padding: 16px;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        
+        .llm-inline-trash.drag-over {
+            border-style: dashed;
+            border-color: #fc8181;
+            background: #fff0f0;
+        }
 
         .llm-ranking-column,
         .llm-trash-column {
@@ -1160,6 +1235,8 @@
             min-height: 220px;
         }
 
+        .llm-triage-list,
+        .llm-triage-trash-list,
         .llm-ranking-list,
         .llm-trash-list {
             list-style: none;
@@ -1167,6 +1244,7 @@
             padding: 0;
         }
 
+        .llm-triage-item,
         .llm-ranking-item,
         .llm-trash-item {
             display: flex;
@@ -1177,13 +1255,39 @@
             padding: 10px 12px;
             margin-bottom: 10px;
             background: #ffffff;
-            cursor: grab;
             transition: box-shadow 0.2s ease;
         }
-
-        .llm-ranking-item:active,
-        .llm-trash-item:active {
+        
+        .llm-triage-item {
+            cursor: default;
+        }
+        
+        .llm-ranking-item {
+            cursor: grab;
+        }
+        
+        .llm-ranking-item:active {
             cursor: grabbing;
+        }
+        
+        .llm-trash-item {
+            cursor: default;
+            border-color: #fc8181;
+            background: #fff5f5;
+        }
+        
+        .llm-trash-item .llm-item-type {
+            color: #c53030;
+        }
+        
+        .llm-trash-item .llm-item-question {
+            color: #742a2a;
+        }
+        
+        .llm-triage-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
         }
 
         .llm-rank-badge {
@@ -1215,19 +1319,12 @@
         }
 
         .llm-trash-dropzone {
-            border: 2px dashed #cbd5e0;
-            border-radius: 10px;
-            min-height: 180px;
-            padding: 12px;
-            background: #ffffff;
-            transition: border-color 0.2s ease, background 0.2s ease;
+            border: none;
+            padding: 0;
         }
 
-        .llm-trash-dropzone.drag-over {
-            border-color: #fc8181;
-            background: #fff5f5;
-        }
-
+        .llm-triage-empty,
+        .llm-triage-trash-empty,
         .llm-ranking-empty,
         .llm-trash-empty,
         .llm-empty-state {
@@ -1592,41 +1689,64 @@
         <div class="llm-review-modal" id="llm-review-modal">
             <div class="llm-review-content">
                 <div class="llm-review-header">
-                    <h3 id="llm-modal-step-title">Review AI Questions - Step 1 of 2</h3>
+                    <h3 id="llm-modal-step-title">Review AI Questions</h3>
                     <p id="llm-modal-segment-label">Segment details</p>
                 </div>
                 <div class="llm-modal-feedback" id="llm-modal-feedback"></div>
                 <div class="llm-step-content active" id="llm-step-1">
-                    <p class="llm-step-instructions">Step 1 of 2 - Rank the AI-generated questions, drop any you do not want into Trash, and leave a comment explaining your choices. You can make edits in the next step.</p>
-                    <div class="llm-step-grid">
-                        <div class="llm-ranking-column">
+                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Review the generated questions, move inappropriate ones to trash, and optionally leave a note.</em></strong></span></p>
+                    <div class="llm-step-stack">
+                        <div class="llm-section-box">
+                            <h4 class="llm-section-title">Questions</h4>
+                            <p class="llm-section-help">Review each question. Use the trash button to remove anything that should not be ranked.</p>
+                            <ul class="llm-triage-list" id="llm-triage-list"></ul>
+                            <div class="llm-triage-empty" id="llm-triage-empty">No questions available.</div>
+                        </div>
+                        <div class="llm-section-box llm-trashed-section">
+                            <h4 class="llm-section-title">Trashed Questions</h4>
+                            <p class="llm-section-help">Trashed questions move to the bottom. Restore one if you change your mind.</p>
+                            <ul class="llm-triage-trash-list" id="llm-triage-trash-list"></ul>
+                            <div class="llm-triage-trash-empty" id="llm-triage-trash-empty">No questions in trash.</div>
+                        </div>
+                    </div>
+                    <div class="llm-comment-section">
+                        <label for="llm-triage-comment">Comment (optional)</label>
+                        <textarea id="llm-triage-comment" placeholder="Add an optional note about removed questions."></textarea>
+                    </div>
+                    <div class="llm-step-footer">
+                        <button type="button" class="btn btn-success" id="llm-step-next-btn">Next: Rank Questions</button>
+                    </div>
+                </div>
+                <div class="llm-step-content" id="llm-step-2">
+                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Rank the remaining questions in order of strength, drop any that should be excluded, and leave an optional rationale.</em></strong></span></p>
+                    <div class="llm-step-stack">
+                        <div class="llm-section-box">
                             <h4 class="llm-section-title">Ranking</h4>
                             <p class="llm-section-help">Drag questions to reorder them. The rank badge shows the current position.</p>
                             <ul class="llm-ranking-list" id="llm-ranking-list"></ul>
                             <div class="llm-ranking-empty" id="llm-ranking-empty">No questions available to rank.</div>
                         </div>
-                        <div class="llm-trash-column">
-                            <h4 class="llm-section-title">Trash</h4>
-                            <p class="llm-section-help">Drop a question here to remove it from the ranked list. You can drag it back if you change your mind.</p>
-                            <div class="llm-trash-dropzone" id="llm-trash-dropzone">
-                                <ul class="llm-trash-list" id="llm-trash-list"></ul>
-                                <div class="llm-trash-empty" id="llm-trash-empty">No questions in trash.</div>
-                            </div>
+                        <div class="llm-section-box llm-inline-trash" id="llm-trash-dropzone">
+                            <h4 class="llm-section-title">Trashed Questions</h4>
+                            <p class="llm-section-help">Drop a question here to remove it from the ranked list. Drag it back above to restore.</p>
+                            <ul class="llm-trash-list" id="llm-ranking-trash-list"></ul>
+                            <div class="llm-trash-empty" id="llm-ranking-trash-empty">No questions in trash.</div>
                         </div>
                     </div>
                     <div class="llm-comment-section">
-                        <label for="llm-ranking-comment">Comment (required)</label>
-                        <textarea id="llm-ranking-comment" placeholder="Explain your ranking decisions and any questions you removed." required></textarea>
+                        <label for="llm-ranking-comment">Comment (optional)</label>
+                        <textarea id="llm-ranking-comment" placeholder="Add an optional note about your ranking decisions."></textarea>
                     </div>
-                    <div class="llm-step-footer">
-                        <button type="button" class="btn btn-success" id="llm-step-next-btn">Next: Review Answers</button>
-                    </div>
-                </div>
-                <div class="llm-step-content" id="llm-step-2">
-                    <p class="llm-step-instructions">Step 2 of 2 - Review answers, use the pencil to edit questions or answers, and trash or restore items as needed.</p>
-                    <div class="llm-accordion" id="llm-accordion-list"></div>
                     <div class="llm-step-footer">
                         <button type="button" class="btn btn-secondary" id="llm-step-back-btn">Back</button>
+                        <button type="button" class="btn btn-success" id="llm-step-next-review-btn">Next: Edit Questions</button>
+                    </div>
+                </div>
+                <div class="llm-step-content" id="llm-step-3">
+                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Review answers, make final edits, and confirm the set looks ready for learners.</em></strong></span></p>
+                    <div class="llm-accordion" id="llm-accordion-list"></div>
+                    <div class="llm-step-footer">
+                        <button type="button" class="btn btn-secondary" id="llm-step-edit-back-btn">Back</button>
                         <button type="button" class="btn btn-success" id="llm-review-submit-btn">Submit &amp; Continue</button>
                     </div>
                 </div>
@@ -1680,7 +1800,8 @@
             dragSource: null,
             step: 1,
             editingKey: null,
-            comment: ''
+            triageComment: '',
+            rankingComment: ''
         };
         let modalPlaybackLockCount = 0;
         let modalPlaybackWasPlaying = false;
@@ -1754,9 +1875,19 @@
                 llmNextButton.addEventListener('click', handleLLMStepNext);
             }
 
+            const llmNextReviewButton = document.getElementById('llm-step-next-review-btn');
+            if (llmNextReviewButton) {
+                llmNextReviewButton.addEventListener('click', handleLLMStepNext);
+            }
+
             const llmBackButton = document.getElementById('llm-step-back-btn');
             if (llmBackButton) {
                 llmBackButton.addEventListener('click', handleLLMStepBack);
+            }
+
+            const llmEditBackButton = document.getElementById('llm-step-edit-back-btn');
+            if (llmEditBackButton) {
+                llmEditBackButton.addEventListener('click', handleLLMStepBack);
             }
 
             const llmSubmitButton = document.getElementById('llm-review-submit-btn');
@@ -1764,11 +1895,17 @@
                 llmSubmitButton.addEventListener('click', handleLLMModalSubmit);
             }
 
-            const llmCommentInput = document.getElementById('llm-ranking-comment');
-            if (llmCommentInput) {
-                llmCommentInput.setAttribute('required', 'required');
-                llmCommentInput.addEventListener('input', () => {
-                    llmModalState.comment = llmCommentInput.value;
+            const llmTriageCommentInput = document.getElementById('llm-triage-comment');
+            if (llmTriageCommentInput) {
+                llmTriageCommentInput.addEventListener('input', () => {
+                    llmModalState.triageComment = llmTriageCommentInput.value;
+                });
+            }
+
+            const llmRankingCommentInput = document.getElementById('llm-ranking-comment');
+            if (llmRankingCommentInput) {
+                llmRankingCommentInput.addEventListener('input', () => {
+                    llmModalState.rankingComment = llmRankingCommentInput.value;
                 });
             }
         });
@@ -2654,7 +2791,15 @@
 
             llmModalState.editingKey = null;
 
-            llmModalState.comment = typeof rankingInfo.comment === 'string' ? rankingInfo.comment : '';
+            llmModalState.triageComment = typeof rankingInfo.triageComment === 'string' ? rankingInfo.triageComment : '';
+
+            const savedRankingComment = typeof rankingInfo.rankingComment === 'string'
+
+                ? rankingInfo.rankingComment
+
+                : (typeof rankingInfo.comment === 'string' ? rankingInfo.comment : '');
+
+            llmModalState.rankingComment = savedRankingComment;
 
 
 
@@ -2668,11 +2813,21 @@
 
 
 
-            const commentInput = document.getElementById('llm-ranking-comment');
+            const triageCommentInput = document.getElementById('llm-triage-comment');
 
-            if (commentInput) {
+            if (triageCommentInput) {
 
-                commentInput.value = llmModalState.comment || '';
+                triageCommentInput.value = llmModalState.triageComment || '';
+
+            }
+
+
+
+            const rankingCommentInput = document.getElementById('llm-ranking-comment');
+
+            if (rankingCommentInput) {
+
+                rankingCommentInput.value = llmModalState.rankingComment || '';
 
             }
 
@@ -2740,7 +2895,9 @@
 
             llmModalState.editingKey = null;
 
-            llmModalState.comment = '';
+            llmModalState.triageComment = '';
+
+            llmModalState.rankingComment = '';
 
         }
 
@@ -2758,11 +2915,21 @@
 
 
 
-            const commentInput = document.getElementById('llm-ranking-comment');
+            const triageCommentInput = document.getElementById('llm-triage-comment');
 
-            if (commentInput) {
+            if (triageCommentInput) {
 
-                commentInput.value = '';
+                triageCommentInput.value = '';
+
+            }
+
+
+
+            const rankingCommentInput = document.getElementById('llm-ranking-comment');
+
+            if (rankingCommentInput) {
+
+                rankingCommentInput.value = '';
 
             }
 
@@ -2806,7 +2973,17 @@
 
             if (title) {
 
-                title.textContent = step === 1 ? 'Review AI Questions - Step 1 of 2' : 'Review AI Questions - Step 2 of 2';
+                const titles = {
+
+                    1: 'Review AI Questions',
+
+                    2: 'Review AI Questions',
+
+                    3: 'Review AI Questions'
+
+                };
+
+                title.textContent = titles[step] || 'Review AI Questions';
 
             }
 
@@ -2824,15 +3001,27 @@
 
                 renderLLMStepOne();
 
-                const commentInput = document.getElementById('llm-ranking-comment');
+                const triageCommentInput = document.getElementById('llm-triage-comment');
 
-                if (commentInput) {
+                if (triageCommentInput) {
 
-                    commentInput.value = llmModalState.comment || '';
+                    triageCommentInput.value = llmModalState.triageComment || '';
 
                 }
 
-            } else {
+            } else if (step === 2) {
+
+                renderLLMStepTwo();
+
+                const rankingCommentInput = document.getElementById('llm-ranking-comment');
+
+                if (rankingCommentInput) {
+
+                    rankingCommentInput.value = llmModalState.rankingComment || '';
+
+                }
+
+            } else if (step === 3) {
 
                 const combinedOrder = getCombinedLLMOrder();
 
@@ -2842,7 +3031,7 @@
 
                 }
 
-                renderLLMStepTwo();
+                renderLLMAccordion();
 
             }
 
@@ -2852,17 +3041,17 @@
 
         function renderLLMStepOne() {
 
-            const rankingList = document.getElementById('llm-ranking-list');
+            const triageList = document.getElementById('llm-triage-list');
 
-            const trashList = document.getElementById('llm-trash-list');
+            const triageEmpty = document.getElementById('llm-triage-empty');
 
-            const rankingEmpty = document.getElementById('llm-ranking-empty');
+            const trashList = document.getElementById('llm-triage-trash-list');
 
-            const trashEmpty = document.getElementById('llm-trash-empty');
+            const trashEmpty = document.getElementById('llm-triage-trash-empty');
 
 
 
-            if (!rankingList || !trashList) {
+            if (!triageList || !trashList) {
 
                 return;
 
@@ -2870,25 +3059,25 @@
 
 
 
-            rankingList.innerHTML = '';
+            triageList.innerHTML = '';
 
             trashList.innerHTML = '';
 
 
 
-            const rankingKeys = llmModalState.rankingOrder || [];
+            const activeKeys = llmModalState.rankingOrder || [];
 
             const trashKeys = llmModalState.trashOrder || [];
 
 
 
-            rankingKeys.forEach((key, index) => {
+            activeKeys.forEach((key, index) => {
 
-                const item = createLLMListItem(key, index, 'ranking');
+                const item = createLLMTriageItem(key, index);
 
                 if (item) {
 
-                    rankingList.appendChild(item);
+                    triageList.appendChild(item);
 
                 }
 
@@ -2910,11 +3099,13 @@
 
 
 
-            if (rankingEmpty) {
+            if (triageEmpty) {
 
-                rankingEmpty.style.display = rankingKeys.length ? 'none' : 'block';
+                triageEmpty.style.display = activeKeys.length ? 'none' : 'block';
 
             }
+
+
 
             if (trashEmpty) {
 
@@ -2922,9 +3113,87 @@
 
             }
 
+        }
 
 
-            attachLLMListListeners();
+
+        function createLLMTriageItem(questionKey, index) {
+
+            const entry = getLLMEntry(questionKey);
+
+            if (!entry || entry.trashed) {
+
+                return null;
+
+            }
+
+
+
+            const item = document.createElement('li');
+
+            item.className = 'llm-triage-item';
+
+            item.dataset.questionKey = questionKey;
+
+            item.dataset.index = String(index);
+
+
+
+            const textWrapper = document.createElement('div');
+
+            textWrapper.className = 'llm-item-text';
+
+
+
+            const typeEl = document.createElement('div');
+
+            typeEl.className = 'llm-item-type';
+
+            typeEl.textContent = entry.type;
+
+            textWrapper.appendChild(typeEl);
+
+
+
+            const questionEl = document.createElement('div');
+
+            questionEl.className = 'llm-item-question';
+
+            questionEl.textContent = entry.question || '(empty question)';
+
+            textWrapper.appendChild(questionEl);
+
+
+
+            item.appendChild(textWrapper);
+
+
+
+            const actions = document.createElement('div');
+
+            actions.className = 'llm-triage-actions';
+
+
+
+            const trashButton = document.createElement('button');
+
+            trashButton.type = 'button';
+
+            trashButton.className = 'btn btn-danger btn-sm';
+
+            trashButton.textContent = 'Trash';
+
+            trashButton.addEventListener('click', () => moveLLMQuestionToTrash(questionKey));
+
+            actions.appendChild(trashButton);
+
+
+
+            item.appendChild(actions);
+
+
+
+            return item;
 
         }
 
@@ -2935,6 +3204,8 @@
             const rankingList = document.getElementById('llm-ranking-list');
 
             const trashDropzone = document.getElementById('llm-trash-dropzone');
+
+            const trashList = document.getElementById('llm-ranking-trash-list');
 
 
 
@@ -2962,6 +3233,20 @@
 
             }
 
+
+
+            if (trashList && trashList.dataset.listenersAttached !== 'true') {
+
+                trashList.addEventListener('dragover', handleLLMTrashDragOver);
+
+                trashList.addEventListener('dragleave', handleLLMTrashDragLeave);
+
+                trashList.addEventListener('drop', handleLLMTrashDrop);
+
+                trashList.dataset.listenersAttached = 'true';
+
+            }
+
         }
 
 
@@ -2986,11 +3271,15 @@
 
             item.dataset.list = listType;
 
-            item.draggable = true;
+            item.draggable = listType === 'ranking';
 
-            item.addEventListener('dragstart', handleLLMDragStart);
+            if (item.draggable) {
 
-            item.addEventListener('dragend', handleLLMDragEnd);
+                item.addEventListener('dragstart', handleLLMDragStart);
+
+                item.addEventListener('dragend', handleLLMDragEnd);
+
+            }
 
 
 
@@ -3044,7 +3333,7 @@
 
                 restoreButton.type = 'button';
 
-                restoreButton.className = 'btn btn-secondary btn-sm';
+                restoreButton.className = 'btn btn-light btn-sm';
 
                 restoreButton.textContent = 'Restore';
 
@@ -3296,9 +3585,11 @@
 
             renderLLMStepOne();
 
+            renderLLMStepTwo();
 
 
-            if (llmModalState.step === 2) {
+
+            if (llmModalState.step === 3) {
 
                 renderLLMAccordion();
 
@@ -3368,9 +3659,11 @@
 
             renderLLMStepOne();
 
+            renderLLMStepTwo();
 
 
-            if (llmModalState.step === 2) {
+
+            if (llmModalState.step === 3) {
 
                 renderLLMAccordion();
 
@@ -3382,7 +3675,81 @@
 
         function renderLLMStepTwo() {
 
-            renderLLMAccordion();
+            const rankingList = document.getElementById('llm-ranking-list');
+
+            const trashList = document.getElementById('llm-ranking-trash-list');
+
+            const rankingEmpty = document.getElementById('llm-ranking-empty');
+
+            const trashEmpty = document.getElementById('llm-ranking-trash-empty');
+
+
+
+            if (!rankingList || !trashList) {
+
+                return;
+
+            }
+
+
+
+            rankingList.innerHTML = '';
+
+            trashList.innerHTML = '';
+
+
+
+            const rankingKeys = llmModalState.rankingOrder || [];
+
+            const trashKeys = llmModalState.trashOrder || [];
+
+
+
+            rankingKeys.forEach((key, index) => {
+
+                const item = createLLMListItem(key, index, 'ranking');
+
+                if (item) {
+
+                    rankingList.appendChild(item);
+
+                }
+
+            });
+
+
+
+            trashKeys.forEach((key, index) => {
+
+                const item = createLLMListItem(key, index, 'trash');
+
+                if (item) {
+
+                    trashList.appendChild(item);
+
+                }
+
+            });
+
+
+
+            if (rankingEmpty) {
+
+                rankingEmpty.style.display = rankingKeys.length ? 'none' : 'block';
+
+            }
+
+
+
+            if (trashEmpty) {
+
+                trashEmpty.style.display = trashKeys.length ? 'none' : 'block';
+
+            }
+
+
+
+            attachLLMListListeners();
 
         }
 
@@ -3536,17 +3903,21 @@
 
 
 
-                const trashButton = document.createElement('button');
+                if (entry.trashed) {
 
-                trashButton.type = 'button';
+                    const restoreButton = document.createElement('button');
 
-                trashButton.className = 'btn btn-secondary btn-sm';
+                    restoreButton.type = 'button';
 
-                trashButton.textContent = entry.trashed ? 'Restore' : 'Trash';
+                    restoreButton.className = 'btn btn-light btn-sm';
 
-                trashButton.addEventListener('click', () => toggleLLMModalTrash(questionKey));
+                    restoreButton.textContent = 'Restore';
 
-                actions.appendChild(trashButton);
+                    restoreButton.addEventListener('click', () => moveLLMQuestionToRanking(questionKey));
+
+                    actions.appendChild(restoreButton);
+
+                }
 
 
 
@@ -3854,32 +4225,6 @@
 
 
 
-        function toggleLLMModalTrash(questionKey) {
-
-            const entry = getLLMEntry(questionKey);
-
-            if (!entry) {
-
-                return;
-
-            }
-
-
-
-            if (entry.trashed) {
-
-                moveLLMQuestionToRanking(questionKey);
-
-            } else {
-
-                moveLLMQuestionToTrash(questionKey);
-
-            }
-
-        }
-
-
-
         function getCombinedLLMOrder() {
 
             const seen = new Set();
@@ -3946,35 +4291,7 @@
 
 
 
-            const commentInput = document.getElementById('llm-ranking-comment');
-
             const feedback = document.getElementById('llm-modal-feedback');
-
-            const comment = commentInput ? commentInput.value.trim() : '';
-
-
-
-            if (!comment) {
-
-                if (feedback) {
-
-                    feedback.textContent = 'Please add a comment before continuing.';
-
-                }
-
-                if (commentInput) {
-
-                    commentInput.focus();
-
-                }
-
-                return;
-
-            }
-
-
-
-            llmModalState.comment = comment;
 
             if (feedback) {
 
@@ -3984,7 +4301,35 @@
 
 
 
-            setLLMStep(2);
+            if (llmModalState.step === 1) {
+
+                const triageCommentInput = document.getElementById('llm-triage-comment');
+
+                const comment = triageCommentInput ? triageCommentInput.value.trim() : '';
+
+                llmModalState.triageComment = comment;
+
+                setLLMStep(2);
+
+                return;
+
+            }
+
+
+
+            if (llmModalState.step === 2) {
+
+                const rankingCommentInput = document.getElementById('llm-ranking-comment');
+
+                const comment = rankingCommentInput ? rankingCommentInput.value.trim() : '';
+
+                llmModalState.rankingComment = comment;
+
+                setLLMStep(3);
+
+                return;
+
+            }
 
         }
 
@@ -4010,7 +4355,21 @@
 
 
 
-            setLLMStep(1);
+            if (llmModalState.step === 2) {
+
+                setLLMStep(1);
+
+                return;
+
+            }
+
+
+
+            if (llmModalState.step === 3) {
+
+                setLLMStep(2);
+
+            }
 
         }
 
@@ -4040,43 +4399,33 @@
 
 
 
-            if (llmModalState.step !== 2) {
+            if (llmModalState.step !== 3) {
 
-                setLLMStep(2);
+                if (llmModalState.step === 1) {
 
-                return;
+                    setLLMStep(2);
 
-            }
+                } else if (llmModalState.step === 2) {
 
-
-
-            const commentInput = document.getElementById('llm-ranking-comment');
-
-            const feedback = document.getElementById('llm-modal-feedback');
-
-            const comment = commentInput ? commentInput.value.trim() : '';
-
-
-
-            if (!comment) {
-
-                if (feedback) {
-
-                    feedback.textContent = 'Please add a comment before submitting.';
-
-                }
-
-                setLLMStep(1);
-
-                if (commentInput) {
-
-                    commentInput.focus();
+                    setLLMStep(3);
 
                 }
 
                 return;
 
             }
+
+
+
+            const rankingCommentInput = document.getElementById('llm-ranking-comment');
+
+            const rankingComment = rankingCommentInput ? rankingCommentInput.value.trim() : (llmModalState.rankingComment || '').trim();
+
+            llmModalState.rankingComment = rankingComment;
+
+
+
+            const triageComment = (llmModalState.triageComment || '').trim();
 
 
 
@@ -4102,15 +4451,15 @@
 
                 trashed: trashOrder,
 
-                comment,
+                triageComment,
+
+                rankingComment,
+
+                comment: rankingComment,
 
                 updatedAt: new Date().toISOString()
 
             };
-
-
-
-            llmModalState.comment = comment;
 
 
 
@@ -4427,7 +4776,7 @@
                     <button class="btn-approve-segment" 
                             onclick="approveSegment('${segmentKey}', ${index})"
                             ${segmentApprovals[currentVideoId][segmentKey] ? 'disabled' : ''}>
-                        ${segmentApprovals[currentVideoId][segmentKey] ? 'Segment Approved âœ“' : 'Approve Segment'}
+                        ${segmentApprovals[currentVideoId][segmentKey] ? 'Segment Approved ✓' : 'Approve Segment'}
                     </button>
                 `;
                 
@@ -4685,8 +5034,14 @@
                     });
 
                     // Add ranking comment if exists
-                    if (rankingInfo && rankingInfo.comment) {
-                        segmentData.rankingComment = rankingInfo.comment;
+                    if (rankingInfo) {
+                        if (rankingInfo.triageComment) {
+                            segmentData.triageComment = rankingInfo.triageComment;
+                        }
+                        const resolvedRankingComment = rankingInfo.rankingComment || rankingInfo.comment;
+                        if (resolvedRankingComment) {
+                            segmentData.rankingComment = resolvedRankingComment;
+                        }
                     }
                 }
 
@@ -4717,7 +5072,7 @@
                     const btn = document.querySelector('.btn-save-changes');
                     if (btn) {
                         btn.disabled = true;
-                        btn.textContent = 'Saved to final_questions ✓';
+                        btn.textContent = 'Saved to final_questions ?';
                         setTimeout(() => {
                             btn.disabled = false;
                             btn.textContent = 'Finalize questions and submit';
