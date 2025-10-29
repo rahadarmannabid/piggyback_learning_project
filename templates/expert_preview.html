@@ -4,32 +4,49 @@
     <meta charset="utf-8">
     <title>Expert Preview - Video Question Review</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-surface: #ffffff;
+    --color-surface-muted: #f4f6fb;
+    --color-surface-soft: #ecf4f5;
+    --color-border: #d7dcec;
+    --color-text: #2e2b44;
+    --color-muted: #5c6886;
+    --color-accent: #2c7a7b;
+    --color-accent-dark: #1f5f61;
+    --color-accent-soft: #dff2f1;
+    --color-secondary: #6b5fb5;
+    --color-secondary-dark: #5548a0;
+    --color-highlight: #f5edff;
+    --color-manual: #2f855a;
+    --shadow-soft: 0 16px 40px rgba(71, 68, 119, 0.08);
+}
         
-        body {
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-            min-height: 100vh;
-            color: #2d3748;
-        }
+body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(135deg, #edf6ff 0%, #fbf1ff 100%);
+    min-height: 100vh;
+    color: var(--color-text);
+}
         
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 24px 40px;
+}
         
-        .header {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
+.header {
+    background: var(--color-surface);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-soft);
+}
         
         .video-selector {
             display: flex;
@@ -38,29 +55,30 @@
             flex-wrap: wrap;
         }
         
-        select {
-            padding: 10px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            background: white;
-            min-width: 200px;
-        }
+select {
+    padding: 10px;
+    border: 2px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+    min-width: 200px;
+}
         
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #3182ce;
-            color: white;
-        }
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--color-accent);
+    color: var(--color-surface);
+    box-shadow: 0 2px 6px rgba(44, 122, 123, 0.25);
+}
         
-        .btn:hover {
-            background: #2c5aa0;
-            transform: translateY(-1px);
-        }
+.btn:hover {
+    background: var(--color-accent-dark);
+    transform: translateY(-1px);
+}
         
         .main-grid {
             display: grid;
@@ -69,12 +87,12 @@
             min-height: 600px;
         }
         
-        .video-section {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
+.video-section {
+    background: var(--color-surface);
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: var(--shadow-soft);
+}
         
         .video-section.qs-fullscreen-active,
         .qs-fullscreen .video-section {
@@ -174,22 +192,23 @@
             box-shadow: 0 0 15px rgba(255,212,59,0.9);
         }
         
-        .video-controls {
-            margin-top: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
+.video-controls {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 20px;
+    background: var(--color-surface-muted);
+    border-radius: 14px;
+}
         
-        .time-display {
-            font-family: monospace;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #3182ce;
-        }
+.time-display {
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--color-accent);
+}
         
         .control-buttons {
             display: flex;
@@ -197,18 +216,18 @@
             align-items: center;
         }
         
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: 0.9rem;
-        }
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
         
-        .btn-secondary {
-            background: #718096;
-        }
+.btn-secondary {
+    background: var(--color-secondary);
+}
         
-        .btn-secondary:hover {
-            background: #4a5568;
-        }
+.btn-secondary:hover {
+    background: var(--color-secondary-dark);
+}
         
         .btn-danger {
             background: #e53e3e;
@@ -218,19 +237,40 @@
             background: #c53030;
         }
         
-        .btn-light {
-            background: #edf2f7;
-            color: #2d3748;
-        }
+.btn-light {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
         
-        .btn-light:hover {
-            background: #e2e8f0;
-        }
+.btn-light:hover {
+    background: var(--color-surface-muted);
+}
+
+.btn-ghost {
+    background: transparent;
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    box-shadow: none;
+    padding-inline: 18px;
+}
+
+.btn-ghost:hover {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-dark);
+}
+
+.btn:disabled,
+.btn[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
         
         /* Manual Add Question Modal */
-        .add-question-modal {
-            position: fixed;
-            top: 0;
+.add-question-modal {
+    position: fixed;
+    top: 0;
             left: 0;
             right: 0;
             bottom: 0;
@@ -245,61 +285,69 @@
             display: flex;
         }
         
-        .add-question-content {
-            background: white;
-            padding: 32px;
-            border-radius: 14px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-        }
-        
-        .add-question-header {
-            margin-bottom: 24px;
-        }
-        
-        .add-question-header h3 {
-            margin: 0 0 8px 0;
-            color: #2d3748;
-            font-size: 1.4rem;
-        }
-        
-        .add-question-header p {
-            margin: 0;
-            color: #4a5568;
-            font-size: 0.95rem;
-        }
-        
-        .timestamp-display {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding: 12px;
-            background: #f7fafc;
-            border-radius: 8px;
-        }
-        
-        .timestamp-label {
-            font-weight: 600;
-            color: #2d3748;
-        }
-        
-        .timestamp-value {
-            font-family: monospace;
-            font-size: 1.1rem;
-            color: #3182ce;
-        }
-        
-        .timestamp-input {
-            padding: 6px 10px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 1rem;
-        }
+.add-question-content {
+    background: var(--color-surface);
+    padding: 32px;
+    border-radius: 18px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-soft);
+}
+
+.add-question-header {
+    margin-bottom: 24px;
+}
+
+.add-question-header h3 {
+    margin: 0 0 8px 0;
+    color: var(--color-text);
+    font-size: 1.4rem;
+}
+
+.add-question-header p {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 0.95rem;
+}
+
+.modal-hint {
+    margin: 0 0 16px 0;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.timestamp-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: var(--color-surface-muted);
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+}
+
+.timestamp-label {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.timestamp-value {
+    font-family: monospace;
+    font-size: 1.1rem;
+    color: var(--color-accent);
+}
+
+.timestamp-input {
+    padding: 6px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 1rem;
+    background: var(--color-surface);
+}
         
         .pause-overlay {
             position: absolute;
@@ -307,11 +355,11 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.85);
+            background: rgba(17, 23, 41, 0.75);
             display: none;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
+            border-radius: 20px;
             z-index: 20;
         }
         
@@ -319,40 +367,51 @@
             display: flex;
         }
         
-        .pause-message {
-            background: white;
-            padding: 32px;
-            border-radius: 14px;
-            max-width: 560px;
+.pause-message {
+    background: var(--color-surface);
+    padding: 36px 40px;
+    border-radius: 22px;
+    max-width: 640px;
             width: 100%;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+            box-shadow: var(--shadow-soft);
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            text-align: left;
-        }
+    gap: 20px;
+    text-align: left;
+}
+
+.pause-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
         .pause-message h3 {
             margin: 0;
-            color: #2d3748;
+            color: var(--color-text);
             font-size: 1.4rem;
         }
 
         .pause-message p {
             margin: 0;
-            color: #4a5568;
+            color: var(--color-muted);
             font-size: 0.95rem;
         }
 
         .pause-hint {
+            font-size: 0.95rem;
+            color: var(--color-muted);
+        }
+
+        .pause-guidance {
             font-size: 0.9rem;
-            color: #4a5568;
+            color: var(--color-muted);
         }
 
         .pause-form {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
         }
 
         .pause-field {
@@ -364,18 +423,19 @@
         .pause-field label {
             font-weight: 600;
             font-size: 0.9rem;
-            color: #2d3748;
+            color: var(--color-text);
         }
 
         .pause-field select,
         .pause-field textarea,
         .pause-field input {
             padding: 10px 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
             font-size: 0.95rem;
             font-family: inherit;
             resize: vertical;
+            background: var(--color-surface-muted);
         }
 
         .pause-field textarea {
@@ -392,123 +452,278 @@
         .form-feedback {
             min-height: 18px;
             font-size: 0.85rem;
-            color: #e53e3e;
+            color: #d64545;
         }
 
         .form-feedback.success {
             color: #2f855a;
         }
         
-        .questions-panel {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            overflow-y: auto;
-            max-height: none;
-            margin-top: 20px;
-        }
+.questions-panel {
+    background: var(--color-surface);
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-top: 24px;
+}
         
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        
-        .segment-info {
-            background: #edf2f7;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .segment-time {
-            font-family: monospace;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #3182ce;
-            margin-bottom: 5px;
-        }
-        
-        .segment-duration {
-            color: #718096;
-            font-size: 0.9rem;
-        }
-        
-        .ai-questions {
-            margin-bottom: 25px;
-        }
-        
-        .question-item {
-            background: #f8f9fa;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
+.panel-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
 
-        .question-item.skipped {
-            background: #fffaf0;
-            border: 1px solid #fbd38d;
-        }
+.panel-title h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
 
-        .question-item.skipped .question-type-badge {
-            background: #dd6b20;
-        }
+.panel-subtitle {
+    margin-top: 4px;
+    color: var(--color-muted);
+    font-size: 0.95rem;
+    max-width: 520px;
+}
 
-        .question-meta {
-            font-size: 0.8rem;
-            color: #718096;
-            margin-top: 8px;
-        }
+.insight-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
 
-        .question-type-badge {
-            display: inline-block;
-            background: #3182ce;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
+.progress-card {
+    background: var(--color-surface-muted);
+    border-radius: 16px;
+    padding: 20px 22px;
+    border: 1px solid rgba(213, 223, 243, 0.6);
+}
+
+.progress-card-header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.progress-card-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.progress-headline {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.progress-subtext {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.progress-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 64px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: var(--color-accent-soft);
+    color: var(--color-accent-dark);
+}
         
-        .question-text {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #2d3748;
-        }
+.segment-info {
+    background: var(--color-surface);
+    border-radius: 16px;
+    border: 1px solid rgba(213, 223, 243, 0.6);
+    padding: 20px 22px;
+}
+
+.segment-info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.segment-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.segment-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-muted);
+}
+
+.segment-time {
+    font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-secondary-dark);
+}
+
+.segment-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--color-highlight);
+    color: var(--color-secondary-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.segment-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.segment-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-muted);
+}
+
+.metric-value {
+    font-weight: 600;
+    color: var(--color-text);
+}
         
-        .answer-text {
-            color: #718096;
-            margin-bottom: 15px;
-        }
+.ai-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
         
-        .progress-indicator {
-            background: #edf2f7;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
+.question-item {
+    background: var(--color-surface-muted);
+    border: 1px solid rgba(213, 223, 243, 0.6);
+    border-radius: 14px;
+    padding: 18px 20px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.question-item.is-active {
+    border-color: var(--color-accent);
+    background: var(--color-surface);
+    box-shadow: 0 10px 24px rgba(44, 122, 123, 0.12);
+}
+
+.question-item.is-manual {
+    border-left: 4px solid var(--color-manual);
+    background: #f0fbf6;
+}
+
+.question-item.is-skipped {
+    background: #fff5eb;
+    border-color: #f7c59f;
+}
+
+.question-item-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.question-meta {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.question-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.question-field:last-of-type {
+    margin-bottom: 0;
+}
+
+.question-field-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+.question-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    background: var(--color-secondary);
+    color: var(--color-surface);
+    text-transform: uppercase;
+}
+
+.question-chip--character { background: #2c7a7b; }
+.question-chip--setting { background: #6b5fb5; }
+.question-chip--feeling { background: #d16d9d; }
+.question-chip--action { background: #ff8c61; }
+.question-chip--causal { background: #4c6ef5; }
+.question-chip--outcome { background: #38a169; }
+.question-chip--prediction { background: #f59e0b; }
+.question-chip--manual { background: var(--color-manual); }
+.question-chip--skipped { background: #d97706; }
+.question-chip--default { background: var(--color-secondary); }
         
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
+.question-text {
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.45;
+}
         
-        .progress-fill {
-            height: 100%;
-            background: #38a169;
-            transition: width 0.3s ease;
-        }
+.answer-text {
+    color: var(--color-muted);
+    line-height: 1.5;
+}
+        
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(206, 215, 235, 0.7);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--color-secondary);
+    transition: width 0.3s ease;
+}
         
         .status-message {
             padding: 15px;
@@ -1367,6 +1582,48 @@
             margin-left: auto;
         }
 
+.llm-action-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #e53e3e;
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.llm-action-icon:hover {
+    background: #c53030;
+    transform: translateY(-1px);
+}
+
+.llm-action-icon:focus-visible {
+    outline: 2px solid #fb7185;
+    outline-offset: 2px;
+}
+
+.llm-action-icon svg {
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+    fill: currentColor;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
         .llm-rank-badge {
             width: 32px;
             height: 32px;
@@ -1629,9 +1886,10 @@
                         </div>
                         <div class="pause-overlay" id="pause-overlay">
                             <div class="pause-message">
-                                <div>
-                                    <h3>Add Expert Question</h3>
-                                    <p class="pause-hint">Segment <span id="expert-segment-number">1</span> | <span id="expert-segment-time">00:00 - 00:59</span> | Paused at <span id="expert-pause-timestamp">00:00</span></p>
+                                <div class="pause-header">
+                                    <h3>Capture Expert Question</h3>
+                                    <p class="pause-hint">Segment <span id="expert-segment-number">1</span> | <span id="expert-segment-time">00:00 - 00:59</span> | Pause <span id="expert-pause-timestamp">00:00</span></p>
+                                    <p class="pause-guidance">Use calm, kid-friendly wording before resuming playback.</p>
                                 </div>
                                 <form id="expert-question-form" class="pause-form">
                                     <div class="pause-field">
@@ -1676,17 +1934,43 @@
                     </div>
                     <div class="questions-panel">
                         <div class="panel-header">
-                            <h3>Expert Questions:</h3>
-                        </div>
-                        <div class="progress-indicator">
-                            <div id="progress-text">Select a video to begin</div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                            <div class="panel-title">
+                                <h3>Expert Questions</h3>
+                                <p class="panel-subtitle">Shape kid-friendly prompts by refining each segment below.</p>
                             </div>
                         </div>
-                        <div class="segment-info" id="segment-info" style="display: none;">
-                            <div class="segment-time" id="segment-time">00:00 - 00:00</div>
-                            <div class="segment-duration" id="segment-duration">Duration: 0 seconds</div>
+                        <div class="insight-stack">
+                            <div class="progress-card">
+                                <div class="progress-card-header">
+                                    <span class="progress-chip" id="progress-chip">0%</span>
+                                    <div class="progress-card-text">
+                                        <div class="progress-headline" id="progress-text">Select a video to begin</div>
+                                        <div class="progress-subtext" id="progress-subtext">Segment progress will appear here.</div>
+                                    </div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="segment-info" id="segment-info" style="display: none;">
+                                <div class="segment-info-header">
+                                    <span class="segment-pill" id="segment-index-pill">Segment 1</span>
+                                    <div class="segment-info-text">
+                                        <span class="segment-label">Active segment</span>
+                                        <span class="segment-time" id="segment-time">00:00 - 00:00</span>
+                                    </div>
+                                </div>
+                                <div class="segment-metrics">
+                                    <div class="segment-metric">
+                                        <span class="metric-label">Length</span>
+                                        <span class="metric-value" id="segment-duration">0s</span>
+                                    </div>
+                                    <div class="segment-metric">
+                                        <span class="metric-label">Next pause</span>
+                                        <span class="metric-value" id="segment-next-pause">00:00</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="ai-questions" id="expert-questions">
                             <!-- AI questions will be populated here -->
@@ -1709,10 +1993,11 @@
                 <div class="add-question-content">
                     <div class="add-question-header">
                         <h3>Add Expert Question</h3>
-                        <p>Add a custom question at the current timestamp</p>
+                        <p>Capture a custom prompt at this moment using age-appropriate, caregiver-friendly language.</p>
                     </div>
                     
                     <form id="manual-question-form">
+                        <p class="modal-hint">Tip: keep it short, concrete, and rooted in what children can see or feel.</p>
                         <div class="timestamp-display">
                             <span class="timestamp-label">Timestamp:</span>
                             <input type="text" 
@@ -1769,7 +2054,7 @@
                 </div>
                 <div class="llm-modal-feedback" id="llm-modal-feedback"></div>
                 <div class="llm-step-content active" id="llm-step-1">
-                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Review the AI generated questions, move inappropriate ones to trash, and optionally leave a note.</em></strong></span></p>
+                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Review the AI generated questions, mark the inappropriate ones, and optionally leave a note.</em></strong></span></p>
                     <div class="llm-step-stack">
                         <div class="llm-section-box">
                             <h4 class="llm-section-title">Questions</h4>
@@ -1793,7 +2078,7 @@
                     </div>
                 </div>
                 <div class="llm-step-content" id="llm-step-2">
-                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Rank the remaining comprehension questions, and leave an optional rationale.</em></strong></span></p>
+                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Rank the remaining comprehension questions, and leave an optional note to explain your logic.</em></strong></span></p>
                     <div class="llm-step-stack">
                         <div class="llm-section-box">
                             <h4 class="llm-section-title">Ranking</h4>
@@ -2064,6 +2349,11 @@
                 manualForm.addEventListener('submit', handleManualQuestionSubmit);
             }
 
+            const manualButton = document.getElementById('add-manual-question-btn');
+            if (manualButton) {
+                manualButton.addEventListener('click', openAddQuestionModal);
+            }
+
             const llmNextButton = document.getElementById('llm-step-next-btn');
             if (llmNextButton) {
                 llmNextButton.addEventListener('click', handleLLMStepNext);
@@ -2288,6 +2578,21 @@
             return labels[normalized] || (value ? String(value) : 'Unknown');
         }
 
+        function getExpertQuestionTypeClass(value) {
+            const classes = {
+                character: 'question-chip--character',
+                setting: 'question-chip--setting',
+                feeling: 'question-chip--feeling',
+                action: 'question-chip--action',
+                causal: 'question-chip--causal',
+                outcome: 'question-chip--outcome',
+                prediction: 'question-chip--prediction'
+            };
+
+            const normalized = normalizeQuestionType(value);
+            return classes[normalized] || 'question-chip--default';
+        }
+
         function getSegmentKey(segment) {
             if (!segment) {
                 return '';
@@ -2368,9 +2673,8 @@
             wrapper.className = 'question-item';
 
             const textEl = document.createElement('div');
-            textEl.className = 'question-text';
+            textEl.className = 'answer-text';
             textEl.style.textAlign = 'center';
-            textEl.style.color = '#718096';
             textEl.textContent = message;
 
             wrapper.appendChild(textEl);
@@ -2385,112 +2689,115 @@
 
             container.innerHTML = '';
 
-            // Show all saved expert questions
+            const createField = (labelText, valueText, valueClass) => {
+                const field = document.createElement('div');
+                field.className = 'question-field';
+
+                const labelEl = document.createElement('div');
+                labelEl.className = 'question-field-label';
+                labelEl.textContent = labelText;
+                field.appendChild(labelEl);
+
+                const valueEl = document.createElement('div');
+                valueEl.className = valueClass;
+                valueEl.textContent = valueText || '';
+                field.appendChild(valueEl);
+
+                return field;
+            };
+
             if (currentSegments && currentSegments.length > 0) {
                 let hasAnyQuestions = false;
-                
-                // First, show questions for defined segments
+
                 currentSegments.forEach((seg, index) => {
                     const entry = getExpertQuestionForSegment(seg);
-                    if (entry) {
-                        hasAnyQuestions = true;
-                        
-                        const questionDiv = document.createElement('div');
-                        questionDiv.className = 'question-item';
-                        
-                        // Add highlight if this is the current segment
-                        if (segment && seg === segment) {
-                            questionDiv.style.border = '2px solid #3182ce';
-                            questionDiv.style.backgroundColor = '#ebf8ff';
-                        }
-                        
-                        // Add segment header
-                        const segmentHeader = document.createElement('div');
-                        segmentHeader.style.fontSize = '0.85rem';
-                        segmentHeader.style.color = '#718096';
-                        segmentHeader.style.marginBottom = '8px';
-                        segmentHeader.textContent = `Segment ${index + 1} (${formatTime(seg.start)} - ${formatTime(seg.end)})`;
-                        questionDiv.appendChild(segmentHeader);
-
-                        if (entry.skipped) {
-                            questionDiv.classList.add('skipped');
-
-                            const badge = document.createElement('div');
-                            badge.className = 'question-type-badge';
-                            badge.textContent = 'Skipped';
-                            questionDiv.appendChild(badge);
-
-                            const messageEl = document.createElement('div');
-                            messageEl.className = 'question-text';
-                            messageEl.textContent = 'Segment marked as skipped';
-                            questionDiv.appendChild(messageEl);
-
-                            if (entry.skipReason) {
-                                const reasonEl = document.createElement('div');
-                                reasonEl.className = 'answer-text';
-                                reasonEl.textContent = `Reason: ${entry.skipReason}`;
-                                questionDiv.appendChild(reasonEl);
-                            }
-                        } else {
-                            const badge = document.createElement('div');
-                            badge.className = 'question-type-badge';
-                            badge.textContent = getExpertQuestionTypeLabel(entry.questionType);
-                            questionDiv.appendChild(badge);
-
-                            const questionText = document.createElement('div');
-                            questionText.className = 'question-text';
-                            questionText.textContent = entry.question || '';
-                            questionDiv.appendChild(questionText);
-
-                            const answerText = document.createElement('div');
-                            answerText.className = 'answer-text';
-                            answerText.textContent = entry.answer || '';
-                            questionDiv.appendChild(answerText);
-                        }
-
-                        container.appendChild(questionDiv);
+                    if (!entry) {
+                        return;
                     }
+
+                    hasAnyQuestions = true;
+
+                    const card = document.createElement('div');
+                    card.className = 'question-item';
+
+                    if (segment && seg === segment) {
+                        card.classList.add('is-active');
+                    }
+
+                    const header = document.createElement('div');
+                    header.className = 'question-item-header';
+
+                    const chip = document.createElement('span');
+                    if (entry.skipped) {
+                        card.classList.add('is-skipped');
+                        chip.className = 'question-chip question-chip--skipped';
+                        chip.textContent = 'Skipped';
+                    } else {
+                        const chipClass = getExpertQuestionTypeClass(entry.questionType);
+                        chip.className = `question-chip ${chipClass}`;
+                        chip.textContent = getExpertQuestionTypeLabel(entry.questionType);
+                    }
+                    header.appendChild(chip);
+
+                    const meta = document.createElement('div');
+                    meta.className = 'question-meta';
+                    meta.textContent = `Segment ${index + 1} | ${formatTime(seg.start)} - ${formatTime(seg.end)}`;
+                    header.appendChild(meta);
+
+                    card.appendChild(header);
+
+                    if (entry.skipped) {
+                        card.appendChild(createField('Status', 'Segment marked as skipped.', 'question-text'));
+
+                        if (entry.skipReason) {
+                            card.appendChild(createField('Skip reason', entry.skipReason, 'answer-text'));
+                        }
+                    } else {
+                        card.appendChild(createField('Question', entry.question || '', 'question-text'));
+                        card.appendChild(createField('Model answer', entry.answer || '', 'answer-text'));
+                    }
+
+                    container.appendChild(card);
                 });
-                
-                // Also show manually added questions
+
                 Object.entries(expertQuestions).forEach(([key, entry]) => {
-                    if (entry && entry.isManual) {
-                        hasAnyQuestions = true;
-                        
-                        const questionDiv = document.createElement('div');
-                        questionDiv.className = 'question-item';
-                        questionDiv.style.borderLeft = '4px solid #38a169';
-                        
-                        // Add manual question header
-                        const segmentHeader = document.createElement('div');
-                        segmentHeader.style.fontSize = '0.85rem';
-                        segmentHeader.style.color = '#38a169';
-                        segmentHeader.style.marginBottom = '8px';
-                        segmentHeader.textContent = `Manual Question @ ${formatTime(entry.timestamp || 0)}`;
-                        questionDiv.appendChild(segmentHeader);
-                        
-                        const badge = document.createElement('div');
-                        badge.className = 'question-type-badge';
-                        badge.style.background = '#38a169';
-                        badge.textContent = getExpertQuestionTypeLabel(entry.questionType);
-                        questionDiv.appendChild(badge);
-
-                        const questionText = document.createElement('div');
-                        questionText.className = 'question-text';
-                        questionText.textContent = entry.question || '';
-                        questionDiv.appendChild(questionText);
-
-                        const answerText = document.createElement('div');
-                        answerText.className = 'answer-text';
-                        answerText.textContent = entry.answer || '';
-                        questionDiv.appendChild(answerText);
-                        
-                        container.appendChild(questionDiv);
+                    if (!entry || !entry.isManual) {
+                        return;
                     }
+
+                    hasAnyQuestions = true;
+
+                    const card = document.createElement('div');
+                    card.className = 'question-item is-manual';
+
+                    const header = document.createElement('div');
+                    header.className = 'question-item-header';
+
+                    const chip = document.createElement('span');
+                    const chipClass = getExpertQuestionTypeClass(entry.questionType);
+                    chip.className = `question-chip ${chipClass}`;
+                    const manualTypeLabel = getExpertQuestionTypeLabel(entry.questionType);
+                    chip.textContent = manualTypeLabel === 'Unknown' ? 'Manual' : manualTypeLabel;
+                    if (manualTypeLabel === 'Unknown') {
+                        chip.classList.add('question-chip--manual');
+                    }
+                    header.appendChild(chip);
+
+                    const meta = document.createElement('div');
+                    meta.className = 'question-meta';
+                    const manualTime = formatTime(entry.timestamp || entry.segmentStart || entry.segmentEnd || 0);
+                    meta.textContent = `Manual entry @ ${manualTime}`;
+                    header.appendChild(meta);
+
+                    card.appendChild(header);
+                    card.appendChild(createField('Question', entry.question || '', 'question-text'));
+                    card.appendChild(createField('Model answer', entry.answer || '', 'answer-text'));
+
+                    container.appendChild(card);
                 });
-                
+
                 if (!hasAnyQuestions) {
-                    renderExpertInfoMessage(container, 'No expert questions saved yet. Play the video to add questions at each segment or use "Add Question" button.');
+                    renderExpertInfoMessage(container, 'No expert questions saved yet. Play the video to add questions at each segment when the review pauses.');
                 }
             } else {
                 renderExpertInfoMessage(container, 'Select a video to begin adding expert questions.');
@@ -3383,13 +3690,15 @@
 
 
             const trashButton = document.createElement('button');
-
             trashButton.type = 'button';
-
-            trashButton.className = 'btn btn-danger btn-sm';
-
-            trashButton.textContent = 'Trash';
-
+            trashButton.className = 'llm-action-icon';
+            trashButton.title = 'Mark as Inappropriate';
+            trashButton.setAttribute('aria-label', 'Mark as Inappropriate');
+            trashButton.innerHTML = `
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                    <path d="M7.5 2a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1h4a.75.75 0 0 1 0 1.5h-.82l-1.08 12.11A2.25 2.25 0 0 1 12.37 18H7.63a2.25 2.25 0 0 1-2.23-2.39L4.32 3.5H3.5a.75.75 0 0 1 0-1.5h4Zm1.56 0h1.88a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.38.5Zm4.48 2H6.46l1.03 11.5a.75.75 0 0 0 .74.68h4.74a.75.75 0 0 0 .74-.68L13.54 4Z"/>
+                </svg>
+            `;
             trashButton.addEventListener('click', () => moveLLMQuestionToTrash(questionKey));
 
             actions.appendChild(trashButton);
@@ -4726,6 +5035,63 @@
                     reviewList.innerHTML = '<div class="review-placeholder">Select a video on Step 1 to begin.</div>';
                 }
             }
+
+            const progressText = document.getElementById('progress-text');
+            if (progressText) {
+                progressText.textContent = currentVideoId ? 'Loading segments...' : 'Select a video to begin';
+            }
+
+            const progressSubtext = document.getElementById('progress-subtext');
+            if (progressSubtext) {
+                progressSubtext.textContent = currentVideoId ? 'Preparing segment details...' : 'Segment progress will appear here.';
+            }
+
+            const progressFill = document.getElementById('progress-fill');
+            if (progressFill) {
+                progressFill.style.width = '0%';
+            }
+
+            const progressChip = document.getElementById('progress-chip');
+            if (progressChip) {
+                progressChip.textContent = '0%';
+            }
+
+            const segmentInfo = document.getElementById('segment-info');
+            if (segmentInfo) {
+                segmentInfo.style.display = 'none';
+            }
+
+            const segmentIndex = document.getElementById('segment-index-pill');
+            if (segmentIndex) {
+                segmentIndex.textContent = 'Segment 1';
+            }
+
+            const segmentTime = document.getElementById('segment-time');
+            if (segmentTime) {
+                segmentTime.textContent = '00:00 - 00:00';
+            }
+
+            const segmentDuration = document.getElementById('segment-duration');
+            if (segmentDuration) {
+                segmentDuration.textContent = '0s';
+            }
+
+            const segmentNextPause = document.getElementById('segment-next-pause');
+            if (segmentNextPause) {
+                segmentNextPause.textContent = '00:00';
+            }
+
+            updateManualQuestionButtonState();
+        }
+
+        function updateManualQuestionButtonState() {
+            const manualButton = document.getElementById('add-manual-question-btn');
+            if (!manualButton) {
+                return;
+            }
+
+            const enable = Boolean(currentVideoId && videoElement);
+            manualButton.disabled = !enable;
         }
 
         function updateReviewButtonState() {
@@ -5477,9 +5843,19 @@
                 progressText.textContent = 'Loading segments...';
             }
 
+            const progressSubtext = document.getElementById('progress-subtext');
+            if (progressSubtext) {
+                progressSubtext.textContent = 'Loading segment details...';
+            }
+
             const progressFill = document.getElementById('progress-fill');
             if (progressFill) {
                 progressFill.style.width = '0%';
+            }
+
+            const progressChip = document.getElementById('progress-chip');
+            if (progressChip) {
+                progressChip.textContent = '0%';
             }
 
             let loadSucceeded = false;
@@ -5534,6 +5910,7 @@
             container.appendChild(video);
             
             videoElement = video;
+            updateManualQuestionButtonState();
             
             // Show timeline annotations
             document.getElementById('timeline-annotations').style.display = 'block';
@@ -5805,9 +6182,19 @@
                 timeEl.textContent = timeText;
             }
 
+            const segmentIndexEl = document.getElementById('segment-index-pill');
+            if (segmentIndexEl) {
+                segmentIndexEl.textContent = `Segment ${currentSegmentIndex + 1}`;
+            }
+
             const durationEl = document.getElementById('segment-duration');
             if (durationEl) {
-                durationEl.textContent = `Duration: ${duration} seconds`;
+                durationEl.textContent = formatDuration(duration);
+            }
+
+            const nextPauseEl = document.getElementById('segment-next-pause');
+            if (nextPauseEl) {
+                nextPauseEl.textContent = formatTime(segment.end);
             }
 
             updateExpertQuestionsPanel(segment);
@@ -5816,6 +6203,8 @@
             if (approveSection) {
                 approveSection.style.display = 'block';
             }
+
+            updateManualQuestionButtonState();
         }
         
         async function loadAIQuestionsForSegment(segment) {
@@ -6018,6 +6407,8 @@
         function updateProgress() {
             const progressText = document.getElementById('progress-text');
             const progressFill = document.getElementById('progress-fill');
+            const progressSubtext = document.getElementById('progress-subtext');
+            const progressChip = document.getElementById('progress-chip');
 
             if (!progressText || !progressFill) {
                 return;
@@ -6025,6 +6416,12 @@
 
             if (!currentSegments.length) {
                 progressText.textContent = 'No segments available';
+                if (progressSubtext) {
+                    progressSubtext.textContent = 'Select a video to load segment data.';
+                }
+                if (progressChip) {
+                    progressChip.textContent = '0%';
+                }
                 progressFill.style.width = '0%';
                 return;
             }
@@ -6033,13 +6430,23 @@
             const completed = currentSegments.reduce((count, segment) => count + (hasExpertDecision(segment) ? 1 : 0), 0);
 
             if (completed >= total) {
-                progressText.textContent = `All ${total} segments completed`;
+                progressText.textContent = `All ${total} segments reviewed`;
             } else {
-                progressText.textContent = `Segment ${completed + 1} of ${total}`;
+                progressText.textContent = completed === 0
+                    ? `Start with segment 1 of ${total}`
+                    : `Segment ${completed + 1} of ${total} ready for review`;
             }
 
-            const percent = (completed / total) * 100;
+            const percent = Math.min(100, Math.max(0, (completed / total) * 100));
             progressFill.style.width = `${percent}%`;
+
+            if (progressChip) {
+                progressChip.textContent = `${Math.round(percent)}%`;
+            }
+
+            if (progressSubtext) {
+                progressSubtext.textContent = `Reviewed ${completed} of ${total} segments`;
+            }
         }
 
         function showStatus(message, type) {
