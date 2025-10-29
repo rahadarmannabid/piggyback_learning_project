@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -64,7 +64,7 @@
         
         .main-grid {
             display: grid;
-            grid-template-columns: 1fr 400px;
+            grid-template-columns: 1fr;
             gap: 20px;
             min-height: 600px;
         }
@@ -74,6 +74,45 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .video-section.qs-fullscreen-active,
+        .qs-fullscreen .video-section {
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            max-height: none;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background: #0f172a;
+        }
+        
+        .video-section.qs-fullscreen-active .video-container,
+        .qs-fullscreen .video-section .video-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .video-section.qs-fullscreen-active .video-player,
+        .qs-fullscreen .video-section .video-player {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .video-section.qs-fullscreen-active .questions-panel,
+        .qs-fullscreen .video-section .questions-panel {
+            max-height: 35vh;
+            overflow-y: auto;
+        }
+        
+        .video-player.qs-fullscreen-video,
+        .qs-fullscreen video {
+            width: 100%;
+            height: 100%;
         }
         
         .video-container {
@@ -186,16 +225,6 @@
         
         .btn-light:hover {
             background: #e2e8f0;
-        }
-        
-        .btn-add-question {
-            background: #38a169;
-            color: white;
-            margin-left: 10px;
-        }
-        
-        .btn-add-question:hover {
-            background: #2f855a;
         }
         
         /* Manual Add Question Modal */
@@ -376,7 +405,8 @@
             padding: 20px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             overflow-y: auto;
-            max-height: 80vh;
+            max-height: none;
+            margin-top: 20px;
         }
         
         .panel-header {
@@ -666,6 +696,9 @@
             border: 1px solid #e2e8f0;
             border-radius: 10px;
             padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             text-align: left;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
@@ -684,15 +717,59 @@
             opacity: 0.7;
             pointer-events: none;
         }
+        .video-card-thumb {
+            position: relative;
+            width: 100%;
+            padding-top: 56%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #dbe3f2;
+        }
+        .video-card-thumb-image {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .video-card-thumb-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4c51bf, #3182ce);
+            color: #f7fafc;
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .video-card-duration-badge {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(26, 32, 44, 0.8);
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 999px;
+        }
+        .video-card-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
         .video-card-title {
             font-weight: 600;
             color: #2d3748;
-            margin-bottom: 6px;
+            margin: 0;
         }
         .video-card-subtitle {
             font-size: 0.85rem;
             color: #4a5568;
-            margin-bottom: 8px;
+            margin: 0;
         }
         .video-card-meta {
             display: flex;
@@ -999,7 +1076,7 @@
         }
         
         .accordion-header.approved .segment-index::after {
-            content: " ✓";
+            content: " ?";
             color: #28a745;
             font-weight: bold;
         }
@@ -1595,37 +1672,35 @@
                             <button class="btn btn-secondary btn-sm" onclick="jumpToSegment(1)">Next</button>
                             <button class="btn btn-secondary btn-sm" onclick="seekVideo(-10)">-10s</button>
                             <button class="btn btn-secondary btn-sm" onclick="seekVideo(10)">+10s</button>
-                            <button class="btn btn-sm btn-add-question" onclick="openAddQuestionModal()">Add Question</button>
                         </div>
                     </div>
-                </div>
-
-                <div class="questions-panel">
-                    <div class="panel-header">
-                        <h3>Expert Questions:</h3>
-                    </div>
-                    <div class="progress-indicator">
-                        <div id="progress-text">Select a video to begin</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    <div class="questions-panel">
+                        <div class="panel-header">
+                            <h3>Expert Questions:</h3>
                         </div>
+                        <div class="progress-indicator">
+                            <div id="progress-text">Select a video to begin</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="segment-info" id="segment-info" style="display: none;">
+                            <div class="segment-time" id="segment-time">00:00 - 00:00</div>
+                            <div class="segment-duration" id="segment-duration">Duration: 0 seconds</div>
+                        </div>
+                        <div class="ai-questions" id="expert-questions">
+                            <!-- AI questions will be populated here -->
+                        </div>
+                        <div class="approve-section" id="approve-section" style="display: none;">
+                            <h3>Ready to Approve?</h3>
+                            <p>Review the questions above and click approve to continue to the next segment</p>
+                            <button class="btn btn-success" onclick="approveAndContinue()">Approve & Continue</button>
+                        </div>
+                        <div class="review-button-bar">
+                            <button class="btn" id="review-button" onclick="handleReviewQuestions()" disabled>Review Questions</button>
+                        </div>
+                        <div id="status-messages"></div>
                     </div>
-                    <div class="segment-info" id="segment-info" style="display: none;">
-                        <div class="segment-time" id="segment-time">00:00 - 00:00</div>
-                        <div class="segment-duration" id="segment-duration">Duration: 0 seconds</div>
-                    </div>
-                    <div class="ai-questions" id="expert-questions">
-                        <!-- AI questions will be populated here -->
-                    </div>
-                    <div class="approve-section" id="approve-section" style="display: none;">
-                        <h3>Ready to Approve?</h3>
-                        <p>Review the questions above and click approve to continue to the next segment</p>
-                        <button class="btn btn-success" onclick="approveAndContinue()">Approve & Continue</button>
-                    </div>
-                    <div class="review-button-bar">
-                        <button class="btn" id="review-button" onclick="handleReviewQuestions()" disabled>Review Questions</button>
-                    </div>
-                    <div id="status-messages"></div>
                 </div>
             </div>
             
@@ -1694,7 +1769,7 @@
                 </div>
                 <div class="llm-modal-feedback" id="llm-modal-feedback"></div>
                 <div class="llm-step-content active" id="llm-step-1">
-                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Review the generated questions, move inappropriate ones to trash, and optionally leave a note.</em></strong></span></p>
+                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Review the AI generated questions, move inappropriate ones to trash, and optionally leave a note.</em></strong></span></p>
                     <div class="llm-step-stack">
                         <div class="llm-section-box">
                             <h4 class="llm-section-title">Questions</h4>
@@ -1718,7 +1793,7 @@
                     </div>
                 </div>
                 <div class="llm-step-content" id="llm-step-2">
-                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Rank the remaining questions in order of strength, drop any that should be excluded, and leave an optional rationale.</em></strong></span></p>
+                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Rank the remaining comprehension questions, and leave an optional rationale.</em></strong></span></p>
                     <div class="llm-step-stack">
                         <div class="llm-section-box">
                             <h4 class="llm-section-title">Ranking</h4>
@@ -1743,7 +1818,7 @@
                     </div>
                 </div>
                 <div class="llm-step-content" id="llm-step-3">
-                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Review answers, make final edits, and confirm the set looks ready for learners.</em></strong></span></p>
+                    <p class="llm-step-instructions"><span class="llm-instruction-icon" aria-hidden="true">i</span><span class="llm-instruction-text"><strong><em>Review answers & make final edits to both questions and answers</em></strong></span></p>
                     <div class="llm-accordion" id="llm-accordion-list"></div>
                     <div class="llm-step-footer">
                         <button type="button" class="btn btn-secondary" id="llm-step-edit-back-btn">Back</button>
@@ -1807,6 +1882,124 @@
         let modalPlaybackWasPlaying = false;
 
         let llmModalResolve = null;
+        const qsFullscreenState = {
+            container: null,
+            modals: []
+        };
+
+        function getFullscreenElement() {
+            return document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.msFullscreenElement ||
+                null;
+        }
+
+        function getRequestFullscreenFn(element) {
+            if (!element) {
+                return null;
+            }
+            return element.requestFullscreen ||
+                element.webkitRequestFullscreen ||
+                element.msRequestFullscreen ||
+                null;
+        }
+
+        function trackModalElement(id, fullscreenSelector = null) {
+            const el = document.getElementById(id);
+            if (!el) {
+                return;
+            }
+
+            const alreadyTracked = qsFullscreenState.modals.some(item => item.el === el);
+            if (alreadyTracked) {
+                return;
+            }
+
+            qsFullscreenState.modals.push({
+                el,
+                parent: el.parentNode,
+                nextSibling: el.nextSibling,
+                fullscreenSelector
+            });
+        }
+
+        function moveModalsToContainer(container) {
+            if (!container) {
+                return;
+            }
+            qsFullscreenState.modals.forEach(item => {
+                const { el, fullscreenSelector } = item;
+                if (!el) {
+                    return;
+                }
+                const target = fullscreenSelector
+                    ? container.querySelector(fullscreenSelector) || container
+                    : container;
+                if (target && el.parentNode !== target) {
+                    target.appendChild(el);
+                }
+            });
+        }
+
+        function restoreModalsToOriginal() {
+            qsFullscreenState.modals.forEach(item => {
+                const { el, parent, nextSibling } = item;
+                if (!el || !parent) {
+                    return;
+                }
+
+                if (nextSibling && nextSibling.parentNode === parent) {
+                    parent.insertBefore(el, nextSibling);
+                } else {
+                    parent.appendChild(el);
+                }
+            });
+        }
+
+        function handleFullscreenChange() {
+            const current = getFullscreenElement();
+            const container = qsFullscreenState.container || document.querySelector('.video-section');
+            qsFullscreenState.container = container;
+
+            if (videoElement && current === videoElement && container && container !== videoElement) {
+                const request = getRequestFullscreenFn(container);
+                if (typeof request === 'function') {
+                    request.call(container);
+                }
+                return;
+            }
+
+            const isContainerFullscreen = current && container && current === container;
+
+            document.body.classList.toggle('qs-fullscreen', Boolean(isContainerFullscreen));
+
+            if (container) {
+                container.classList.toggle('qs-fullscreen-active', Boolean(isContainerFullscreen));
+            }
+
+            if (videoElement) {
+                videoElement.classList.toggle('qs-fullscreen-video', Boolean(isContainerFullscreen));
+            }
+
+            if (isContainerFullscreen) {
+                moveModalsToContainer(container);
+            } else {
+                restoreModalsToOriginal();
+            }
+        }
+
+        function initFullscreenSupport() {
+            qsFullscreenState.container = document.querySelector('.video-section');
+            trackModalElement('pause-overlay', '.video-container');
+            trackModalElement('add-question-modal');
+            trackModalElement('llm-review-modal');
+
+            ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(eventName => {
+                document.addEventListener(eventName, handleFullscreenChange);
+            });
+
+            handleFullscreenChange();
+        }
 
 
         function acquireModalPlaybackLock() {
@@ -1846,9 +2039,10 @@
         function isVideoPlaybackLocked() {
             return modalPlaybackLockCount > 0;
         }
-        
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            initFullscreenSupport();
             initStepNavigation();
             loadVideoList();
             resetReviewPanel();
@@ -2002,14 +2196,27 @@
                 const fileCount = typeof video.fileCount === 'number' ? video.fileCount : 0;
                 const questionCount = typeof video.questionCount === 'number' ? video.questionCount : null;
                 const questionText = questionCount !== null ? `Questions: ${questionCount}` : 'Questions: N/A';
+                const rawThumbnail = typeof video.thumbnail === 'string' ? video.thumbnail.trim() : '';
+                const thumbnailUrl = rawThumbnail;
+                const hasThumbnail = thumbnailUrl.length > 0;
+                const placeholderInitial = baseLabel ? baseLabel.trim().charAt(0).toUpperCase() : 'V';
+                const showDurationBadge = durationText && durationText !== '0:00';
 
                 card.innerHTML = `
-                    <div class="video-card-title">${baseLabel}</div>
-                    <div class="video-card-subtitle">${subtitle}</div>
-                    <div class="video-card-meta">
-                        <span>Duration: ${durationText}</span>
-                        <span>Files: ${fileCount}</span>
-                        <span>${questionText}</span>
+                    <div class="video-card-thumb">
+                        ${hasThumbnail
+                            ? `<img class="video-card-thumb-image" src="${thumbnailUrl}" alt="${baseLabel}">`
+                            : `<div class="video-card-thumb-placeholder">${placeholderInitial}</div>`}
+                        ${showDurationBadge ? `<span class="video-card-duration-badge">${durationText}</span>` : ''}
+                    </div>
+                    <div class="video-card-details">
+                        <div class="video-card-title">${baseLabel}</div>
+                        <div class="video-card-subtitle">${subtitle}</div>
+                        <div class="video-card-meta">
+                            <span>Duration: ${durationText}</span>
+                            <span>Files: ${fileCount}</span>
+                            <span>${questionText}</span>
+                        </div>
                     </div>
                 `;
 
@@ -4776,7 +4983,7 @@
                     <button class="btn-approve-segment" 
                             onclick="approveSegment('${segmentKey}', ${index})"
                             ${segmentApprovals[currentVideoId][segmentKey] ? 'disabled' : ''}>
-                        ${segmentApprovals[currentVideoId][segmentKey] ? 'Segment Approved ✓' : 'Approve Segment'}
+                        ${segmentApprovals[currentVideoId][segmentKey] ? 'Segment Approved ?' : 'Approve Segment'}
                     </button>
                 `;
                 
@@ -5863,7 +6070,7 @@
             if (!videoElement || !currentVideoId) {
                 return;
             }
-            
+
             // Pause the video and remember its state
             const wasPlaying = !videoElement.paused;
             videoElement.pause();
@@ -6153,3 +6360,6 @@
     </script>
 </body>
 </html>
+
+
+
